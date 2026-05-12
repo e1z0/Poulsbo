@@ -1,0 +1,12 @@
+probe=1 phase=complete
+probe_1_phase=complete
+probe_1_status=bad
+probe_1_reason=phase_failed
+probe_1_phase_rc=1
+probe_1_health_rc=0
+probe_1_health=remote_usable
+probe_1_failed_step=submit_op_ccb_focus
+probe_1_failed_rc=1
+probe_1_failed_log=/tmp/tmp.wJViQ8V7aV/submit_op_ccb_focus.txt
+probe_1_remote_tmpdir=
+probe_1_authoritative_terminal=0

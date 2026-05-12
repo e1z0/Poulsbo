@@ -5,6 +5,109 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### Shared SGX live-view exec-record unification and pre-queue CCB fix
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Extended the shared kernel-internal execution-shaped submit record so it now
+  also drives the older fixed live submit blocks:
+  - `queue header`
+  - `ccb record`
+  - `sync`
+  - `owner`
+  - `report`
+- The first guarded candidate exposed a real regression in the legal pre-queue
+  `ccb` path:
+  - regression bundle:
+    [logs/vaio-plan-session/20260513-004821-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-004821-sgx-plan-session)
+  - failing live override:
+    - `driver_srcversion=A91AC3D851E88D083C04C9F`
+  - failing exact phase:
+    - `selected_failed_phase=complete`
+    - `selected_failed_step=submit_op_ccb_focus`
+    - `selected_failed_rc=1`
+- Cause:
+  - the queue-header builder started assuming queue geometry already existed
+    and tried to compute queue progression even before the later `queue`
+    configure step
+- Fix:
+  - `queue header` and `sync` now keep a valid pre-queue fallback and skip
+    queue progression until queue geometry exists
+- Local validation passed:
+  - `git -C third_party/linux-ubuntu-5.4 diff --check -- drivers/gpu/drm/gma500`
+  - `./scripts/docker-build-vaio-gma500.sh`
+- Final direct guarded deploy bundle:
+  - [logs/vaio-deploy/20260513-005139-guarded-deploy-direct](/root/Poulsbo/logs/vaio-deploy/20260513-005139-guarded-deploy-direct)
+- That deploy rebooted the VAIO onto:
+  - `driver_srcversion=21D34B366D429B395AD45DC`
+  - `override_module_size=434960`
+  - `lightdm_active=inactive`
+  - `kdump_service_active=active`
+- Exact terminal rerun:
+  - [logs/vaio-plan-session/20260513-005336-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-005336-sgx-plan-session)
+  - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete`
+  - result:
+    - `session_outcome=completed`
+    - `selected_phase_profile=complete`
+    - `final_driver_srcversion=21D34B366D429B395AD45DC`
+- Focused typed submit bundle:
+  - [logs/vaio-ioctl/20260513-005719-sgx-submit-exec-record-full-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-005719-sgx-submit-exec-record-full-live/summary.log)
+- Final focused typed state:
+  - `submit_prepare_count=1`
+  - `submit_arm_count=1`
+  - `submit_emit_count=1`
+  - `submit_launch_count=1`
+  - `submit_dispatch_count=1`
+  - `submit_retired_count=1`
+  - `submit_issue_count=1`
+  - `submit_transition_count=2`
+  - `submit_result_stage_name=retired`
+  - `submit_result_source_name=retired`
+  - `submit_result_owner_state_name=complete`
+- Typed multi-submit bundle:
+  - [logs/vaio-ioctl/20260513-005759-sgx-multi-submit-exec-record-full-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-005759-sgx-multi-submit-exec-record-full-live/summary.log)
+- Final typed multi-submit state:
+  - `SUBMIT_A_ID=6`
+  - `SUBMIT_B_ID=7`
+  - submit A:
+    - `submit_arm_count=3`
+    - `submit_emit_count=3`
+    - `submit_launch_count=3`
+    - `submit_dispatch_count=3`
+    - `submit_retired_count=3`
+    - `submit_issue_count=3`
+    - `submit_transition_count=6`
+    - `submit_result_stage_name=retired`
+    - `submit_result_source_name=retired`
+    - `submit_result_owner_state_name=complete`
+  - submit B:
+    - `submit_arm_count=2`
+    - `submit_emit_count=2`
+    - `submit_launch_count=2`
+    - `submit_dispatch_count=2`
+    - `submit_retired_count=2`
+    - `submit_issue_count=2`
+    - `submit_transition_count=4`
+    - `submit_result_stage_name=retired`
+    - `submit_result_source_name=retired`
+    - `submit_result_owner_state_name=complete`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver stays terminal on the new module:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-005336`
+  - `source_row_module_srcversion=21D34B366D429B395AD45DC`
+
+Conclusion:
+
+- the full typed SGX lab submit image now shares one execution-facing kernel
+  record
+- the pre-queue `ccb` path still mattered and is now preserved explicitly
+- the final direct-deploy candidate is clean on exact `complete`, focused
+  submit, and typed multi-submit validation
+
 ### Shared SGX submit exec-record refactor and live validation
 
 - Updated:

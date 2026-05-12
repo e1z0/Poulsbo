@@ -1,0 +1,8 @@
+phase=complete
+phase_complete_rc=1
+phase_complete_health=remote_usable
+phase_complete_reason=phase_failed
+phase_complete_failed_step=submit_op_ccb_focus
+phase_complete_failed_rc=1
+phase_complete_failed_log=/tmp/tmp.dC3StAHrbM/submit_op_ccb_focus.txt
+phase_complete_remote_tmpdir=

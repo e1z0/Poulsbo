@@ -2183,7 +2183,7 @@ index 000000000..2ece8af5f
 +
 +#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..4fcb1ee5e 100644
+index d414525ec..bee98b28e 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -2203,7 +2203,7 @@ index d414525ec..4fcb1ee5e 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,13018 @@
+@@ -37,6 +40,13122 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -2718,6 +2718,12 @@ index d414525ec..4fcb1ee5e 100644
 +	u32 stage;
 +	u32 stage_count;
 +	u32 source;
++	u32 prepare_count;
++	u32 arm_count;
++	u32 emit_count;
++	u32 launch_count;
++	u32 dispatch_count;
++	u32 retired_count;
 +	u32 context;
 +	u32 cmd_type;
 +	u32 owner_state;
@@ -4229,6 +4235,12 @@ index d414525ec..4fcb1ee5e 100644
 +
 +	switch (source) {
 +	case PSB_SGX_LAB_EXEC_SOURCE_LAUNCH:
++		record->prepare_count = submit->launch_prepare_count;
++		record->arm_count = submit->launch_arm_count;
++		record->emit_count = submit->launch_emit_count;
++		record->launch_count = submit->launch_count;
++		record->dispatch_count = submit->dispatch_count;
++		record->retired_count = submit->retired_count;
 +		record->context = submit->launch_context;
 +		record->cmd_type = submit->launch_cmd_type;
 +		record->owner_state = submit->launch_owner_state;
@@ -4279,6 +4291,12 @@ index d414525ec..4fcb1ee5e 100644
 +			(u32)submit->launch_status_gpu_va;
 +		return 0;
 +	case PSB_SGX_LAB_EXEC_SOURCE_DISPATCH:
++		record->prepare_count = submit->dispatch_prepare_count;
++		record->arm_count = submit->dispatch_arm_count;
++		record->emit_count = submit->dispatch_emit_count;
++		record->launch_count = submit->dispatch_launch_count;
++		record->dispatch_count = submit->dispatch_count;
++		record->retired_count = submit->retired_count;
 +		record->context = submit->dispatch_context;
 +		record->cmd_type = submit->dispatch_cmd_type;
 +		record->owner_state = submit->dispatch_owner_state;
@@ -4330,6 +4348,12 @@ index d414525ec..4fcb1ee5e 100644
 +			(u32)submit->dispatch_status_gpu_va;
 +		return 0;
 +	case PSB_SGX_LAB_EXEC_SOURCE_RETIRED:
++		record->prepare_count = submit->retired_prepare_count;
++		record->arm_count = submit->retired_arm_count;
++		record->emit_count = submit->retired_emit_count;
++		record->launch_count = submit->retired_launch_count;
++		record->dispatch_count = submit->retired_dispatch_count;
++		record->retired_count = submit->retired_count;
 +		record->context = submit->retired_context;
 +		record->cmd_type = submit->retired_cmd_type;
 +		record->owner_state = submit->retired_owner_state;
@@ -4377,29 +4401,37 @@ index d414525ec..4fcb1ee5e 100644
 +			(u32)submit->retired_control_gpu_va : 0;
 +		record->status_gpu_va32 = submit->retired_status_gpu_va ?
 +			(u32)submit->retired_status_gpu_va : 0;
-+		if (!record->control_gpu_va32) {
++		if (!record->control_gpu_va32 && dev_priv) {
 +			ret = poulsbo_sgx_resolve_object_gpu_va32_locked(
 +				dev_priv, submit->control_object_id,
 +				&record->control_gpu_va32);
 +			if (ret)
 +				return ret;
 +		}
-+		if (!record->status_gpu_va32) {
++		if (!record->status_gpu_va32 && dev_priv) {
 +			ret = poulsbo_sgx_resolve_object_gpu_va32_locked(
 +				dev_priv, submit->status_object_id,
 +				&record->status_gpu_va32);
 +			if (ret)
 +				return ret;
 +		}
-+		ret = poulsbo_sgx_resolve_submit_ccb_gpu_va32_locked(
-+			dev_priv, submit, &record->pds_gpu_va32,
-+			&record->use_gpu_va32, &record->target_gpu_va32,
-+			&record->ccb_status_gpu_va32);
-+		if (ret)
-+			return ret;
++		if (dev_priv) {
++			ret = poulsbo_sgx_resolve_submit_ccb_gpu_va32_locked(
++				dev_priv, submit, &record->pds_gpu_va32,
++				&record->use_gpu_va32, &record->target_gpu_va32,
++				&record->ccb_status_gpu_va32);
++			if (ret)
++				return ret;
++		}
 +		return 0;
 +	case PSB_SGX_LAB_EXEC_SOURCE_LIVE:
 +	default:
++		record->prepare_count = submit->prepare_count;
++		record->arm_count = submit->arm_count;
++		record->emit_count = submit->emit_count;
++		record->launch_count = submit->launch_count;
++		record->dispatch_count = submit->dispatch_count;
++		record->retired_count = submit->retired_count;
 +		record->context = submit->context;
 +		record->cmd_type = submit->cmd_type;
 +		record->owner_state = submit->owner_state;
@@ -4438,18 +4470,20 @@ index d414525ec..4fcb1ee5e 100644
 +		record->ccb_cache_control = submit->ccb_cache_control;
 +		record->ccb_data0 = submit->ccb_data0;
 +		record->ccb_data1 = submit->ccb_data1;
-+		ret = poulsbo_sgx_resolve_object_gpu_va32_locked(
-+			dev_priv, submit->control_object_id,
-+			&record->control_gpu_va32);
-+		if (ret)
-+			return ret;
-+		ret = poulsbo_sgx_resolve_submit_ccb_gpu_va32_locked(
-+			dev_priv, submit, &record->pds_gpu_va32,
-+			&record->use_gpu_va32, &record->target_gpu_va32,
-+			&record->ccb_status_gpu_va32);
-+		if (ret)
-+			return ret;
-+		record->status_gpu_va32 = record->ccb_status_gpu_va32;
++		if (dev_priv) {
++			ret = poulsbo_sgx_resolve_object_gpu_va32_locked(
++				dev_priv, submit->control_object_id,
++				&record->control_gpu_va32);
++			if (ret)
++				return ret;
++			ret = poulsbo_sgx_resolve_submit_ccb_gpu_va32_locked(
++				dev_priv, submit, &record->pds_gpu_va32,
++				&record->use_gpu_va32, &record->target_gpu_va32,
++				&record->ccb_status_gpu_va32);
++			if (ret)
++				return ret;
++			record->status_gpu_va32 = record->ccb_status_gpu_va32;
++		}
 +		return 0;
 +	}
 +}
@@ -4498,18 +4532,46 @@ index d414525ec..4fcb1ee5e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_queue_header_words *queue_header)
 +{
++	struct psb_sgx_lab_submit_exec_record record;
++	u32 expected_tail_packets;
++	u32 expected_head_packets;
++	u32 expected_write_offset;
++	int ret;
++
 +	if (!queue_header)
 +		return -EINVAL;
 +
++	ret = poulsbo_sgx_build_submit_exec_record_locked(
++		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	if (ret)
++		return ret;
++	expected_tail_packets = 0;
++	expected_head_packets = 0;
++	expected_write_offset = record.ccb_write_offset;
++	if (record.queue_size && record.queue_packet_size &&
++	    record.queue_packet_count) {
++		ret = poulsbo_sgx_queue_progression(record.ccb_read_offset,
++						    record.queue_size,
++						    record.queue_packet_size,
++						    record.queue_packet_count,
++						    &expected_tail_packets,
++						    &expected_head_packets,
++						    &expected_write_offset);
++		if (ret)
++			return ret;
++		if (expected_write_offset != record.ccb_write_offset)
++			return -EINVAL;
++	}
++
 +	memset(queue_header, 0, sizeof(*queue_header));
-+	queue_header->write_offset = submit->ccb_write_offset;
-+	queue_header->read_offset = submit->ccb_read_offset;
-+	queue_header->queue_base_offset = submit->queue_base_offset;
-+	queue_header->queue_size = submit->queue_size;
-+	queue_header->queue_packet_size = submit->queue_packet_size;
-+	queue_header->queue_packet_count = submit->queue_packet_count;
-+	queue_header->queue_tail_packet_count = submit->queue_tail_packet_count;
-+	queue_header->queue_head_packet_count = submit->queue_head_packet_count;
++	queue_header->write_offset = record.ccb_write_offset;
++	queue_header->read_offset = record.ccb_read_offset;
++	queue_header->queue_base_offset = record.queue_base_offset;
++	queue_header->queue_size = record.queue_size;
++	queue_header->queue_packet_size = record.queue_packet_size;
++	queue_header->queue_packet_count = record.queue_packet_count;
++	queue_header->queue_tail_packet_count = expected_tail_packets;
++	queue_header->queue_head_packet_count = expected_head_packets;
 +	return 0;
 +}
 +
@@ -4542,19 +4604,27 @@ index d414525ec..4fcb1ee5e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_ccb_record_words *ccb_record)
 +{
++	struct psb_sgx_lab_submit_exec_record record;
++	int ret;
++
 +	if (!ccb_record)
 +		return -EINVAL;
 +
-+	memset(ccb_record, 0, sizeof(*ccb_record));
-+	ccb_record->service_address = submit->ccb_service_address;
-+	ccb_record->cache_control = submit->ccb_cache_control;
-+	ccb_record->data0 = submit->ccb_data0;
-+	ccb_record->data1 = submit->ccb_data1;
++	ret = poulsbo_sgx_build_submit_exec_record_locked(
++		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	if (ret)
++		return ret;
 +
-+	return poulsbo_sgx_resolve_submit_ccb_gpu_va32_locked(
-+		dev_priv, submit, &ccb_record->pds_gpu_va32,
-+		&ccb_record->use_gpu_va32, &ccb_record->target_gpu_va32,
-+		&ccb_record->status_gpu_va32);
++	memset(ccb_record, 0, sizeof(*ccb_record));
++	ccb_record->service_address = record.ccb_service_address;
++	ccb_record->cache_control = record.ccb_cache_control;
++	ccb_record->data0 = record.ccb_data0;
++	ccb_record->data1 = record.ccb_data1;
++	ccb_record->pds_gpu_va32 = record.pds_gpu_va32;
++	ccb_record->use_gpu_va32 = record.use_gpu_va32;
++	ccb_record->target_gpu_va32 = record.target_gpu_va32;
++	ccb_record->status_gpu_va32 = record.ccb_status_gpu_va32;
++	return 0;
 +}
 +
 +static int poulsbo_sgx_write_submit_ccb_record_locked(
@@ -4585,25 +4655,52 @@ index d414525ec..4fcb1ee5e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_sync_words *sync)
 +{
++	struct psb_sgx_lab_submit_exec_record record;
++	u32 expected_head_packets;
++	u32 expected_write_offset;
 +	u32 flags;
++	int ret;
 +
 +	if (!sync)
 +		return -EINVAL;
 +
++	ret = poulsbo_sgx_build_submit_exec_record_locked(
++		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	if (ret)
++		return ret;
++	expected_head_packets = 0;
++	expected_write_offset = record.ccb_write_offset;
++	if (record.queue_size && record.queue_packet_size &&
++	    record.queue_packet_count) {
++		u32 expected_tail_packets;
++
++		ret = poulsbo_sgx_queue_progression(record.ccb_read_offset,
++						    record.queue_size,
++						    record.queue_packet_size,
++						    record.queue_packet_count,
++						    &expected_tail_packets,
++						    &expected_head_packets,
++						    &expected_write_offset);
++		if (ret)
++			return ret;
++		if (expected_write_offset != record.ccb_write_offset)
++			return -EINVAL;
++	}
++
 +	memset(sync, 0, sizeof(*sync));
-+	flags = submit->sync_flags | PSB_SGX_LAB_SYNC_FLAG_READY;
-+	if (submit->queue_head_packet_count)
++	flags = record.sync_flags | PSB_SGX_LAB_SYNC_FLAG_READY;
++	if (expected_head_packets)
 +		flags |= PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
 +	else
 +		flags &= ~PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
 +
-+	sync->read_offset = submit->ccb_read_offset;
-+	sync->write_offset = submit->ccb_write_offset;
-+	sync->complete_seq = submit->sync_complete_seq;
-+	sync->pending_seq = submit->sync_pending_seq;
++	sync->read_offset = record.ccb_read_offset;
++	sync->write_offset = record.ccb_write_offset;
++	sync->complete_seq = record.sync_complete_seq;
++	sync->pending_seq = record.sync_pending_seq;
 +	sync->flags = flags;
-+	sync->epoch = submit->queue_epoch;
-+	sync->global_issue_ticket = submit->global_issue_ticket;
++	sync->epoch = record.queue_epoch;
++	sync->global_issue_ticket = record.global_issue_ticket;
 +	return 0;
 +}
 +
@@ -4635,16 +4732,24 @@ index d414525ec..4fcb1ee5e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_owner_words *owner)
 +{
++	struct psb_sgx_lab_submit_exec_record record;
++	int ret;
++
 +	if (!owner)
 +		return -EINVAL;
 +
++	ret = poulsbo_sgx_build_submit_exec_record_locked(
++		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	if (ret)
++		return ret;
++
 +	memset(owner, 0, sizeof(*owner));
-+	owner->owner_state = submit->owner_state;
-+	owner->owner_issue_cookie = submit->owner_issue_cookie;
-+	owner->owner_complete_cookie = submit->owner_complete_cookie;
-+	owner->epoch = submit->queue_epoch;
-+	owner->global_complete_ticket = submit->global_complete_ticket;
-+	owner->global_running_ticket = submit->global_running_ticket;
++	owner->owner_state = record.owner_state;
++	owner->owner_issue_cookie = record.owner_issue_cookie;
++	owner->owner_complete_cookie = record.owner_complete_cookie;
++	owner->epoch = record.queue_epoch;
++	owner->global_complete_ticket = record.global_complete_ticket;
++	owner->global_running_ticket = record.global_running_ticket;
 +	return 0;
 +}
 +
@@ -4990,37 +5095,36 @@ index d414525ec..4fcb1ee5e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_report_words *report)
 +{
-+	u32 report_stage;
++	struct psb_sgx_lab_submit_exec_record record;
++	int ret;
 +
 +	if (!report)
 +		return -EINVAL;
 +
++	ret = poulsbo_sgx_build_submit_exec_record_locked(
++		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	if (ret)
++		return ret;
++
 +	memset(report, 0, sizeof(*report));
-+	report_stage = poulsbo_sgx_submit_report_stage_locked(submit);
-+	report->stage = report_stage;
-+	report->stage_count =
-+		poulsbo_sgx_submit_report_stage_count_locked(submit,
-+							    report_stage);
-+	report->prepare_count = submit->prepare_count;
-+	report->arm_count = submit->arm_count;
-+	report->emit_count = submit->emit_count;
-+	report->launch_count = submit->launch_count;
-+	report->dispatch_count = submit->dispatch_count;
-+	report->retired_count = submit->retired_count;
-+	report->owner_state = submit->owner_state;
-+	report->queue_packet_count = submit->queue_packet_count;
-+	report->completed_packets =
-+		poulsbo_sgx_submit_report_completed_packets_locked(
-+			submit, report_stage);
-+	report->dependency_active_count =
-+		poulsbo_sgx_submit_report_dependency_count_locked(
-+			submit, report_stage);
-+	report->queue_epoch = submit->queue_epoch;
-+	report->global_issue_ticket = submit->global_issue_ticket;
-+	report->global_running_ticket = submit->global_running_ticket;
-+	report->global_complete_ticket = submit->global_complete_ticket;
-+	report->flags = poulsbo_sgx_submit_report_flags_locked(submit);
-+	report->context = submit->context;
++	report->stage = record.stage;
++	report->stage_count = record.stage_count;
++	report->prepare_count = record.prepare_count;
++	report->arm_count = record.arm_count;
++	report->emit_count = record.emit_count;
++	report->launch_count = record.launch_count;
++	report->dispatch_count = record.dispatch_count;
++	report->retired_count = record.retired_count;
++	report->owner_state = record.owner_state;
++	report->queue_packet_count = record.queue_packet_count;
++	report->completed_packets = record.completed_packets;
++	report->dependency_active_count = record.dependency_active_count;
++	report->queue_epoch = record.queue_epoch;
++	report->global_issue_ticket = record.global_issue_ticket;
++	report->global_running_ticket = record.global_running_ticket;
++	report->global_complete_ticket = record.global_complete_ticket;
++	report->flags = record.report_flags;
++	report->context = record.context;
 +
 +	return 0;
 +}
@@ -15222,7 +15326,7 @@ index d414525ec..4fcb1ee5e 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +13117,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +13221,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -15245,7 +15349,7 @@ index d414525ec..4fcb1ee5e 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +13155,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +13259,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -15253,7 +15357,7 @@ index d414525ec..4fcb1ee5e 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +13183,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +13287,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -15273,7 +15377,7 @@ index d414525ec..4fcb1ee5e 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +13270,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +13374,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -15286,7 +15390,7 @@ index d414525ec..4fcb1ee5e 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +13420,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +13524,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);
