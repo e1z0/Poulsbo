@@ -9786,3 +9786,109 @@ Conclusion:
   - `current_recovery_source_timestamp=20260512-154733`
 - Documented in:
   - `docs/148-sgx-plan-request-resolved-source-provenance.md`
+
+### SGX lab submit `result` block and fixed-module validation
+
+- Added one new memory-backed typed submit `result` block through:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drm_lab.h`
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+  - `workloads/psb_sgx_lab_submit_op.c`
+  - `workloads/psb_sgx_lab_query.c`
+  - `workloads/psb_sgx_lab_dump.c`
+  - `scripts/run-vaio-sgx-ioctl-submit-op.sh`
+  - `scripts/run-vaio-sgx-multi-submit.sh`
+- The typed submit-op surface now supports:
+  - `result <submit-selector> <offset>`
+- The memory-backed `result` block now carries:
+  - stage and stage count
+  - selected source `live|dispatch|retired`
+  - context, command type, and owner state
+  - issued/completed packet counts
+  - dependency-active count
+  - queue packet count and queue epoch
+  - sync, owner, and global ticket fields
+  - linked `report/manifest/descriptor/plan` offsets
+  - control/status object IDs and GPU-VA32 words
+  - config count and `last_result_jiffies`
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260512-234450-guarded-deploy`
+  - live override:
+    - `driver_srcversion=EAD330CBA159A4483448EBF`
+    - `override_module_size=434112`
+    - `last_overall=remote_usable`
+- Focused direct hardware validation then passed and is now captured in:
+  - `logs/vaio-ioctl/20260513-000332-sgx-submit-result-live/summary.log`
+  - final focused `result` state proved:
+    - `submit_result_offset=0x180`
+    - `submit_result_stage_name=retired`
+    - `submit_result_source_name=retired`
+    - `submit_result_owner_state_name=complete`
+    - `submit_result_issued_packets=1`
+    - `submit_result_completed_packets=2`
+    - `submit_result_queue_packet_count=0`
+    - `submit_result_queue_epoch=0`
+    - `submit_result_control_gpu_va32=0x807bf000`
+    - `submit_result_status_gpu_va32=0x807cf000`
+    - `submit_result_report_offset=0x120`
+    - `submit_result_manifest_offset=0x180`
+    - `submit_result_descriptor_offset=0x200`
+    - `submit_result_plan_offset=0x300`
+    - `submit_result_config_count=1`
+  - focused progression still completed cleanly:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now captured in:
+  - `logs/vaio-ioctl/20260513-000411-sgx-multi-submit-result-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=23`
+    - `SUBMIT_B_ID=24`
+    - submit A final:
+      - `submit_result_stage_name=retired`
+      - `submit_result_stage_count=3`
+      - `submit_result_source_name=retired`
+      - `submit_result_owner_state_name=complete`
+      - `submit_result_dependency_active_count=0`
+      - `submit_result_queue_epoch=2`
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_result_stage_name=retired`
+      - `submit_result_stage_count=2`
+      - `submit_result_source_name=retired`
+      - `submit_result_owner_state_name=complete`
+      - `submit_result_dependency_active_count=1`
+      - `submit_result_queue_epoch=1`
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The exact no-redeploy `plan` regression line still passed on that same
+  override:
+  - `logs/vaio-plan-session/20260512-235844-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=EAD330CBA159A4483448EBF`
+- The shared current-boundary resolver now therefore holds:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260512-235844`
+- Documented in:
+  - `docs/160-sgx-plan-fixed-module-through-complete.md`
+  - `docs/161-sgx-lab-submit-result-op-ioctl.md`

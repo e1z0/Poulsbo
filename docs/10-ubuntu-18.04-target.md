@@ -4,45 +4,50 @@ This project is now targeting Ubuntu 18.04 LTS user space for the first reproduc
 
 The current real hardware target is a Sony VAIO VGN-P11Z running Ubuntu 18.04.5 with a `5.4.0-150-generic` `i686` kernel and Intel US15W/Poulsbo graphics.
 
-Current live note on May 12, 2026:
+Current live note on May 13, 2026:
 
 - the old clean top-level `plan` session on `srcversion 2BE09D0DC1CCBDB51D2328E`
   still records the historical `sync / submit_op_kick_focus` blocker only
-- the old later candidate `srcversion 0EEEE302E3FDA9F59B7CFB9` is now
-  historical only too:
+- the old later candidate `srcversion 0EEEE302E3FDA9F59B7CFB9` is also
+  historical only now:
   - it required explicit `gma500_gfx` autoload on one headless boot
   - it later narrowed to `plan_query_offset`
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
-- the fixed guarded-deploy session is now:
-  [logs/vaio-plan-session/20260512-213102-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-213102-sgx-plan-session)
+- the current guarded deploy session is now:
+  [logs/vaio-deploy/20260512-234450-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260512-234450-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=6E95EDFFFB5384C8E58F25B`
-  - `override_module_size=429020`
+  - `driver_srcversion=EAD330CBA159A4483448EBF`
+  - `override_module_size=434112`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
   - `xorg_process_count=0`
-- exact no-redeploy reruns on that fixed module are now all clean through:
+  - `kdump_service_active=active`
+- the exact no-redeploy `plan` ladder on that module is now clean all the way
+  through `complete`, with the latest canonical terminal proof at:
+  - [logs/vaio-plan-session/20260512-235844-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-235844-sgx-plan-session)
+  - `session_outcome=completed`
+  - `final_driver_srcversion=EAD330CBA159A4483448EBF`
+- the new memory-backed submit `result` block is now hardware-validated too:
+  - focused submit-op bundle:
+    [logs/vaio-ioctl/20260513-000332-sgx-submit-result-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-000332-sgx-submit-result-live/summary.log)
+  - typed multi-submit bundle:
+    [logs/vaio-ioctl/20260513-000411-sgx-multi-submit-result-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-000411-sgx-multi-submit-result-live/summary.log)
+- the current execution-shaped SGX lab memory model now includes:
+  - `report`
+  - `result`
+  - `manifest`
+  - `descriptor`
+  - `plan`
+  - the expanded non-executing 8-dword CCB record
+- the exact operator profiles now cover:
+  - `plan_query`
+  - `plan_query_fetch`
+  - `plan_query_basic`
   - `plan_query_offset`
   - `plan_query_config`
   - `plan_query_snapshot`
-  - `prepare_op`
-  - `prepare_query`
-  - `arm`
-- canonical exact bundles:
-  - [logs/vaio-plan-session/20260512-213353-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-213353-sgx-plan-session)
-  - [logs/vaio-plan-session/20260512-213943-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-213943-sgx-plan-session)
-  - [logs/vaio-plan-session/20260512-214214-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-214214-sgx-plan-session)
-  - [logs/vaio-plan-session/20260512-214311-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-214311-sgx-plan-session)
-  - [logs/vaio-plan-session/20260512-214548-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-214548-sgx-plan-session)
-- the exact operator profiles now cover:
-  - `plan_query` for the broader split no-redeploy recovery boundary
-  - `plan_query_fetch` for the first split subphase alone
-  - `plan_query_basic` for the middle split subphase alone
-  - `plan_query_offset` for the first basic post-`plan` assertion alone
-  - `plan_query_config` for the second basic post-`plan` assertion alone
-  - `plan_query_snapshot` for the full snapshot readback alone
   - `prepare_op`
   - `prepare_query`
   - `arm`
@@ -52,78 +57,34 @@ Current live note on May 12, 2026:
   - `issue`
   - `running`
   - `complete`
-  - `post_descriptor` for broader intentional re-checks on the same line
-  - `full` for fresh deploy-side investigations
-  and the top-level `run-vaio-sgx-plan-session.sh` selector now chooses
-  between them automatically unless overridden
+  - `post_descriptor`
+  - `full`
 - the shared current-boundary resolver now advances from successful exact
-  evidence too, so the current exact boundary is:
-  - `resolved_profile=emit`
-  - `resolved_phase=emit`
-  - `resolved_reason=latest_phase_evidence_advanced`
-  - `source_timestamp=20260512-214548`
-- the next exact live command is now:
-  - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=emit ./scripts/run-vaio-sgx-plan-session.sh`
-- the latest operator semantics follow-up also makes `PLAN_PHASES=<csv>` the
-  preferred explicit override and keeps that top-level explicit choice
-  separate from the child recovery wrapper's internal `request_only` state in
-  saved session results
-- the latest local kernel follow-up fixed one concrete `plan`-side overrun:
-  `PSB_SGX_LAB_PLAN_DWORDS` had drifted to `42` while
-  `struct psb_sgx_lab_plan_words` contained `41` `u32` fields; that fix is
-  now widened into compile-time size checks plus struct-size-driven word-copy
-  helpers across the normalized queue/ccb/sync/owner/report/descriptor/plan/
-  dependency blocks, but it is still awaiting hardware rerun
-- the latest wrapper follow-up also removed pipeline-based `tee` from the
-  timeout-critical phase / recovery / operator paths, so the next mid-phase
-  target loss should return a bounded timeout result instead of leaving the
-  local parent session hung on an open pipe
-- the operator stack now has timeout-bounded phase / recovery wrappers so the
-  next rerun records `phase_timeout` and related reasons cleanly instead of
-  hanging
+  evidence and currently resolves to:
+  - `resolved_profile=complete`
+  - `resolved_phase=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260512-235844`
+  - `source_row_module_srcversion=EAD330CBA159A4483448EBF`
+- the exact regression command is now:
+  - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
+- the preferred operator entrypoint remains:
+  `./scripts/run-vaio-sgx-plan-session.sh`
+- the preferred offline comparison view between reruns remains:
+  `MAX_SESSIONS=10 ./scripts/summarize-vaio-plan-sessions.sh`
+- the preferred single-command current-state report remains:
+  `./scripts/report-vaio-plan-status.sh`
 - the target is currently usable:
   - `ping_status=ok`
   - `tcp_22_status=open`
   - `ssh_pubkey_status=ok`
   - `overall=remote_usable`
-- the preferred operator entrypoint remains:
-  `./scripts/run-vaio-sgx-plan-session.sh`
-- the preferred offline comparison view between reruns is now:
-  `MAX_SESSIONS=10 ./scripts/summarize-vaio-plan-sessions.sh`
-- the preferred single-command current-state report is now:
-  `./scripts/report-vaio-plan-status.sh`
-- that report now keeps the older confirmed `sync / submit_op_kick_focus`
-  failure as historical context but derives the next narrowed rerun from the
-  newest remote-usable successful exact phase-evidence bundle, which currently
-  resolves to `PLAN_PHASE_PROFILE=emit`
-- the plan-specific operator wrappers now also share one current-boundary
-  resolver through [scripts/lib-vaio-plan-summary.sh](/root/Poulsbo/scripts/lib-vaio-plan-summary.sh),
-  so recovery-mode `auto` uses the same saved `plan_query` boundary as the
-  status report instead of falling back to `post_descriptor`
-- the latest blocked recovery-mode top-level check now records that provenance
-  explicitly:
-  - `selected_phase_profile_request=auto`
-  - `selected_phase_profile=plan_query_basic`
-  - `selected_phase_source_reason=phase_timeout`
-  - `selected_phase_source_kind=plan_session`
-  - `selected_phase_source_name=sgx-plan-session`
-  - `selected_phase_source_timestamp=20260512-201327`
-- the offline summary/report layer now also preserves the same source
-  structure directly instead of only `phase_source=reason@timestamp`:
-  - `phase_source_reason=phase_timeout`
-  - `phase_source_kind=plan_session`
-  - `phase_source_name=sgx-plan-session`
-  - `phase_source_timestamp=20260512-201327`
-- the summary/report layer now prefers the live `final_driver_srcversion`
-  over the local build `local_module_srcversion`, so the current saved source
-  row now reports the actually loaded candidate:
-  - `source_row_module_srcversion=0EEEE302E3FDA9F59B7CFB9`
-- if the machine is recovered on the already-loaded candidate and you want to
-  avoid an immediate redeploy:
-  `PLAN_SESSION_MODE=recovery ./scripts/run-vaio-sgx-plan-session.sh`
-- if you want to force the current narrowest explicit rerun window through the
-  same top-level operator entrypoint:
-  `PLAN_SESSION_MODE=recovery PLAN_PHASES=plan_query_basic ./scripts/run-vaio-sgx-plan-session.sh`
+- if the machine is already on the current override and you want the exact
+  regression proof without a redeploy:
+  `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
+- the next engineering step is no longer more exact ladder narrowing; it is
+  the first more execution-oriented SGX kernel structure built on top of the
+  validated `result + report + manifest + descriptor + plan + CCB` model
 
 ## Why This Target
 

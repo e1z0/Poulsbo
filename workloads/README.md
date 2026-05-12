@@ -58,6 +58,10 @@ Use small workloads first so register traces stay understandable:
     - manifest offset, stage, stage count, owner state, queue, dependency,
       GPU-VA32, sync, ticket, and owner-cookie fields from the memory-backed
       control-side manifest block
+    - result offset, stage, source, owner state, issued/completed packets,
+      queue, queue epoch, dependency, sync, owner, ticket, report/manifest/
+      descriptor/plan offsets, control/status GPU-VA32 fields, and
+      config-count fields from the memory-backed status-side result block
     - descriptor offset, stage, stage count, owner state, issued/completed
       packets, queue, dependency, GPU-VA32, queue-layout, report/manifest
       offsets, and ticket fields from the memory-backed control-side
@@ -100,7 +104,7 @@ Use small workloads first so register traces stay understandable:
   - opens `/dev/dri/card0` directly
   - runs one bounded SGX lab submit ioctl op
   - currently supports `create`, `focus`, `focus-clear`, `cleanup`, `attach`, `detach`,
-    `kick`, `ccb`, `queue`, `status`, `sync`, `owner`, `report`, `manifest`,
+    `kick`, `ccb`, `queue`, `status`, `sync`, `owner`, `report`, `result`, `manifest`,
     `descriptor`, `plan`,
     `prepare`, `arm`, `emit`, `launch`, `depend-slot`,
     `depticket-slot`, `depstate-slot`, `depclear-slot`, `validate`, `issue`,
@@ -145,6 +149,8 @@ Use small workloads first so register traces stay understandable:
   - includes submit-side `prepare`, `arm`, `emit`, `launch`, and `dispatch`
     state in both text and JSON dumps
   - includes the memory-backed submit `report` block in both text and JSON
+    dumps
+  - includes the memory-backed submit `result` block in both text and JSON
     dumps
   - includes the memory-backed submit `manifest` block in both text and JSON
     dumps

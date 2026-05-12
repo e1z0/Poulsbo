@@ -106,6 +106,22 @@ static const char *plan_source_name(uint32_t source)
 	}
 }
 
+static const char *result_source_name(uint32_t source)
+{
+	switch (source) {
+	case DRM_PSB_SGX_LAB_RESULT_SOURCE_NONE:
+		return "none";
+	case DRM_PSB_SGX_LAB_RESULT_SOURCE_LIVE:
+		return "live";
+	case DRM_PSB_SGX_LAB_RESULT_SOURCE_DISPATCH:
+		return "dispatch";
+	case DRM_PSB_SGX_LAB_RESULT_SOURCE_RETIRED:
+		return "retired";
+	default:
+		return "unknown";
+	}
+}
+
 static const char *slot_name(uint32_t slot)
 {
 	switch (slot) {
@@ -831,6 +847,85 @@ int main(int argc, char **argv)
 		printf("submit_report_flags=0x%x\n", submit.report_flags);
 		printf("submit_report_config_count=%u\n",
 		       submit.report_config_count);
+		printf("submit_result_offset=0x%x\n", submit.result_offset);
+		printf("submit_result_stage=%u\n", submit.result_stage);
+		printf("submit_result_stage_name=%s\n",
+		       report_stage_name(submit.result_stage));
+		printf("submit_result_stage_count=%u\n",
+		       submit.result_stage_count);
+		printf("submit_result_source=%u\n", submit.result_source);
+		printf("submit_result_source_name=%s\n",
+		       result_source_name(submit.result_source));
+		printf("submit_result_context=%u\n", submit.result_context);
+		printf("submit_result_context_name=%s\n",
+		       context_name(submit.result_context));
+		printf("submit_result_cmd_type=%u\n", submit.result_cmd_type);
+		printf("submit_result_cmd_type_name=%s\n",
+		       cmd_type_name(submit.result_cmd_type));
+		printf("submit_result_owner_state=%u\n",
+		       submit.result_owner_state);
+		printf("submit_result_owner_state_name=%s\n",
+		       owner_state_name(submit.result_owner_state));
+		printf("submit_result_issued_packets=%u\n",
+		       submit.result_issued_packets);
+		printf("submit_result_completed_packets=%u\n",
+		       submit.result_completed_packets);
+		printf("submit_result_dependency_active_count=%u\n",
+		       submit.result_dependency_active_count);
+		printf("submit_result_queue_packet_count=%u\n",
+		       submit.result_queue_packet_count);
+		printf("submit_result_queue_epoch=%u\n",
+		       submit.result_queue_epoch);
+		printf("submit_result_sync_complete_seq=0x%x\n",
+		       submit.result_sync_complete_seq);
+		printf("submit_result_sync_pending_seq=0x%x\n",
+		       submit.result_sync_pending_seq);
+		printf("submit_result_sync_flags=0x%x\n",
+		       submit.result_sync_flags);
+		printf("submit_result_owner_issue_cookie=0x%x\n",
+		       submit.result_owner_issue_cookie);
+		printf("submit_result_owner_complete_cookie=0x%x\n",
+		       submit.result_owner_complete_cookie);
+		printf("submit_result_global_issue_ticket=%u\n",
+		       submit.result_global_issue_ticket);
+		printf("submit_result_global_running_ticket=%u\n",
+		       submit.result_global_running_ticket);
+		printf("submit_result_global_complete_ticket=%u\n",
+		       submit.result_global_complete_ticket);
+		printf("submit_result_ctrl_flags=0x%x\n",
+		       submit.result_ctrl_flags);
+		printf("submit_result_num_ta_status_vals=%u\n",
+		       submit.result_num_ta_status_vals);
+		printf("submit_result_num_3d_status_vals=%u\n",
+		       submit.result_num_3d_status_vals);
+		printf("submit_result_ta_dependency=%u\n",
+		       submit.result_ta_dependency);
+		printf("submit_result_status_ta_offset=0x%x\n",
+		       submit.result_status_ta_offset);
+		printf("submit_result_status_3d_offset=0x%x\n",
+		       submit.result_status_3d_offset);
+		printf("submit_result_status_stride=0x%x\n",
+		       submit.result_status_stride);
+		printf("submit_result_status_value_seed=0x%x\n",
+		       submit.result_status_value_seed);
+		printf("submit_result_control_object_id=%u\n",
+		       submit.result_control_object_id);
+		printf("submit_result_status_object_id=%u\n",
+		       submit.result_status_object_id);
+		printf("submit_result_control_gpu_va32=0x%x\n",
+		       submit.result_control_gpu_va32);
+		printf("submit_result_status_gpu_va32=0x%x\n",
+		       submit.result_status_gpu_va32);
+		printf("submit_result_report_offset=0x%x\n",
+		       submit.result_report_offset);
+		printf("submit_result_manifest_offset=0x%x\n",
+		       submit.result_manifest_offset);
+		printf("submit_result_descriptor_offset=0x%x\n",
+		       submit.result_descriptor_offset);
+		printf("submit_result_plan_offset=0x%x\n",
+		       submit.result_plan_offset);
+		printf("submit_result_config_count=%u\n",
+		       submit.result_config_count);
 		printf("submit_manifest_offset=0x%x\n",
 		       submit.manifest_offset);
 		printf("submit_manifest_stage=%u\n", submit.manifest_stage);
@@ -1077,6 +1172,8 @@ int main(int argc, char **argv)
 		       (uint64_t)submit.last_retired_jiffies);
 		printf("submit_last_report_jiffies=%" PRIu64 "\n",
 		       (uint64_t)submit.last_report_jiffies);
+		printf("submit_last_result_jiffies=%" PRIu64 "\n",
+		       (uint64_t)submit.last_result_jiffies);
 		printf("submit_last_manifest_jiffies=%" PRIu64 "\n",
 		       (uint64_t)submit.last_manifest_jiffies);
 		printf("submit_last_descriptor_jiffies=%" PRIu64 "\n",

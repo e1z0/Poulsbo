@@ -41,6 +41,7 @@ hold_seconds="${HOLD_SECONDS:-15}"
 probe_count="${PROBE_COUNT:-5}"
 range_scan_max="${RANGE_SCAN_MAX:-128}"
 report_offset="${REPORT_OFFSET:-0x120}"
+result_offset="${RESULT_OFFSET:-0x180}"
 manifest_offset="${MANIFEST_OFFSET:-0x180}"
 descriptor_offset="${DESCRIPTOR_OFFSET:-0x200}"
 plan_offset="${PLAN_OFFSET:-0x300}"
@@ -364,6 +365,39 @@ assert_plan_snapshot_file() {
     grep -q "^submit_plan_status_gpu_va32=\${expected_status_gpu_va}\$" "\${infile}"
 }
 
+assert_result_snapshot_file() {
+    local infile="\$1"
+    local expected_stage="\$2"
+    local expected_stage_count="\$3"
+    local expected_source="\$4"
+    local expected_owner_state="\$5"
+    local expected_issued_packets="\$6"
+    local expected_completed_packets="\$7"
+    local expected_dependency_active="\$8"
+    local expected_queue_count="\$9"
+    local expected_queue_epoch="\${10}"
+    local expected_control_gpu_va="\${11}"
+    local expected_status_gpu_va="\${12}"
+
+    grep -q "^submit_result_offset=${result_offset}\$" "\${infile}"
+    grep -q '^submit_result_config_count=1$' "\${infile}"
+    grep -q "^submit_result_stage_name=\${expected_stage}\$" "\${infile}"
+    grep -q "^submit_result_stage_count=\${expected_stage_count}\$" "\${infile}"
+    grep -q "^submit_result_source_name=\${expected_source}\$" "\${infile}"
+    grep -q "^submit_result_owner_state_name=\${expected_owner_state}\$" "\${infile}"
+    grep -q "^submit_result_issued_packets=\${expected_issued_packets}\$" "\${infile}"
+    grep -q "^submit_result_completed_packets=\${expected_completed_packets}\$" "\${infile}"
+    grep -q "^submit_result_dependency_active_count=\${expected_dependency_active}\$" "\${infile}"
+    grep -q "^submit_result_queue_packet_count=\${expected_queue_count}\$" "\${infile}"
+    grep -q "^submit_result_queue_epoch=\${expected_queue_epoch}\$" "\${infile}"
+    grep -q "^submit_result_control_gpu_va32=\${expected_control_gpu_va}\$" "\${infile}"
+    grep -q "^submit_result_status_gpu_va32=\${expected_status_gpu_va}\$" "\${infile}"
+    grep -q "^submit_result_report_offset=${report_offset}\$" "\${infile}"
+    grep -q "^submit_result_manifest_offset=${manifest_offset}\$" "\${infile}"
+    grep -q "^submit_result_descriptor_offset=${descriptor_offset}\$" "\${infile}"
+    grep -q "^submit_result_plan_offset=${plan_offset}\$" "\${infile}"
+}
+
 "${target_submit_op_bin}" "${target_node}" cleanup >/dev/null 2>&1 || true
 "${target_object_op_bin}" "${target_node}" cleanup >/dev/null 2>&1 || true
 
@@ -642,6 +676,13 @@ assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_plan.txt" none 0 live qu
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete plan_query_snapshot plan_query plan
 
+run_capture submit_op_result_focus "\${tmpdir}/submit_op_result_focus.txt" \
+    "${target_submit_op_bin}" "${target_node}" result focus "${result_offset}"
+run_capture query_by_id_after_result "\${tmpdir}/query_by_id_after_result.txt" \
+    "${target_query_bin}" "${target_node}" "\${submit_id}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_result.txt" none 0 live queued 0 0 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
+
 run_capture submit_op_prepare_focus "\${tmpdir}/submit_op_prepare_focus.txt" \
     "${target_submit_op_bin}" "${target_node}" prepare focus
 mark_stage_complete prepare_op
@@ -661,6 +702,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepa
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepared 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepared 1 live queued 0 0 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 ccb_pds_gpu_va32=\$(extract_value_from_file "\${tmpdir}/query_by_id_after_prepare.txt" "submit_ccb_pds_gpu_va32")
 ccb_use_gpu_va32=\$(extract_value_from_file "\${tmpdir}/query_by_id_after_prepare.txt" "submit_ccb_use_gpu_va32")
 ccb_target_gpu_va32=\$(extract_value_from_file "\${tmpdir}/query_by_id_after_prepare.txt" "submit_ccb_target_gpu_va32")
@@ -694,6 +737,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 q
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 live queued 0 0 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete arm
 
 "${target_submit_op_bin}" "${target_node}" emit focus > "\${tmpdir}/submit_op_emit_focus.txt"
@@ -721,6 +766,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 1 live queued 0 0 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete emit
 
 "${target_query_bin}" "${target_node}" coord > "\${tmpdir}/coord_base.txt"
@@ -762,6 +809,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emit
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emitted 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emitted 1 live queued 0 0 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete validate
 
 set +e
@@ -802,6 +851,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launch
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launched 1 launch queued 1 0 0 2 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launched 1 live queued 1 0 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete launch
 
 set +e
@@ -851,6 +902,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatc
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatched 1 dispatch queued 1 0 0 2 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatched 1 dispatch queued 1 0 0 2 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete issue
 
 "${target_submit_op_bin}" "${target_node}" transition focus running 1 > "\${tmpdir}/submit_op_transition_running_focus.txt"
@@ -882,6 +935,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_transition_running
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_transition_running.txt" dispatched 1 dispatch running 1 1 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_transition_running.txt" dispatched 1 dispatch running 1 1 0 1 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete running
 
 "${target_submit_op_bin}" "${target_node}" transition "\${submit_id}" complete 1 > "\${tmpdir}/submit_op_transition_complete_id.txt"
@@ -914,6 +969,8 @@ assert_descriptor_snapshot_file "\${tmpdir}/query_by_id_after_transition_complet
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_transition_complete.txt" retired 1 retired complete 1 2 0 0 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_result_snapshot_file "\${tmpdir}/query_by_id_after_transition_complete.txt" retired 1 retired complete 1 2 0 0 0 \
+    "\${control_gpu_va}" "\${status_gpu_va}"
 grep -q '^submit_retired_valid=1$' "\${tmpdir}/query_by_id_after_transition_complete.txt"
 grep -q '^submit_retired_count=1$' "\${tmpdir}/query_by_id_after_transition_complete.txt"
 grep -q '^submit_retired_dispatch_count=1$' "\${tmpdir}/query_by_id_after_transition_complete.txt"

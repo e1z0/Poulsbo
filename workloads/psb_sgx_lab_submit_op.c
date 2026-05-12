@@ -71,6 +71,8 @@ static const char *submit_op_name(uint32_t op)
 		return "owner";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT:
 		return "report";
+	case DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT:
+		return "result";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
 		return "manifest";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DESCRIPTOR:
@@ -285,6 +287,7 @@ static int submit_op_uses_selector(uint32_t op)
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_SYNC:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_OWNER:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT:
+	case DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DESCRIPTOR:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN:
@@ -314,7 +317,7 @@ int main(int argc, char **argv)
 	}
 	if (argc - argi < 1) {
 		fprintf(stderr,
-			"usage: %s [/dev/dri/card0] <create|drop|focus|focus-clear|cleanup|validate|prepare|arm|emit|launch|issue|transition|attach|detach|kick|ccb|queue|status|sync|owner|report|manifest|descriptor|plan|depend-slot|depticket-slot|depstate-slot|depclear-slot> ...\n",
+			"usage: %s [/dev/dri/card0] <create|drop|focus|focus-clear|cleanup|validate|prepare|arm|emit|launch|issue|transition|attach|detach|kick|ccb|queue|status|sync|owner|report|result|manifest|descriptor|plan|depend-slot|depticket-slot|depstate-slot|depclear-slot> ...\n",
 			argv[0]);
 		return 2;
 	}
@@ -552,16 +555,24 @@ int main(int argc, char **argv)
 			fprintf(stderr, "invalid owner complete cookie: %s\n", argv[argi - 1]);
 			return 2;
 		}
-	} else if (strcmp(op_arg, "report") == 0) {
-		op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT;
-		if (argc - argi != 1)
-			return 2;
-		if (parse_u32(argv[argi++], &op.report_offset) != 0) {
-			fprintf(stderr, "invalid report offset: %s\n", argv[argi - 1]);
-			return 2;
-		}
-	} else if (strcmp(op_arg, "manifest") == 0) {
-		op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST;
+		} else if (strcmp(op_arg, "report") == 0) {
+			op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT;
+			if (argc - argi != 1)
+				return 2;
+			if (parse_u32(argv[argi++], &op.report_offset) != 0) {
+				fprintf(stderr, "invalid report offset: %s\n", argv[argi - 1]);
+				return 2;
+			}
+		} else if (strcmp(op_arg, "result") == 0) {
+			op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT;
+			if (argc - argi != 1)
+				return 2;
+			if (parse_u32(argv[argi++], &op.result_offset) != 0) {
+				fprintf(stderr, "invalid result offset: %s\n", argv[argi - 1]);
+				return 2;
+			}
+		} else if (strcmp(op_arg, "manifest") == 0) {
+			op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST;
 		if (argc - argi != 1)
 			return 2;
 		if (parse_u32(argv[argi++], &op.manifest_offset) != 0) {

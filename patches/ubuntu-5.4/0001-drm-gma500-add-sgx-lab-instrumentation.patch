@@ -1257,7 +1257,7 @@ index 505044c9a..5828de33e 100644
  
  	addr = address;
  	end = addr + (num_pages << PAGE_SHIFT);
-@@ -690,7 +739,7 @@ int psb_mmu_insert_pfn_sequence(struct psb_mmu_pd *pd, uint32_t start_pfn,
+@@ -690,7 +739,7 @@ out:
  	if (pd->hw_context != -1)
  		psb_mmu_flush(pd->driver);
  
@@ -1319,8 +1319,871 @@ index d4b5720ef..2747dc859 100644
  };
  
  struct psb_mmu_pd;
+diff --git a/drivers/gpu/drm/gma500/psb_drm_lab.h b/drivers/gpu/drm/gma500/psb_drm_lab.h
+new file mode 100644
+index 000000000..2ece8af5f
+--- /dev/null
++++ b/drivers/gpu/drm/gma500/psb_drm_lab.h
+@@ -0,0 +1,857 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef _PSB_DRM_LAB_H_
++#define _PSB_DRM_LAB_H_
++
++#include <drm/drm.h>
++
++#define DRM_PSB_SGX_LAB_QUERY_SUBMIT 0x00
++#define DRM_PSB_SGX_LAB_QUERY_COORD  0x01
++#define DRM_PSB_SGX_LAB_SUBMIT_OP    0x02
++#define DRM_PSB_SGX_LAB_OBJECT_OP    0x03
++#define DRM_PSB_SGX_LAB_QUERY_RANGE  0x04
++#define DRM_PSB_SGX_LAB_QUERY_SGX_STATE 0x05
++#define DRM_PSB_SGX_LAB_QUERY_GTT_STATE 0x06
++#define DRM_PSB_SGX_LAB_QUERY_OBJECT 0x07
++
++#define DRM_PSB_SGX_LAB_QUERY_SUBMIT_USE_FOCUS 0x00000001
++#define DRM_PSB_SGX_LAB_QUERY_SUBMIT_USE_INDEX 0x00000002
++#define DRM_PSB_SGX_LAB_QUERY_SUBMIT_USE_GPU_VA 0x00000004
++#define DRM_PSB_SGX_LAB_QUERY_SUBMIT_USE_GPU_VA_MATCH_INDEX 0x00000008
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_USE_FOCUS 0x00000001
++#define DRM_PSB_SGX_LAB_QUERY_RANGE_USE_ID 0x00000001
++#define DRM_PSB_SGX_LAB_QUERY_RANGE_FILTER_GEM 0x00000002
++#define DRM_PSB_SGX_LAB_QUERY_RANGE_USE_GPU_VA 0x00000004
++#define DRM_PSB_SGX_LAB_QUERY_RANGE_USE_SUBMIT_MATCH_INDEX 0x00000008
++#define DRM_PSB_SGX_LAB_QUERY_SGX_STATE_CAPTURE 0x00000001
++#define DRM_PSB_SGX_LAB_QUERY_OBJECT_USE_ID 0x00000001
++#define DRM_PSB_SGX_LAB_DEPENDENCY_SLOTS 4
++#define DRM_PSB_SGX_LAB_SGX_REASON_LEN 32
++
++#define DRM_PSB_SGX_LAB_RANGE_UNKNOWN 0
++#define DRM_PSB_SGX_LAB_RANGE_GEM 1
++#define DRM_PSB_SGX_LAB_RANGE_FB 2
++#define DRM_PSB_SGX_LAB_RANGE_CURSOR 3
++#define DRM_PSB_SGX_LAB_RANGE_OTHER 4
++
++#define DRM_PSB_SGX_LAB_CONTEXT_AUTO 0
++#define DRM_PSB_SGX_LAB_CONTEXT_DEFAULT 1
++#define DRM_PSB_SGX_LAB_CONTEXT_PF 2
++
++#define DRM_PSB_SGX_LAB_SUBMIT_SLOT_CONTROL 1
++#define DRM_PSB_SGX_LAB_SUBMIT_SLOT_PDS 2
++#define DRM_PSB_SGX_LAB_SUBMIT_SLOT_USE 3
++#define DRM_PSB_SGX_LAB_SUBMIT_SLOT_TARGET 4
++#define DRM_PSB_SGX_LAB_SUBMIT_SLOT_STATUS 5
++
++#define DRM_PSB_SGX_LAB_ROLE_GENERIC 0
++#define DRM_PSB_SGX_LAB_ROLE_PDS 1
++#define DRM_PSB_SGX_LAB_ROLE_USE 2
++#define DRM_PSB_SGX_LAB_ROLE_CONTROL 3
++#define DRM_PSB_SGX_LAB_ROLE_TARGET 4
++#define DRM_PSB_SGX_LAB_ROLE_STATUS 5
++
++#define DRM_PSB_SGX_LAB_CLASS_GENERIC 0
++#define DRM_PSB_SGX_LAB_CLASS_PACKET 1
++#define DRM_PSB_SGX_LAB_CLASS_CODE 2
++#define DRM_PSB_SGX_LAB_CLASS_STATE 3
++#define DRM_PSB_SGX_LAB_CLASS_SURFACE 4
++
++#define DRM_PSB_SGX_LAB_GPU_USE_GENERIC 0
++#define DRM_PSB_SGX_LAB_GPU_USE_CONTROL_CCB 1
++#define DRM_PSB_SGX_LAB_GPU_USE_PDS_CODE 2
++#define DRM_PSB_SGX_LAB_GPU_USE_USE_CODE 3
++#define DRM_PSB_SGX_LAB_GPU_USE_RENDER_TARGET 4
++#define DRM_PSB_SGX_LAB_GPU_USE_STATUS_BLOCK 5
++
++#define DRM_PSB_SGX_LAB_CMD_INVALID 0
++#define DRM_PSB_SGX_LAB_CMD_TA 1
++#define DRM_PSB_SGX_LAB_CMD_TRANSFER 2
++#define DRM_PSB_SGX_LAB_CMD_2D 3
++#define DRM_PSB_SGX_LAB_CMD_POWER 4
++#define DRM_PSB_SGX_LAB_CMD_CLEANUP 5
++#define DRM_PSB_SGX_LAB_CMD_GETMISCINFO 6
++#define DRM_PSB_SGX_LAB_CMD_PROCESS_QUEUES 7
++
++#define DRM_PSB_SGX_LAB_OWNER_NONE 0
++#define DRM_PSB_SGX_LAB_OWNER_QUEUED 1
++#define DRM_PSB_SGX_LAB_OWNER_RUNNING 2
++#define DRM_PSB_SGX_LAB_OWNER_COMPLETE 3
++
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_NONE 0
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_PREPARED 1
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_ARMED 2
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_EMITTED 3
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_LAUNCHED 4
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_DISPATCHED 5
++#define DRM_PSB_SGX_LAB_REPORT_STAGE_RETIRED 6
++
++#define DRM_PSB_SGX_LAB_REPORT_FLAG_ARM_VALID 0x00000001
++#define DRM_PSB_SGX_LAB_REPORT_FLAG_EMIT_VALID 0x00000002
++#define DRM_PSB_SGX_LAB_REPORT_FLAG_LAUNCH_VALID 0x00000004
++#define DRM_PSB_SGX_LAB_REPORT_FLAG_LAUNCH_CONSUMED 0x00000008
++#define DRM_PSB_SGX_LAB_REPORT_FLAG_DISPATCH_VALID 0x00000010
++#define DRM_PSB_SGX_LAB_REPORT_FLAG_RETIRED_VALID 0x00000020
++
++#define DRM_PSB_SGX_LAB_PLAN_SOURCE_NONE 0
++#define DRM_PSB_SGX_LAB_PLAN_SOURCE_LIVE 1
++#define DRM_PSB_SGX_LAB_PLAN_SOURCE_LAUNCH 2
++#define DRM_PSB_SGX_LAB_PLAN_SOURCE_DISPATCH 3
++#define DRM_PSB_SGX_LAB_PLAN_SOURCE_RETIRED 4
++
++#define DRM_PSB_SGX_LAB_RESULT_SOURCE_NONE 0
++#define DRM_PSB_SGX_LAB_RESULT_SOURCE_LIVE 1
++#define DRM_PSB_SGX_LAB_RESULT_SOURCE_DISPATCH 2
++#define DRM_PSB_SGX_LAB_RESULT_SOURCE_RETIRED 3
++
++#define DRM_PSB_SGX_LAB_DEP_FLAG_READY 0x00000001
++#define DRM_PSB_SGX_LAB_DEP_FLAG_SOURCE_BOUND 0x00000002
++#define DRM_PSB_SGX_LAB_DEP_FLAG_SATISFIED 0x00000004
++#define DRM_PSB_SGX_LAB_DEP_FLAG_GATED 0x00000008
++#define DRM_PSB_SGX_LAB_DEP_FLAG_SOURCE_MISSING 0x00000010
++
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_VALIDATE 1
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE 2
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION 3
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_CREATE 4
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DROP 5
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_FOCUS 6
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_FOCUS_CLEAR 7
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_ATTACH 8
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DETACH 9
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_KICK 10
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_CCB 11
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_QUEUE 12
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_STATUS 13
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_SYNC 14
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_OWNER 15
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DEPEND_SLOT 16
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DEPTICKET_SLOT 17
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DEPSTATE_SLOT 18
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DEPCLEAR_SLOT 19
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_CLEANUP 20
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_PREPARE 21
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_ARM 22
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_EMIT 23
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_LAUNCH 24
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT 25
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST 26
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_DESCRIPTOR 27
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN 28
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT 29
++
++#define DRM_PSB_SGX_LAB_OBJECT_OP_ADOPT 1
++#define DRM_PSB_SGX_LAB_OBJECT_OP_DROP 2
++#define DRM_PSB_SGX_LAB_OBJECT_OP_PF_BIND 3
++#define DRM_PSB_SGX_LAB_OBJECT_OP_PF_UNBIND 4
++#define DRM_PSB_SGX_LAB_OBJECT_OP_GPU_USE 5
++#define DRM_PSB_SGX_LAB_OBJECT_OP_CONTEXT 6
++#define DRM_PSB_SGX_LAB_OBJECT_OP_ROLE 7
++#define DRM_PSB_SGX_LAB_OBJECT_OP_CLASS 8
++#define DRM_PSB_SGX_LAB_OBJECT_OP_CLEANUP 9
++
++struct drm_psb_sgx_lab_dependency_query {
++	__u32 submit_id;
++	__u32 required_ticket;
++	__u32 observed_complete_ticket;
++	__u32 flags;
++};
++
++struct drm_psb_sgx_lab_submit_query {
++	__u32 size;
++	__u32 flags;
++	__u32 submit_id;
++	__u32 query_index;
++	__u64 query_gpu_va;
++	__u32 query_match_index;
++	__u32 resolved_submit_id;
++	__u32 resolved_index;
++	__u32 total_submit_count;
++	__u32 matching_submit_count;
++	__u32 resolved_match_index;
++	__u32 resolved_slot;
++	__u32 resolved_object_id;
++	__u32 resolved_range_id;
++	__u32 resolved_range_type;
++	__u32 resolved_object_role;
++	__u32 resolved_object_class;
++	__u32 resolved_object_gpu_use;
++	__u32 resolved_object_expected_context;
++	__u64 query_gpu_va_offset;
++	__u32 context;
++	__u32 cmd_type;
++	__u32 owner_state;
++	__s32 last_validate_status;
++	__u32 num_ta_status_vals;
++	__u32 num_3d_status_vals;
++	__u32 ta_dependency;
++	__u32 ctrl_flags;
++	__u32 control_object_id;
++	__u32 pds_object_id;
++	__u32 use_object_id;
++	__u32 target_object_id;
++	__u32 status_object_id;
++	__u32 ccb_offset;
++	__u32 ccb_write_offset;
++	__u32 ccb_read_offset;
++	__u32 ccb_service_address;
++	__u32 ccb_cache_control;
++	__u32 ccb_data0;
++	__u32 ccb_data1;
++	__u32 ccb_pds_gpu_va32;
++	__u32 ccb_use_gpu_va32;
++	__u32 ccb_target_gpu_va32;
++	__u32 ccb_status_gpu_va32;
++	__u32 queue_base_offset;
++	__u32 queue_size;
++	__u32 queue_packet_size;
++	__u32 queue_packet_count;
++	__u32 queue_tail_packet_count;
++	__u32 queue_head_packet_count;
++	__u32 queue_epoch;
++	__u32 status_ta_offset;
++	__u32 status_3d_offset;
++	__u32 status_stride;
++	__u32 status_value_seed;
++	__u32 sync_offset;
++	__u32 sync_complete_seq;
++	__u32 sync_pending_seq;
++	__u32 sync_flags;
++	__u32 owner_offset;
++	__u32 owner_issue_cookie;
++	__u32 owner_complete_cookie;
++	__u32 global_issue_ticket;
++	__u32 global_running_ticket;
++	__u32 global_complete_ticket;
++	__u32 validate_count;
++	__u32 prepare_count;
++	__u32 arm_valid;
++	__u32 arm_count;
++	__u32 arm_prepare_count;
++	__u32 arm_queue_packet_count;
++	__u32 arm_queue_tail_packet_count;
++	__u32 arm_queue_head_packet_count;
++	__u32 arm_ccb_read_offset;
++	__u32 arm_ccb_write_offset;
++	__u32 arm_sync_complete_seq;
++	__u32 arm_sync_pending_seq;
++	__u32 arm_owner_state;
++	__u32 arm_owner_issue_cookie;
++	__u32 arm_owner_complete_cookie;
++	__u32 arm_queue_epoch;
++	__u32 arm_global_issue_ticket;
++	__u32 emit_valid;
++	__u32 emit_count;
++	__u32 emit_prepare_count;
++	__u32 emit_arm_count;
++	__u32 emit_context;
++	__u32 emit_cmd_type;
++	__u32 emit_owner_state;
++	__u32 emit_ctrl_flags;
++	__u32 emit_num_ta_status_vals;
++	__u32 emit_num_3d_status_vals;
++	__u32 emit_ta_dependency;
++	__u32 emit_control_object_id;
++	__u32 emit_pds_object_id;
++	__u32 emit_use_object_id;
++	__u32 emit_target_object_id;
++	__u32 emit_status_object_id;
++	__u32 emit_ccb_offset;
++	__u32 emit_ccb_write_offset;
++	__u32 emit_ccb_read_offset;
++	__u32 emit_ccb_service_address;
++	__u32 emit_ccb_cache_control;
++	__u32 emit_ccb_data0;
++	__u32 emit_ccb_data1;
++	__u32 emit_queue_base_offset;
++	__u32 emit_queue_size;
++	__u32 emit_queue_packet_size;
++	__u32 emit_queue_packet_count;
++	__u32 emit_queue_tail_packet_count;
++	__u32 emit_queue_head_packet_count;
++	__u32 emit_sync_complete_seq;
++	__u32 emit_sync_pending_seq;
++	__u32 emit_sync_flags;
++	__u32 emit_owner_issue_cookie;
++	__u32 emit_owner_complete_cookie;
++	__u32 emit_queue_epoch;
++	__u32 emit_global_issue_ticket;
++	__u32 emit_dependency_active_count;
++	__u64 emit_control_gpu_va;
++	__u64 emit_pds_gpu_va;
++	__u64 emit_use_gpu_va;
++	__u64 emit_target_gpu_va;
++	__u64 emit_status_gpu_va;
++	__u32 launch_valid;
++	__u32 launch_consumed;
++	__u32 launch_count;
++	__u32 launch_prepare_count;
++	__u32 launch_arm_count;
++	__u32 launch_emit_count;
++	__u32 launch_context;
++	__u32 launch_cmd_type;
++	__u32 launch_owner_state;
++	__u32 launch_issued_packets;
++	__u32 launch_refilled_from_complete;
++	__u32 launch_ctrl_flags;
++	__u32 launch_num_ta_status_vals;
++	__u32 launch_num_3d_status_vals;
++	__u32 launch_ta_dependency;
++	__u32 launch_control_object_id;
++	__u32 launch_pds_object_id;
++	__u32 launch_use_object_id;
++	__u32 launch_target_object_id;
++	__u32 launch_status_object_id;
++	__u32 launch_ccb_offset;
++	__u32 launch_ccb_write_offset;
++	__u32 launch_ccb_read_offset;
++	__u32 launch_new_write_offset;
++	__u32 launch_ccb_service_address;
++	__u32 launch_ccb_cache_control;
++	__u32 launch_ccb_data0;
++	__u32 launch_ccb_data1;
++	__u32 launch_queue_base_offset;
++	__u32 launch_queue_size;
++	__u32 launch_queue_packet_size;
++	__u32 launch_queue_packet_count;
++	__u32 launch_queue_tail_packet_count;
++	__u32 launch_queue_head_packet_count;
++	__u32 launch_sync_offset;
++	__u32 launch_sync_complete_seq;
++	__u32 launch_sync_pending_seq;
++	__u32 launch_sync_flags;
++	__u32 launch_owner_offset;
++	__u32 launch_owner_issue_cookie;
++	__u32 launch_owner_complete_cookie;
++	__u32 launch_queue_epoch;
++	__u32 launch_global_issue_ticket;
++	__u32 launch_global_running_ticket;
++	__u32 launch_global_complete_ticket;
++	__u32 launch_dependency_active_count;
++	__u64 launch_control_gpu_va;
++	__u64 launch_pds_gpu_va;
++	__u64 launch_use_gpu_va;
++	__u64 launch_target_gpu_va;
++	__u64 launch_status_gpu_va;
++	__u32 dispatch_valid;
++	__u32 dispatch_count;
++	__u32 dispatch_prepare_count;
++	__u32 dispatch_arm_count;
++	__u32 dispatch_emit_count;
++	__u32 dispatch_launch_count;
++	__u32 dispatch_context;
++	__u32 dispatch_cmd_type;
++	__u32 dispatch_owner_state;
++	__u32 dispatch_issued_packets;
++	__u32 dispatch_completed_packets;
++	__u32 dispatch_refilled_from_complete;
++	__u32 dispatch_ctrl_flags;
++	__u32 dispatch_num_ta_status_vals;
++	__u32 dispatch_num_3d_status_vals;
++	__u32 dispatch_ta_dependency;
++	__u32 dispatch_control_object_id;
++	__u32 dispatch_pds_object_id;
++	__u32 dispatch_use_object_id;
++	__u32 dispatch_target_object_id;
++	__u32 dispatch_status_object_id;
++	__u32 dispatch_ccb_offset;
++	__u32 dispatch_ccb_write_offset;
++	__u32 dispatch_ccb_read_offset;
++	__u32 dispatch_ccb_service_address;
++	__u32 dispatch_ccb_cache_control;
++	__u32 dispatch_ccb_data0;
++	__u32 dispatch_ccb_data1;
++	__u32 dispatch_queue_base_offset;
++	__u32 dispatch_queue_size;
++	__u32 dispatch_queue_packet_size;
++	__u32 dispatch_queue_packet_count;
++	__u32 dispatch_queue_tail_packet_count;
++	__u32 dispatch_queue_head_packet_count;
++	__u32 dispatch_sync_offset;
++	__u32 dispatch_sync_complete_seq;
++	__u32 dispatch_sync_pending_seq;
++	__u32 dispatch_sync_flags;
++	__u32 dispatch_owner_offset;
++	__u32 dispatch_owner_issue_cookie;
++	__u32 dispatch_owner_complete_cookie;
++	__u32 dispatch_queue_epoch;
++	__u32 dispatch_global_issue_ticket;
++	__u32 dispatch_global_running_ticket;
++	__u32 dispatch_global_complete_ticket;
++	__u32 dispatch_dependency_active_count;
++	__u64 dispatch_control_gpu_va;
++	__u64 dispatch_pds_gpu_va;
++	__u64 dispatch_use_gpu_va;
++	__u64 dispatch_target_gpu_va;
++	__u64 dispatch_status_gpu_va;
++	__u32 retired_valid;
++	__u32 retired_count;
++	__u32 retired_prepare_count;
++	__u32 retired_arm_count;
++	__u32 retired_emit_count;
++	__u32 retired_launch_count;
++	__u32 retired_dispatch_count;
++	__u32 retired_context;
++	__u32 retired_cmd_type;
++	__u32 retired_owner_state;
++	__u32 retired_issued_packets;
++	__u32 retired_completed_packets;
++	__u32 retired_refilled_from_complete;
++	__u32 retired_queue_packet_count;
++	__u32 retired_sync_complete_seq;
++	__u32 retired_sync_pending_seq;
++	__u32 retired_owner_issue_cookie;
++	__u32 retired_owner_complete_cookie;
++	__u32 retired_queue_epoch;
++	__u32 retired_global_issue_ticket;
++	__u32 retired_global_running_ticket;
++	__u32 retired_global_complete_ticket;
++	__u32 retired_dependency_active_count;
++	__u32 retired_control_object_id;
++	__u32 retired_status_object_id;
++	__u64 retired_control_gpu_va;
++	__u64 retired_status_gpu_va;
++	__u32 report_offset;
++	__u32 report_stage;
++	__u32 report_stage_count;
++	__u32 report_owner_state;
++	__u32 report_queue_packet_count;
++	__u32 report_completed_packets;
++	__u32 report_dependency_active_count;
++	__u32 report_queue_epoch;
++	__u32 report_global_issue_ticket;
++	__u32 report_global_running_ticket;
++	__u32 report_global_complete_ticket;
++	__u32 report_flags;
++	__u32 report_config_count;
++	__u32 manifest_offset;
++	__u32 manifest_stage;
++	__u32 manifest_stage_count;
++	__u32 manifest_context;
++	__u32 manifest_cmd_type;
++	__u32 manifest_owner_state;
++	__u32 manifest_ctrl_flags;
++	__u32 manifest_queue_base_offset;
++	__u32 manifest_queue_size;
++	__u32 manifest_queue_packet_size;
++	__u32 manifest_queue_packet_count;
++	__u32 manifest_queue_epoch;
++	__u32 manifest_ccb_offset;
++	__u32 manifest_ccb_write_offset;
++	__u32 manifest_ccb_read_offset;
++	__u32 manifest_dependency_active_count;
++	__u32 manifest_global_issue_ticket;
++	__u32 manifest_global_running_ticket;
++	__u32 manifest_global_complete_ticket;
++	__u32 manifest_pds_gpu_va32;
++	__u32 manifest_use_gpu_va32;
++	__u32 manifest_target_gpu_va32;
++	__u32 manifest_status_gpu_va32;
++	__u32 manifest_sync_complete_seq;
++	__u32 manifest_sync_pending_seq;
++	__u32 manifest_sync_flags;
++	__u32 manifest_owner_issue_cookie;
++	__u32 manifest_owner_complete_cookie;
++	__u32 manifest_config_count;
++	__u32 descriptor_offset;
++	__u32 descriptor_stage;
++	__u32 descriptor_stage_count;
++	__u32 descriptor_context;
++	__u32 descriptor_cmd_type;
++	__u32 descriptor_owner_state;
++	__u32 descriptor_issued_packets;
++	__u32 descriptor_completed_packets;
++	__u32 descriptor_dependency_active_count;
++	__u32 descriptor_queue_packet_count;
++	__u32 descriptor_queue_epoch;
++	__u32 descriptor_ctrl_flags;
++	__u32 descriptor_queue_base_offset;
++	__u32 descriptor_queue_size;
++	__u32 descriptor_queue_packet_size;
++	__u32 descriptor_ccb_offset;
++	__u32 descriptor_sync_offset;
++	__u32 descriptor_owner_offset;
++	__u32 descriptor_report_offset;
++	__u32 descriptor_manifest_offset;
++	__u32 descriptor_global_issue_ticket;
++	__u32 descriptor_global_running_ticket;
++	__u32 descriptor_global_complete_ticket;
++	__u32 descriptor_report_flags;
++	__u32 descriptor_status_ta_offset;
++	__u32 descriptor_status_3d_offset;
++	__u32 descriptor_status_stride;
++	__u32 descriptor_status_value_seed;
++	__u32 descriptor_control_gpu_va32;
++	__u32 descriptor_pds_gpu_va32;
++	__u32 descriptor_use_gpu_va32;
++	__u32 descriptor_target_gpu_va32;
++	__u32 descriptor_status_gpu_va32;
++	__u32 descriptor_config_count;
++	__u32 plan_offset;
++	__u32 plan_stage;
++	__u32 plan_stage_count;
++	__u32 plan_source;
++	__u32 plan_context;
++	__u32 plan_cmd_type;
++	__u32 plan_owner_state;
++	__u32 plan_issued_packets;
++	__u32 plan_completed_packets;
++	__u32 plan_dependency_active_count;
++	__u32 plan_refilled_from_complete;
++	__u32 plan_queue_packet_count;
++	__u32 plan_queue_epoch;
++	__u32 plan_queue_base_offset;
++	__u32 plan_queue_size;
++	__u32 plan_queue_packet_size;
++	__u32 plan_ccb_offset;
++	__u32 plan_ccb_write_offset;
++	__u32 plan_ccb_read_offset;
++	__u32 plan_sync_offset;
++	__u32 plan_sync_complete_seq;
++	__u32 plan_sync_pending_seq;
++	__u32 plan_sync_flags;
++	__u32 plan_owner_offset;
++	__u32 plan_owner_issue_cookie;
++	__u32 plan_owner_complete_cookie;
++	__u32 plan_global_issue_ticket;
++	__u32 plan_global_running_ticket;
++	__u32 plan_global_complete_ticket;
++	__u32 plan_report_offset;
++	__u32 plan_manifest_offset;
++	__u32 plan_descriptor_offset;
++	__u32 plan_ctrl_flags;
++	__u32 plan_ccb_service_address;
++	__u32 plan_ccb_cache_control;
++	__u32 plan_ccb_data0;
++	__u32 plan_ccb_data1;
++	__u32 plan_control_gpu_va32;
++	__u32 plan_pds_gpu_va32;
++	__u32 plan_use_gpu_va32;
++	__u32 plan_target_gpu_va32;
++	__u32 plan_status_gpu_va32;
++	__u32 plan_config_count;
++	__u32 result_offset;
++	__u32 result_stage;
++	__u32 result_stage_count;
++	__u32 result_source;
++	__u32 result_context;
++	__u32 result_cmd_type;
++	__u32 result_owner_state;
++	__u32 result_issued_packets;
++	__u32 result_completed_packets;
++	__u32 result_dependency_active_count;
++	__u32 result_queue_packet_count;
++	__u32 result_queue_epoch;
++	__u32 result_sync_complete_seq;
++	__u32 result_sync_pending_seq;
++	__u32 result_sync_flags;
++	__u32 result_owner_issue_cookie;
++	__u32 result_owner_complete_cookie;
++	__u32 result_global_issue_ticket;
++	__u32 result_global_running_ticket;
++	__u32 result_global_complete_ticket;
++	__u32 result_ctrl_flags;
++	__u32 result_num_ta_status_vals;
++	__u32 result_num_3d_status_vals;
++	__u32 result_ta_dependency;
++	__u32 result_status_ta_offset;
++	__u32 result_status_3d_offset;
++	__u32 result_status_stride;
++	__u32 result_status_value_seed;
++	__u32 result_control_object_id;
++	__u32 result_status_object_id;
++	__u32 result_control_gpu_va32;
++	__u32 result_status_gpu_va32;
++	__u32 result_report_offset;
++	__u32 result_manifest_offset;
++	__u32 result_descriptor_offset;
++	__u32 result_plan_offset;
++	__u32 result_config_count;
++	__u32 issue_count;
++	__u32 transition_count;
++	__u32 dependency_slot_count;
++	__u32 dependency_active_count;
++	__u64 last_prepare_jiffies;
++	__u64 last_arm_jiffies;
++	__u64 last_emit_jiffies;
++	__u64 last_launch_jiffies;
++	__u64 last_dispatch_jiffies;
++	__u64 last_retired_jiffies;
++	struct drm_psb_sgx_lab_dependency_query
++		dependencies[DRM_PSB_SGX_LAB_DEPENDENCY_SLOTS];
++	__u64 control_gpu_va;
++	__u64 pds_gpu_va;
++	__u64 use_gpu_va;
++	__u64 target_gpu_va;
++	__u64 status_gpu_va;
++	__u64 last_report_jiffies;
++	__u64 last_manifest_jiffies;
++	__u64 last_descriptor_jiffies;
++	__u64 last_plan_jiffies;
++	__u64 last_result_jiffies;
++	__u32 reserved[1];
++};
++
++struct drm_psb_sgx_lab_coord_query {
++	__u32 size;
++	__u32 flags;
++	__u32 focus_valid;
++	__u32 focused_submit_id;
++	__u32 live_submit_count;
++	__u32 live_object_count;
++	__u32 issue_ticket;
++	__u32 running_ticket;
++	__u32 complete_ticket;
++	__u32 issue_submit_id;
++	__u32 running_submit_id;
++	__u32 complete_submit_id;
++	__u32 active_running_valid;
++	__u32 active_running_submit_id;
++	__u32 reserved[10];
++};
++
++struct drm_psb_sgx_lab_range_query {
++	__u32 size;
++	__u32 flags;
++	__u32 range_id;
++	__u32 query_index;
++	__u64 query_gpu_va;
++	__u32 query_submit_match_index;
++	__u32 resolved_range_id;
++	__u32 resolved_index;
++	__u32 range_type;
++	__u32 total_range_count;
++	__u32 matching_range_count;
++	__u32 offset;
++	__s32 in_gart;
++	__u32 stolen;
++	__u32 mmapping;
++	__s32 npage;
++	__s32 roll;
++	__u32 sgx_object_id;
++	__u32 sgx_object_role;
++	__u32 sgx_object_class;
++	__u32 sgx_object_gpu_use;
++	__u32 sgx_object_expected_context;
++	__u32 sgx_submit_ref_count;
++	__u32 sgx_first_submit_id;
++	__u32 sgx_first_submit_slot;
++	__u32 sgx_resolved_submit_found;
++	__u32 sgx_resolved_submit_id;
++	__u32 sgx_resolved_submit_slot;
++	__u32 sgx_resolved_submit_match_index;
++	__u32 pin_count_total;
++	__u32 unpin_count_total;
++	__u32 pf_bind_count;
++	__u32 pf_bind_total;
++	__u32 pf_unbind_total;
++	__u64 start;
++	__u64 end;
++	__u64 len;
++	__u64 gpu_va;
++	__u64 query_gpu_va_offset;
++	__u32 reserved[1];
++};
++
++struct drm_psb_sgx_lab_sgx_state_query {
++	__u32 size;
++	__u32 flags;
++	__u32 sequence;
++	__u32 capture_failed;
++	__u64 captured_jiffies;
++	__u8 reason[DRM_PSB_SGX_LAB_SGX_REASON_LEN];
++	__u32 irq_count;
++	__u32 fault_count;
++	__u32 vdc_irq_mask;
++	__u32 gatt_start;
++	__u32 mmu_gatt_start;
++	__u32 gatt_free_offset;
++	__u32 mmu_driver_bif_ctrl;
++	__u32 mmu_needs_tlbflush;
++	__u32 mmu_default_pd_context;
++	__u32 core_id;
++	__u32 core_revision;
++	__u32 clkgatectl;
++	__u32 sgx_soft_reset;
++	__u32 event_status;
++	__u32 event_status2;
++	__u32 event_host_enable;
++	__u32 event_host_enable2;
++	__u32 event_kicker;
++	__u32 event_kick;
++	__u32 pds_exec_base;
++	__u32 use_code_base0;
++	__u32 use_code_base1;
++	__u32 bif_ctrl;
++	__u32 bif_int_stat;
++	__u32 bif_fault;
++	__u32 bif_dir_list_base0;
++	__u32 bif_dir_list_base1;
++	__u32 bif_bank0;
++	__u32 bif_bank1;
++	__u32 bif_twod_req_base;
++	__u32 bif_3d_req_base;
++	__u32 twod_socif;
++	__u32 twod_blit_status;
++	__u32 reserved[8];
++};
++
++struct drm_psb_sgx_lab_gtt_state_query {
++	__u32 size;
++	__u32 flags;
++	__u32 gtt_start;
++	__u32 gatt_start;
++	__u32 mmu_gatt_start;
++	__u32 gatt_free_offset;
++	__u64 stolen_size;
++	__u64 vram_stolen_size;
++	__u32 mmu_last_op;
++	__u32 mmu_last_num_pages;
++	__s32 mmu_last_type;
++	__s32 mmu_last_hw_context;
++	__u64 mmu_last_address;
++	__u64 mmu_last_jiffies;
++	__u32 mmu_flush_count;
++	__u32 mmu_set_pd_context_count;
++	__u32 mmu_insert_pfn_sequence_count;
++	__u32 mmu_insert_pages_count;
++	__u32 mmu_remove_pfn_sequence_count;
++	__u32 mmu_remove_pages_count;
++	__s32 mmu_default_pd_context;
++	__s32 mmu_pf_pd_context;
++	__u32 range_total_count;
++	__u32 range_gem_count;
++	__u32 range_fb_count;
++	__u32 range_cursor_count;
++	__u32 range_other_count;
++	__u32 range_in_gart_count;
++	__u32 range_mmapping_count;
++	__u32 range_sgx_object_count;
++	__u32 range_pf_bound_count;
++	__u32 reserved[8];
++};
++
++struct drm_psb_sgx_lab_object_query {
++	__u32 size;
++	__u32 flags;
++	__u32 object_id;
++	__u32 query_index;
++	__u32 resolved_object_id;
++	__u32 resolved_index;
++	__u32 total_object_count;
++	__u32 range_id;
++	__u32 range_type;
++	__u32 role;
++	__u32 object_class;
++	__u32 gpu_use;
++	__u32 expected_context;
++	__u32 offset;
++	__s32 in_gart;
++	__u32 stolen;
++	__u32 mmapping;
++	__s32 npage;
++	__u32 pf_bind_count;
++	__u32 pf_bind_total;
++	__u32 pf_unbind_total;
++	__u64 size_bytes;
++	__u64 gpu_va;
++	__u64 created_jiffies;
++	__u64 last_pf_bind_jiffies;
++	__u64 last_pf_unbind_jiffies;
++	__u64 last_role_jiffies;
++	__u64 last_class_jiffies;
++	__u64 last_gpu_use_jiffies;
++	__u64 last_context_jiffies;
++	__u32 reserved[8];
++};
++
++struct drm_psb_sgx_lab_submit_op {
++	__u32 size;
++	__u32 flags;
++	__u32 submit_id;
++	__u32 resolved_submit_id;
++	__u32 result_count;
++	__u32 op;
++	__u32 owner_state;
++	__u32 packet_count;
++	__u32 context;
++	__u32 slot;
++	__u32 object_id;
++	__u32 cmd_type;
++	__u32 ccb_offset;
++	__u32 ctrl_flags;
++	__u32 num_ta_status_vals;
++	__u32 num_3d_status_vals;
++	__u32 ta_dependency;
++	__u32 ccb_write_offset;
++	__u32 ccb_read_offset;
++	__u32 ccb_service_address;
++	__u32 ccb_cache_control;
++	__u32 ccb_data0;
++	__u32 ccb_data1;
++	__u32 queue_base_offset;
++	__u32 queue_size;
++	__u32 queue_packet_size;
++	__u32 queue_packet_count;
++	__u32 status_ta_offset;
++	__u32 status_3d_offset;
++	__u32 status_stride;
++	__u32 status_value_seed;
++	__u32 sync_offset;
++	__u32 sync_complete_seq;
++	__u32 sync_pending_seq;
++	__u32 sync_flags;
++	__u32 owner_offset;
++	__u32 owner_issue_cookie;
++	__u32 owner_complete_cookie;
++	__u32 dependency_slot;
++	__u32 dependency_submit_id;
++	__u32 dependency_ticket;
++	__u32 dependency_offset;
++	__u32 report_offset;
++	__u32 manifest_offset;
++	__u32 descriptor_offset;
++	__u32 plan_offset;
++	__u32 result_offset;
++};
++
++struct drm_psb_sgx_lab_object_op {
++	__u32 size;
++	__u32 flags;
++	__u32 object_id;
++	__u32 resolved_object_id;
++	__u32 result_count;
++	__u32 op;
++	__u32 range_id;
++	__u32 role;
++	__u32 object_class;
++	__u32 gpu_use;
++	__u32 context;
++	__u32 reserved[6];
++};
++
++#define DRM_IOCTL_PSB_SGX_LAB_QUERY_SUBMIT \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_QUERY_SUBMIT, \
++		 struct drm_psb_sgx_lab_submit_query)
++#define DRM_IOCTL_PSB_SGX_LAB_QUERY_COORD \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_QUERY_COORD, \
++		 struct drm_psb_sgx_lab_coord_query)
++#define DRM_IOCTL_PSB_SGX_LAB_QUERY_RANGE \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_QUERY_RANGE, \
++		 struct drm_psb_sgx_lab_range_query)
++#define DRM_IOCTL_PSB_SGX_LAB_QUERY_SGX_STATE \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_QUERY_SGX_STATE, \
++		 struct drm_psb_sgx_lab_sgx_state_query)
++#define DRM_IOCTL_PSB_SGX_LAB_QUERY_GTT_STATE \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_QUERY_GTT_STATE, \
++		 struct drm_psb_sgx_lab_gtt_state_query)
++#define DRM_IOCTL_PSB_SGX_LAB_QUERY_OBJECT \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_QUERY_OBJECT, \
++		 struct drm_psb_sgx_lab_object_query)
++#define DRM_IOCTL_PSB_SGX_LAB_SUBMIT_OP \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_SUBMIT_OP, \
++		 struct drm_psb_sgx_lab_submit_op)
++#define DRM_IOCTL_PSB_SGX_LAB_OBJECT_OP \
++	DRM_IOWR(DRM_COMMAND_BASE + DRM_PSB_SGX_LAB_OBJECT_OP, \
++		 struct drm_psb_sgx_lab_object_op)
++
++#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..e24f61059 100644
+index d414525ec..456ca24dd 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -1340,7 +2203,7 @@ index d414525ec..e24f61059 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,12324 @@
+@@ -37,6 +40,12905 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -1566,6 +2429,42 @@ index d414525ec..e24f61059 100644
 +#define PSB_SGX_LAB_PLAN_USE_GPU_VA32_OFFSET 152
 +#define PSB_SGX_LAB_PLAN_TARGET_GPU_VA32_OFFSET 156
 +#define PSB_SGX_LAB_PLAN_STATUS_GPU_VA32_OFFSET 160
++#define PSB_SGX_LAB_RESULT_DWORDS 35
++#define PSB_SGX_LAB_RESULT_STAGE_OFFSET 0
++#define PSB_SGX_LAB_RESULT_STAGE_COUNT_OFFSET 4
++#define PSB_SGX_LAB_RESULT_SOURCE_OFFSET 8
++#define PSB_SGX_LAB_RESULT_CONTEXT_OFFSET 12
++#define PSB_SGX_LAB_RESULT_CMD_TYPE_OFFSET 16
++#define PSB_SGX_LAB_RESULT_OWNER_STATE_OFFSET 20
++#define PSB_SGX_LAB_RESULT_ISSUED_PACKETS_OFFSET 24
++#define PSB_SGX_LAB_RESULT_COMPLETED_PACKETS_OFFSET 28
++#define PSB_SGX_LAB_RESULT_DEPENDENCY_ACTIVE_COUNT_OFFSET 32
++#define PSB_SGX_LAB_RESULT_QUEUE_PACKET_COUNT_OFFSET 36
++#define PSB_SGX_LAB_RESULT_QUEUE_EPOCH_OFFSET 40
++#define PSB_SGX_LAB_RESULT_SYNC_COMPLETE_SEQ_OFFSET 44
++#define PSB_SGX_LAB_RESULT_SYNC_PENDING_SEQ_OFFSET 48
++#define PSB_SGX_LAB_RESULT_SYNC_FLAGS_OFFSET 52
++#define PSB_SGX_LAB_RESULT_OWNER_ISSUE_COOKIE_OFFSET 56
++#define PSB_SGX_LAB_RESULT_OWNER_COMPLETE_COOKIE_OFFSET 60
++#define PSB_SGX_LAB_RESULT_GLOBAL_ISSUE_TICKET_OFFSET 64
++#define PSB_SGX_LAB_RESULT_GLOBAL_RUNNING_TICKET_OFFSET 68
++#define PSB_SGX_LAB_RESULT_GLOBAL_COMPLETE_TICKET_OFFSET 72
++#define PSB_SGX_LAB_RESULT_CTRL_FLAGS_OFFSET 76
++#define PSB_SGX_LAB_RESULT_NUM_TA_STATUS_VALS_OFFSET 80
++#define PSB_SGX_LAB_RESULT_NUM_3D_STATUS_VALS_OFFSET 84
++#define PSB_SGX_LAB_RESULT_TA_DEPENDENCY_OFFSET 88
++#define PSB_SGX_LAB_RESULT_STATUS_TA_OFFSET_OFFSET 92
++#define PSB_SGX_LAB_RESULT_STATUS_3D_OFFSET_OFFSET 96
++#define PSB_SGX_LAB_RESULT_STATUS_STRIDE_OFFSET 100
++#define PSB_SGX_LAB_RESULT_STATUS_VALUE_SEED_OFFSET 104
++#define PSB_SGX_LAB_RESULT_CONTROL_OBJECT_ID_OFFSET 108
++#define PSB_SGX_LAB_RESULT_STATUS_OBJECT_ID_OFFSET 112
++#define PSB_SGX_LAB_RESULT_CONTROL_GPU_VA32_OFFSET 116
++#define PSB_SGX_LAB_RESULT_STATUS_GPU_VA32_OFFSET 120
++#define PSB_SGX_LAB_RESULT_REPORT_OFFSET 124
++#define PSB_SGX_LAB_RESULT_MANIFEST_OFFSET 128
++#define PSB_SGX_LAB_RESULT_DESCRIPTOR_OFFSET 132
++#define PSB_SGX_LAB_RESULT_PLAN_OFFSET 136
 +#define PSB_SGX_LAB_CONTROL_QUEUE_HEADER_BYTES 32
 +#define PSB_SGX_LAB_CCB_RECORD_DWORDS 8
 +#define PSB_SGX_LAB_CCB_RECORD_BYTES \
@@ -1770,6 +2669,44 @@ index d414525ec..e24f61059 100644
 +	u32 status_gpu_va32;
 +};
 +
++struct psb_sgx_lab_result_words {
++	u32 stage;
++	u32 stage_count;
++	u32 source;
++	u32 context;
++	u32 cmd_type;
++	u32 owner_state;
++	u32 issued_packets;
++	u32 completed_packets;
++	u32 dependency_active_count;
++	u32 queue_packet_count;
++	u32 queue_epoch;
++	u32 sync_complete_seq;
++	u32 sync_pending_seq;
++	u32 sync_flags;
++	u32 owner_issue_cookie;
++	u32 owner_complete_cookie;
++	u32 global_issue_ticket;
++	u32 global_running_ticket;
++	u32 global_complete_ticket;
++	u32 ctrl_flags;
++	u32 num_ta_status_vals;
++	u32 num_3d_status_vals;
++	u32 ta_dependency;
++	u32 status_ta_offset;
++	u32 status_3d_offset;
++	u32 status_stride;
++	u32 status_value_seed;
++	u32 control_object_id;
++	u32 status_object_id;
++	u32 control_gpu_va32;
++	u32 status_gpu_va32;
++	u32 report_offset;
++	u32 manifest_offset;
++	u32 descriptor_offset;
++	u32 plan_offset;
++};
++
 +struct psb_sgx_lab_refresh_views {
 +	struct psb_sgx_lab_object *control_obj;
 +	struct psb_sgx_lab_object *status_obj;
@@ -1777,10 +2714,12 @@ index d414525ec..e24f61059 100644
 +	bool have_manifest;
 +	bool have_descriptor;
 +	bool have_plan;
++	bool have_result;
 +	struct psb_sgx_lab_report_words report;
 +	struct psb_sgx_lab_manifest_words manifest;
 +	struct psb_sgx_lab_descriptor_words descriptor;
 +	struct psb_sgx_lab_plan_words plan;
++	struct psb_sgx_lab_result_words result;
 +};
 +
 +static_assert(sizeof(struct psb_sgx_lab_report_words) ==
@@ -1799,6 +2738,8 @@ index d414525ec..e24f61059 100644
 +	      PSB_SGX_LAB_DESCRIPTOR_DWORDS * sizeof(u32));
 +static_assert(sizeof(struct psb_sgx_lab_plan_words) ==
 +	      PSB_SGX_LAB_PLAN_DWORDS * sizeof(u32));
++static_assert(sizeof(struct psb_sgx_lab_result_words) ==
++	      PSB_SGX_LAB_RESULT_DWORDS * sizeof(u32));
 +static_assert(sizeof(struct psb_sgx_lab_dependency_words) ==
 +	      PSB_SGX_LAB_DEPENDENCY_DWORDS * sizeof(u32));
 +
@@ -1872,6 +2813,7 @@ index d414525ec..e24f61059 100644
 +	u32 manifest_offset;
 +	u32 descriptor_offset;
 +	u32 plan_offset;
++	u32 result_offset;
 +	u32 global_issue_ticket;
 +	u32 global_running_ticket;
 +	u32 global_complete_ticket;
@@ -1891,6 +2833,7 @@ index d414525ec..e24f61059 100644
 +	u32 manifest_config_count;
 +	u32 descriptor_config_count;
 +	u32 plan_config_count;
++	u32 result_config_count;
 +	u32 queue_epoch;
 +	u32 prepare_count;
 +	u32 report_stage;
@@ -2113,6 +3056,7 @@ index d414525ec..e24f61059 100644
 +	unsigned long last_manifest_jiffies;
 +	unsigned long last_descriptor_jiffies;
 +	unsigned long last_plan_jiffies;
++	unsigned long last_result_jiffies;
 +	unsigned long last_prepare_jiffies;
 +	unsigned long last_arm_jiffies;
 +	unsigned long last_emit_jiffies;
@@ -2298,6 +3242,21 @@ index d414525ec..e24f61059 100644
 +	case DRM_PSB_SGX_LAB_PLAN_SOURCE_RETIRED:
 +		return "retired";
 +	case DRM_PSB_SGX_LAB_PLAN_SOURCE_NONE:
++	default:
++		return "none";
++	}
++}
++
++static const char *poulsbo_sgx_lab_result_source_name(u32 source)
++{
++	switch (source) {
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_LIVE:
++		return "live";
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_DISPATCH:
++		return "dispatch";
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_RETIRED:
++		return "retired";
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_NONE:
 +	default:
 +		return "none";
 +	}
@@ -3680,6 +4639,7 @@ index d414525ec..e24f61059 100644
 +static int poulsbo_sgx_manifest_region_end(u32 base_offset, u32 *end_out);
 +static int poulsbo_sgx_descriptor_region_end(u32 base_offset, u32 *end_out);
 +static int poulsbo_sgx_plan_region_end(u32 base_offset, u32 *end_out);
++static int poulsbo_sgx_result_region_end(u32 base_offset, u32 *end_out);
 +struct psb_sgx_lab_control_layout;
 +static int poulsbo_sgx_validate_submit_control_layout_locked(
 +	struct psb_sgx_lab_submit *submit,
@@ -3694,6 +4654,10 @@ index d414525ec..e24f61059 100644
 +	struct psb_sgx_lab_submit *submit, unsigned int slot);
 +static u32 *poulsbo_sgx_dependency_config_count_ptr(
 +	struct psb_sgx_lab_submit *submit, unsigned int slot);
++static int poulsbo_sgx_write_submit_result_locked(
++	struct psb_sgx_lab_object *status_obj,
++	u32 result_offset,
++	const struct psb_sgx_lab_result_words *result);
 +
 +static bool
 +poulsbo_sgx_submit_has_control_views(struct psb_sgx_lab_submit *submit)
@@ -3715,6 +4679,7 @@ index d414525ec..e24f61059 100644
 +	return submit->status_config_count || submit->sync_config_count ||
 +	       submit->owner_config_count ||
 +	       submit->report_config_count ||
++	       submit->result_config_count ||
 +	       submit->dependency_config_count ||
 +	       submit->dependency_config_count_secondary ||
 +	       submit->dependency_config_count_tertiary ||
@@ -3753,6 +4718,27 @@ index d414525ec..e24f61059 100644
 +	submit->report_flags = views->report.flags;
 +	submit->last_report_jiffies = jiffies;
 +
++	return 0;
++}
++
++static int poulsbo_sgx_refresh_submit_result_locked(
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_refresh_views *views)
++{
++	int ret;
++
++	if (!submit->result_config_count)
++		return 0;
++	if (!views || !views->status_obj || !views->have_result)
++		return -EINVAL;
++
++	ret = poulsbo_sgx_write_submit_result_locked(views->status_obj,
++						     submit->result_offset,
++						     &views->result);
++	if (ret)
++		return ret;
++
++	submit->last_result_jiffies = jiffies;
 +	return 0;
 +}
 +
@@ -4301,6 +5287,24 @@ index d414525ec..e24f61059 100644
 +	}
 +}
 +
++static u32 poulsbo_sgx_submit_result_source_locked(
++	struct psb_sgx_lab_submit *submit, u32 stage)
++{
++	switch (stage) {
++	case PSB_SGX_LAB_REPORT_STAGE_RETIRED:
++		return DRM_PSB_SGX_LAB_RESULT_SOURCE_RETIRED;
++	case PSB_SGX_LAB_REPORT_STAGE_DISPATCHED:
++		return DRM_PSB_SGX_LAB_RESULT_SOURCE_DISPATCH;
++	case PSB_SGX_LAB_REPORT_STAGE_LAUNCHED:
++	case PSB_SGX_LAB_REPORT_STAGE_EMITTED:
++	case PSB_SGX_LAB_REPORT_STAGE_ARMED:
++	case PSB_SGX_LAB_REPORT_STAGE_PREPARED:
++	case PSB_SGX_LAB_REPORT_STAGE_NONE:
++	default:
++		return DRM_PSB_SGX_LAB_RESULT_SOURCE_LIVE;
++	}
++}
++
 +static int poulsbo_sgx_build_submit_plan_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
@@ -4532,6 +5536,180 @@ index d414525ec..e24f61059 100644
 +	}
 +}
 +
++static int poulsbo_sgx_build_submit_result_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_result_words *result)
++{
++	struct psb_sgx_lab_object *control_obj = NULL;
++	struct psb_sgx_lab_object *status_obj = NULL;
++	u32 stage;
++	u32 source;
++	u32 control_gpu_va32 = 0;
++	u32 status_gpu_va32 = 0;
++
++	if (!result)
++		return -EINVAL;
++
++	memset(result, 0, sizeof(*result));
++	stage = poulsbo_sgx_submit_report_stage_locked(submit);
++	source = poulsbo_sgx_submit_result_source_locked(submit, stage);
++
++	result->stage = stage;
++	result->stage_count =
++		poulsbo_sgx_submit_report_stage_count_locked(submit, stage);
++	result->source = source;
++	result->report_offset = submit->report_offset;
++	result->manifest_offset = submit->manifest_offset;
++	result->descriptor_offset = submit->descriptor_offset;
++	result->plan_offset = submit->plan_offset;
++	result->ctrl_flags = submit->ctrl_flags;
++	result->num_ta_status_vals = submit->num_ta_status_vals;
++	result->num_3d_status_vals = submit->num_3d_status_vals;
++	result->ta_dependency = submit->ta_dependency;
++	result->status_ta_offset = submit->status_ta_offset;
++	result->status_3d_offset = submit->status_3d_offset;
++	result->status_stride = submit->status_stride;
++	result->status_value_seed = submit->status_value_seed;
++
++	if (submit->control_object_id) {
++		control_obj = poulsbo_sgx_find_object_locked(
++			dev_priv, submit->control_object_id);
++		if (!control_obj)
++			return -ENOENT;
++		control_gpu_va32 =
++			(u32)poulsbo_sgx_object_gpu_va(dev_priv, control_obj);
++	}
++	if (submit->status_object_id) {
++		status_obj = poulsbo_sgx_find_object_locked(
++			dev_priv, submit->status_object_id);
++		if (!status_obj)
++			return -ENOENT;
++		status_gpu_va32 =
++			(u32)poulsbo_sgx_object_gpu_va(dev_priv, status_obj);
++	}
++
++	switch (source) {
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_DISPATCH:
++		result->context = submit->dispatch_context;
++		result->cmd_type = submit->dispatch_cmd_type;
++		result->owner_state = submit->dispatch_owner_state;
++		result->issued_packets = submit->dispatch_issued_packets;
++		result->completed_packets = submit->dispatch_completed_packets;
++		result->dependency_active_count =
++			submit->dispatch_dependency_active_count;
++		result->queue_packet_count = submit->dispatch_queue_packet_count;
++		result->queue_epoch = submit->dispatch_queue_epoch;
++		result->sync_complete_seq = submit->dispatch_sync_complete_seq;
++		result->sync_pending_seq = submit->dispatch_sync_pending_seq;
++		result->sync_flags = submit->dispatch_sync_flags;
++		result->owner_issue_cookie =
++			submit->dispatch_owner_issue_cookie;
++		result->owner_complete_cookie =
++			submit->dispatch_owner_complete_cookie;
++		result->global_issue_ticket =
++			submit->dispatch_global_issue_ticket;
++		result->global_running_ticket =
++			submit->dispatch_global_running_ticket;
++		result->global_complete_ticket =
++			submit->dispatch_global_complete_ticket;
++		result->control_object_id =
++			submit->dispatch_control_object_id;
++		result->status_object_id = submit->dispatch_status_object_id;
++		result->control_gpu_va32 = (u32)submit->dispatch_control_gpu_va;
++		result->status_gpu_va32 = (u32)submit->dispatch_status_gpu_va;
++		return 0;
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_RETIRED:
++		result->context = submit->retired_context;
++		result->cmd_type = submit->retired_cmd_type;
++		result->owner_state = submit->retired_owner_state;
++		result->issued_packets = submit->retired_issued_packets;
++		result->completed_packets = submit->retired_completed_packets;
++		result->dependency_active_count =
++			submit->retired_dependency_active_count;
++		result->queue_packet_count = submit->retired_queue_packet_count;
++		result->queue_epoch = submit->retired_queue_epoch;
++		result->sync_complete_seq = submit->retired_sync_complete_seq;
++		result->sync_pending_seq = submit->retired_sync_pending_seq;
++		result->sync_flags = submit->sync_flags;
++		result->owner_issue_cookie =
++			submit->retired_owner_issue_cookie;
++		result->owner_complete_cookie =
++			submit->retired_owner_complete_cookie;
++		result->global_issue_ticket =
++			submit->retired_global_issue_ticket;
++		result->global_running_ticket =
++			submit->retired_global_running_ticket;
++		result->global_complete_ticket =
++			submit->retired_global_complete_ticket;
++		result->control_object_id = submit->retired_control_object_id ?
++			submit->retired_control_object_id :
++			submit->control_object_id;
++		result->status_object_id = submit->retired_status_object_id ?
++			submit->retired_status_object_id :
++			submit->status_object_id;
++		result->control_gpu_va32 = submit->retired_control_gpu_va ?
++			(u32)submit->retired_control_gpu_va : control_gpu_va32;
++		result->status_gpu_va32 = submit->retired_status_gpu_va ?
++			(u32)submit->retired_status_gpu_va : status_gpu_va32;
++		return 0;
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_NONE:
++	case DRM_PSB_SGX_LAB_RESULT_SOURCE_LIVE:
++	default:
++		result->context = submit->context;
++		result->cmd_type = submit->cmd_type;
++		result->owner_state = submit->owner_state;
++		result->issued_packets =
++			poulsbo_sgx_submit_report_issued_packets_locked(
++				submit, stage);
++		result->completed_packets =
++			poulsbo_sgx_submit_report_completed_packets_locked(
++				submit, stage);
++		result->dependency_active_count =
++			poulsbo_sgx_submit_report_dependency_count_locked(
++				submit, stage);
++		result->queue_packet_count = submit->queue_packet_count;
++		result->queue_epoch = submit->queue_epoch;
++		result->sync_complete_seq = submit->sync_complete_seq;
++		result->sync_pending_seq = submit->sync_pending_seq;
++		result->sync_flags = submit->sync_flags;
++		result->owner_issue_cookie = submit->owner_issue_cookie;
++		result->owner_complete_cookie = submit->owner_complete_cookie;
++		result->global_issue_ticket = submit->global_issue_ticket;
++		result->global_running_ticket = submit->global_running_ticket;
++		result->global_complete_ticket = submit->global_complete_ticket;
++		result->control_object_id = submit->control_object_id;
++		result->status_object_id = submit->status_object_id;
++		result->control_gpu_va32 = control_gpu_va32;
++		result->status_gpu_va32 = status_gpu_va32;
++		return 0;
++	}
++}
++
++static int poulsbo_sgx_write_submit_result_locked(
++	struct psb_sgx_lab_object *status_obj,
++	u32 result_offset,
++	const struct psb_sgx_lab_result_words *result)
++{
++	return poulsbo_sgx_object_write_words_locked(
++		status_obj, result_offset, (const u32 *)result,
++		sizeof(*result) / sizeof(u32));
++}
++
++static int poulsbo_sgx_read_submit_result_locked(
++	struct psb_sgx_lab_object *status_obj,
++	u32 result_offset,
++	struct psb_sgx_lab_result_words *result)
++{
++	if (!result)
++		return -EINVAL;
++
++	memset(result, 0, sizeof(*result));
++	return poulsbo_sgx_object_read_words_locked(
++		status_obj, result_offset, (u32 *)result,
++		sizeof(*result) / sizeof(u32));
++}
++
 +static int poulsbo_sgx_write_submit_plan_locked(
 +	struct psb_sgx_lab_object *control_obj,
 +	u32 plan_offset,
@@ -4647,6 +5825,14 @@ index d414525ec..e24f61059 100644
 +		views->have_plan = true;
 +	}
 +
++	if (submit->result_config_count) {
++		ret = poulsbo_sgx_build_submit_result_locked(dev_priv, submit,
++							     &views->result);
++		if (ret)
++			return ret;
++		views->have_result = true;
++	}
++
 +	return 0;
 +}
 +
@@ -4663,6 +5849,9 @@ index d414525ec..e24f61059 100644
 +		return ret;
 +
 +	ret = poulsbo_sgx_refresh_submit_report_locked(submit, &views);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_refresh_submit_result_locked(submit, &views);
 +	if (ret)
 +		return ret;
 +	ret = poulsbo_sgx_refresh_submit_manifest_locked(submit, &views);
@@ -5001,6 +6190,19 @@ index d414525ec..e24f61059 100644
 +	return 0;
 +}
 +
++static int poulsbo_sgx_result_region_end(u32 base_offset, u32 *end_out)
++{
++	u64 end;
++
++	end = (u64)base_offset +
++	      (u64)PSB_SGX_LAB_RESULT_DWORDS * sizeof(u32);
++	if (end > U32_MAX)
++		return -EINVAL;
++
++	*end_out = (u32)end;
++	return 0;
++}
++
 +static int poulsbo_sgx_dependency_region_end(u32 base_offset, u32 *end_out)
 +{
 +	u64 end;
@@ -5270,12 +6472,14 @@ index d414525ec..e24f61059 100644
 +	bool sync_active;
 +	bool owner_active;
 +	bool report_active;
++	bool result_active;
 +	bool dependency_active[PSB_SGX_LAB_DEPENDENCY_SLOTS];
 +	u32 ta_region_end;
 +	u32 threed_region_end;
 +	u32 sync_region_end;
 +	u32 owner_region_end;
 +	u32 report_region_end;
++	u32 result_region_end;
 +	u32 dependency_region_end[PSB_SGX_LAB_DEPENDENCY_SLOTS];
 +};
 +
@@ -5402,6 +6606,46 @@ index d414525ec..e24f61059 100644
 +			return -EINVAL;
 +	}
 +
++	if (submit->result_config_count) {
++		int ret;
++
++		ret = poulsbo_sgx_result_region_end(submit->result_offset,
++						    &layout->result_region_end);
++		if (ret)
++			return ret;
++		layout->result_active = true;
++		if (layout->sync_active &&
++		    poulsbo_sgx_regions_overlap(submit->result_offset,
++						layout->result_region_end,
++						submit->sync_offset,
++						layout->sync_region_end))
++			return -EINVAL;
++		if (layout->owner_active &&
++		    poulsbo_sgx_regions_overlap(submit->result_offset,
++						layout->result_region_end,
++						submit->owner_offset,
++						layout->owner_region_end))
++			return -EINVAL;
++		if (layout->report_active &&
++		    poulsbo_sgx_regions_overlap(submit->result_offset,
++						layout->result_region_end,
++						submit->report_offset,
++						layout->report_region_end))
++			return -EINVAL;
++		if (layout->ta_active &&
++		    poulsbo_sgx_regions_overlap(submit->result_offset,
++						layout->result_region_end,
++						submit->status_ta_offset,
++						layout->ta_region_end))
++			return -EINVAL;
++		if (layout->threed_active &&
++		    poulsbo_sgx_regions_overlap(submit->result_offset,
++						layout->result_region_end,
++						submit->status_3d_offset,
++						layout->threed_region_end))
++			return -EINVAL;
++	}
++
 +	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
 +		u32 *dependency_offset =
 +			poulsbo_sgx_dependency_offset_ptr(submit, slot);
@@ -5437,6 +6681,12 @@ index d414525ec..e24f61059 100644
 +			    *dependency_offset,
 +			    layout->dependency_region_end[slot],
 +			    submit->report_offset, layout->report_region_end))
++			return -EINVAL;
++		if (layout->result_active &&
++		    poulsbo_sgx_regions_overlap(
++			    *dependency_offset,
++			    layout->dependency_region_end[slot],
++			    submit->result_offset, layout->result_region_end))
 +			return -EINVAL;
 +		if (layout->ta_active &&
 +		    poulsbo_sgx_regions_overlap(
@@ -5495,7 +6745,7 @@ index d414525ec..e24f61059 100644
 +
 +	any_active = layout->ta_active || layout->threed_active ||
 +		     layout->sync_active || layout->owner_active ||
-+		     layout->report_active;
++		     layout->report_active || layout->result_active;
 +	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS && !any_active;
 +	     slot++)
 +		any_active = layout->dependency_active[slot];
@@ -5537,6 +6787,13 @@ index d414525ec..e24f61059 100644
 +		ret = poulsbo_sgx_object_access_ok(
 +			status_obj, submit->report_offset,
 +			layout->report_region_end - submit->report_offset);
++		if (ret)
++			return ret;
++	}
++	if (layout->result_active) {
++		ret = poulsbo_sgx_object_access_ok(
++			status_obj, submit->result_offset,
++			layout->result_region_end - submit->result_offset);
 +		if (ret)
 +			return ret;
 +	}
@@ -6331,6 +7588,7 @@ index d414525ec..e24f61059 100644
 +}
 +
 +static int poulsbo_sgx_validate_submit_status_side_images_locked(
++	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *status_obj)
 +{
@@ -6340,6 +7598,8 @@ index d414525ec..e24f61059 100644
 +	struct psb_sgx_lab_owner_words ctl_owner;
 +	struct psb_sgx_lab_report_words expected_report;
 +	struct psb_sgx_lab_report_words ctl_report;
++	struct psb_sgx_lab_result_words expected_result;
++	struct psb_sgx_lab_result_words ctl_result;
 +	struct psb_sgx_lab_dependency_words expected_dependency;
 +	struct psb_sgx_lab_dependency_words ctl_dependency;
 +	unsigned int slot;
@@ -6390,6 +7650,21 @@ index d414525ec..e24f61059 100644
 +			return ret;
 +		if (memcmp(&ctl_report, &expected_report,
 +			   sizeof(expected_report)) != 0)
++			return -EINVAL;
++	}
++
++	if (submit->result_config_count) {
++		ret = poulsbo_sgx_read_submit_result_locked(status_obj,
++							    submit->result_offset,
++							    &ctl_result);
++		if (ret)
++			return ret;
++		ret = poulsbo_sgx_build_submit_result_locked(dev_priv, submit,
++							     &expected_result);
++		if (ret)
++			return ret;
++		if (memcmp(&ctl_result, &expected_result,
++			   sizeof(expected_result)) != 0)
 +			return -EINVAL;
 +	}
 +
@@ -6552,6 +7827,8 @@ index d414525ec..e24f61059 100644
 +	    (!submit->status_stride || (submit->status_stride & 0x3)))
 +		return -EINVAL;
 +	if (submit->report_config_count && (submit->report_offset & 0x3))
++		return -EINVAL;
++	if (submit->result_config_count && (submit->result_offset & 0x3))
 +		return -EINVAL;
 +	if (submit->manifest_config_count && (submit->manifest_offset & 0x3))
 +		return -EINVAL;
@@ -6726,6 +8003,10 @@ index d414525ec..e24f61059 100644
 +		if (!submit->status_object_id)
 +			return -EINVAL;
 +	}
++	if (submit->result_config_count) {
++		if (!submit->status_object_id)
++			return -EINVAL;
++	}
 +	if ((submit->num_ta_status_vals && (submit->status_ta_offset & 0x3)) ||
 +	    (submit->num_3d_status_vals && (submit->status_3d_offset & 0x3)))
 +		return -EINVAL;
@@ -6791,11 +8072,11 @@ index d414525ec..e24f61059 100644
 +		return -EINVAL;
 +	ret = poulsbo_sgx_validate_submit_control_layout_locked(
 +		submit, control_obj, NULL);
-+	if (ret)
-+		return ret;
++		if (ret)
++			return ret;
 +	if ((submit->num_ta_status_vals || submit->num_3d_status_vals ||
 +	     submit->sync_config_count || submit->owner_config_count ||
-+	     submit->report_config_count ||
++	     submit->report_config_count || submit->result_config_count ||
 +	     submit->dependency_config_count ||
 +	     submit->dependency_config_count_secondary ||
 +	     submit->dependency_config_count_tertiary ||
@@ -6812,7 +8093,7 @@ index d414525ec..e24f61059 100644
 +		return ret;
 +
 +	return poulsbo_sgx_validate_submit_status_side_images_locked(
-+		submit, status_obj);
++		dev_priv, submit, status_obj);
 +}
 +
 +static int poulsbo_sgx_prepare_queue_packets_locked(
@@ -8801,6 +10082,83 @@ index d414525ec..e24f61059 100644
 +			 submit->report_completed_packets,
 +			 submit->report_dependency_active_count,
 +			 submit->report_flags);
++	return ret;
++}
++
++static int poulsbo_sgx_configure_submit_result(struct drm_device *dev,
++					       u32 submit_id,
++					       u32 result_offset)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct psb_sgx_lab_submit *submit;
++	struct psb_sgx_lab_object *status_obj;
++	u32 old_result_offset;
++	u32 old_result_config_count;
++	u32 stage;
++	u32 source;
++	int ret;
++
++	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
++	mutex_lock(&dev_priv->sgx_lab_object_mutex);
++	mutex_lock(&dev_priv->gtt_mutex);
++
++	submit = poulsbo_sgx_find_submit_locked(dev_priv, submit_id);
++	if (!submit) {
++		ret = -ENOENT;
++		goto out_unlock;
++	}
++	if (!submit->status_object_id) {
++		ret = -EINVAL;
++		goto out_unlock;
++	}
++	if (result_offset & 0x3) {
++		ret = -EINVAL;
++		goto out_unlock;
++	}
++
++	status_obj = poulsbo_sgx_find_object_locked(dev_priv,
++						    submit->status_object_id);
++	if (!status_obj) {
++		ret = -ENOENT;
++		goto out_unlock;
++	}
++	old_result_offset = submit->result_offset;
++	old_result_config_count = submit->result_config_count;
++	submit->result_offset = result_offset;
++	submit->result_config_count++;
++	ret = poulsbo_sgx_validate_submit_status_layout_locked(
++		submit, status_obj, NULL);
++	submit->result_offset = old_result_offset;
++	submit->result_config_count = old_result_config_count;
++	if (ret)
++		goto out_unlock;
++
++	poulsbo_sgx_disarm_submit_locked(submit);
++	submit->result_offset = result_offset;
++	submit->result_config_count++;
++	ret = poulsbo_sgx_refresh_submit_views_locked(dev_priv, submit);
++	stage = poulsbo_sgx_submit_report_stage_locked(submit);
++	source = poulsbo_sgx_submit_result_source_locked(submit, stage);
++
++out_unlock:
++	mutex_unlock(&dev_priv->gtt_mutex);
++	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
++	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
++
++	if (!ret)
++		dev_info(dev->dev,
++			 "lab submit result submit_id=%u offset=%#x source=%s stage=%s stage_count=%u owner_state=%s issued_packets=%u completed_packets=%u dependency_active_count=%u\n",
++			 submit_id, result_offset,
++			 poulsbo_sgx_lab_result_source_name(source),
++			 poulsbo_sgx_lab_report_stage_name(stage),
++			 poulsbo_sgx_submit_report_stage_count_locked(submit, stage),
++			 poulsbo_sgx_lab_owner_state_name(submit->owner_state),
++			 poulsbo_sgx_submit_report_issued_packets_locked(submit,
++									 stage),
++			 poulsbo_sgx_submit_report_completed_packets_locked(
++				 submit, stage),
++			 poulsbo_sgx_submit_report_dependency_count_locked(
++				 submit, stage));
 +	return ret;
 +}
 +
@@ -10954,17 +12312,25 @@ index d414525ec..e24f61059 100644
 +							 owner_state,
 +							 owner_issue_cookie,
 +							 owner_complete_cookie);
-+	} else if (sysfs_streq(op, "report")) {
-+		if (sscanf(buf, "%15s %u %15s", op, &id, arg0) != 3)
-+			return -EINVAL;
-+		ret = kstrtou32(arg0, 0, &owner_offset);
-+		if (ret)
-+			return ret;
-+		ret = poulsbo_sgx_configure_submit_report(dev, id,
-+							  owner_offset);
-+	} else if (sysfs_streq(op, "issue")) {
-+		if (sscanf(buf, "%15s %u %15s %15s",
-+			   op, &id, arg0, arg1) != 4)
++		} else if (sysfs_streq(op, "report")) {
++			if (sscanf(buf, "%15s %u %15s", op, &id, arg0) != 3)
++				return -EINVAL;
++			ret = kstrtou32(arg0, 0, &owner_offset);
++			if (ret)
++				return ret;
++			ret = poulsbo_sgx_configure_submit_report(dev, id,
++								  owner_offset);
++		} else if (sysfs_streq(op, "result")) {
++			if (sscanf(buf, "%15s %u %15s", op, &id, arg0) != 3)
++				return -EINVAL;
++			ret = kstrtou32(arg0, 0, &owner_offset);
++			if (ret)
++				return ret;
++			ret = poulsbo_sgx_configure_submit_result(dev, id,
++								  owner_offset);
++		} else if (sysfs_streq(op, "issue")) {
++			if (sscanf(buf, "%15s %u %15s %15s",
++				   op, &id, arg0, arg1) != 4)
 +			return -EINVAL;
 +		ret = poulsbo_sgx_lab_parse_owner_state(arg0, &issue_owner_state);
 +		if (ret)
@@ -11291,9 +12657,11 @@ index d414525ec..e24f61059 100644
 +	u32 manifest_query_end = 0;
 +	u32 descriptor_query_end = 0;
 +	u32 plan_query_end = 0;
++	u32 result_query_end = 0;
 +	struct psb_sgx_lab_manifest_words manifest;
 +	struct psb_sgx_lab_descriptor_words descriptor;
 +	struct psb_sgx_lab_plan_words plan;
++	struct psb_sgx_lab_result_words result;
 +	u32 request_flags = query->flags;
 +	u32 request_submit_id = query->submit_id;
 +	u32 request_query_index = query->query_index;
@@ -11599,6 +12967,9 @@ index d414525ec..e24f61059 100644
 +		submit->report_global_complete_ticket;
 +	query->report_flags = submit->report_flags;
 +	query->report_config_count = submit->report_config_count;
++	query->result_offset = submit->result_offset;
++	query->result_source = DRM_PSB_SGX_LAB_RESULT_SOURCE_NONE;
++	query->result_config_count = submit->result_config_count;
 +	query->manifest_offset = submit->manifest_offset;
 +	query->manifest_stage = 0;
 +	query->manifest_stage_count = 0;
@@ -11788,12 +13159,60 @@ index d414525ec..e24f61059 100644
 +		/* Actual record readback succeeded; live config fields stay above. */
 +		query->ccb_pds_gpu_va32 = ccb_record.pds_gpu_va32;
 +		query->ccb_use_gpu_va32 = ccb_record.use_gpu_va32;
-+		query->ccb_target_gpu_va32 = ccb_record.target_gpu_va32;
-+		query->ccb_status_gpu_va32 = ccb_record.status_gpu_va32;
++			query->ccb_target_gpu_va32 = ccb_record.target_gpu_va32;
++			query->ccb_status_gpu_va32 = ccb_record.status_gpu_va32;
 +	}
++	if (status_obj && submit->result_config_count &&
++	    !poulsbo_sgx_result_region_end(submit->result_offset,
++					   &result_query_end) &&
++	    !poulsbo_sgx_object_access_ok(status_obj, submit->result_offset,
++					  result_query_end -
++						  submit->result_offset) &&
++	    !poulsbo_sgx_read_submit_result_locked(status_obj,
++						  submit->result_offset,
++						  &result)) {
++		query->result_stage = result.stage;
++		query->result_stage_count = result.stage_count;
++		query->result_source = result.source;
++		query->result_context = result.context;
++		query->result_cmd_type = result.cmd_type;
++		query->result_owner_state = result.owner_state;
++		query->result_issued_packets = result.issued_packets;
++		query->result_completed_packets = result.completed_packets;
++		query->result_dependency_active_count =
++			result.dependency_active_count;
++		query->result_queue_packet_count = result.queue_packet_count;
++		query->result_queue_epoch = result.queue_epoch;
++		query->result_sync_complete_seq = result.sync_complete_seq;
++		query->result_sync_pending_seq = result.sync_pending_seq;
++		query->result_sync_flags = result.sync_flags;
++		query->result_owner_issue_cookie = result.owner_issue_cookie;
++		query->result_owner_complete_cookie = result.owner_complete_cookie;
++		query->result_global_issue_ticket = result.global_issue_ticket;
++		query->result_global_running_ticket = result.global_running_ticket;
++		query->result_global_complete_ticket =
++			result.global_complete_ticket;
++		query->result_ctrl_flags = result.ctrl_flags;
++		query->result_num_ta_status_vals = result.num_ta_status_vals;
++		query->result_num_3d_status_vals = result.num_3d_status_vals;
++		query->result_ta_dependency = result.ta_dependency;
++		query->result_status_ta_offset = result.status_ta_offset;
++		query->result_status_3d_offset = result.status_3d_offset;
++		query->result_status_stride = result.status_stride;
++		query->result_status_value_seed = result.status_value_seed;
++		query->result_control_object_id = result.control_object_id;
++		query->result_status_object_id = result.status_object_id;
++		query->result_control_gpu_va32 = result.control_gpu_va32;
++		query->result_status_gpu_va32 = result.status_gpu_va32;
++		query->result_report_offset = result.report_offset;
++		query->result_manifest_offset = result.manifest_offset;
++		query->result_descriptor_offset = result.descriptor_offset;
++		query->result_plan_offset = result.plan_offset;
++	}
++	query->last_result_jiffies = submit->last_result_jiffies;
 +	if (control_obj && submit->manifest_config_count &&
 +	    !poulsbo_sgx_manifest_region_end(submit->manifest_offset,
-+					     &manifest_query_end) &&
++						     &manifest_query_end) &&
 +	    !poulsbo_sgx_object_access_ok(control_obj, submit->manifest_offset,
 +					  manifest_query_end -
 +					  submit->manifest_offset) &&
@@ -12892,6 +14311,9 @@ index d414525ec..e24f61059 100644
 +	if (op->plan_offset &&
 +	    op->op != DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN)
 +		return -EINVAL;
++	if (op->result_offset &&
++	    op->op != DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT)
++		return -EINVAL;
 +	dependency_fields_present = op->dependency_slot ||
 +		op->dependency_submit_id || op->dependency_ticket ||
 +		op->dependency_offset;
@@ -13337,9 +14759,9 @@ index d414525ec..e24f61059 100644
 +							 op->owner_issue_cookie,
 +							 op->owner_complete_cookie);
 +		break;
-+	case DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT:
-+		if (op->owner_state || op->packet_count || op->context ||
-+		    op->slot || op->object_id || op->cmd_type ||
++		case DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT:
++			if (op->owner_state || op->packet_count || op->context ||
++			    op->slot || op->object_id || op->cmd_type ||
 +		    op->ccb_offset || op->ctrl_flags ||
 +		    op->num_ta_status_vals || op->num_3d_status_vals ||
 +		    op->ta_dependency || op->ccb_write_offset ||
@@ -13356,12 +14778,34 @@ index d414525ec..e24f61059 100644
 +		    dependency_fields_present ||
 +		    !op->report_offset)
 +			return -EINVAL;
-+		ret = poulsbo_sgx_configure_submit_report(dev, submit_id,
-+							  op->report_offset);
-+		break;
-+	case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
-+		if (op->owner_state || op->packet_count || op->context ||
-+		    op->slot || op->object_id || op->cmd_type ||
++			ret = poulsbo_sgx_configure_submit_report(dev, submit_id,
++								  op->report_offset);
++			break;
++		case DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT:
++			if (op->owner_state || op->packet_count || op->context ||
++			    op->slot || op->object_id || op->cmd_type ||
++			    op->ccb_offset || op->ctrl_flags ||
++			    op->num_ta_status_vals || op->num_3d_status_vals ||
++			    op->ta_dependency || op->ccb_write_offset ||
++			    op->ccb_read_offset || op->ccb_service_address ||
++			    op->ccb_cache_control || op->ccb_data0 || op->ccb_data1 ||
++			    op->queue_base_offset || op->queue_size ||
++			    op->queue_packet_size || op->queue_packet_count ||
++			    op->status_ta_offset || op->status_3d_offset ||
++			    op->status_stride || op->status_value_seed ||
++			    op->sync_offset || op->sync_complete_seq ||
++			    op->sync_pending_seq || op->sync_flags ||
++			    op->owner_offset || op->owner_issue_cookie ||
++			    op->owner_complete_cookie || op->plan_offset ||
++			    dependency_fields_present ||
++			    !op->result_offset)
++				return -EINVAL;
++			ret = poulsbo_sgx_configure_submit_result(dev, submit_id,
++								  op->result_offset);
++			break;
++		case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
++			if (op->owner_state || op->packet_count || op->context ||
++			    op->slot || op->object_id || op->cmd_type ||
 +		    op->ccb_offset || op->ctrl_flags ||
 +		    op->num_ta_status_vals || op->num_3d_status_vals ||
 +		    op->ta_dependency || op->ccb_write_offset ||
@@ -13665,7 +15109,7 @@ index d414525ec..e24f61059 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +12423,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +13004,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -13688,7 +15132,7 @@ index d414525ec..e24f61059 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +12461,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +13042,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -13696,7 +15140,7 @@ index d414525ec..e24f61059 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +12489,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +13070,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -13716,7 +15160,7 @@ index d414525ec..e24f61059 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +12576,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +13157,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -13729,7 +15173,7 @@ index d414525ec..e24f61059 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +12726,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +13307,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);
@@ -14332,7 +15776,7 @@ index 56bb34d04..23a0f380b 100644
  	PSB_RSGX32(PSB_CR_EVENT_HOST_ENABLE); /* Post */
  
  	/* This register is safe even if display island is off */
-@@ -658,4 +928,3 @@ u32 psb_get_vblank_counter(struct drm_device *dev, unsigned int pipe)
+@@ -658,4 +928,3 @@ psb_get_vblank_counter_exit:
  
  	return count;
  }
