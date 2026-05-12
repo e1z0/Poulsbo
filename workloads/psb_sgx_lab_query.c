@@ -847,6 +847,109 @@ int main(int argc, char **argv)
 		printf("submit_report_flags=0x%x\n", submit.report_flags);
 		printf("submit_report_config_count=%u\n",
 		       submit.report_config_count);
+		printf("submit_live_offset=0x%x\n", submit.live_offset);
+		printf("submit_live_stage=%u\n", submit.live_stage);
+		printf("submit_live_stage_name=%s\n",
+		       report_stage_name(submit.live_stage));
+		printf("submit_live_stage_count=%u\n", submit.live_stage_count);
+		printf("submit_live_prepare_count=%u\n",
+		       submit.live_prepare_count);
+		printf("submit_live_arm_count=%u\n", submit.live_arm_count);
+		printf("submit_live_emit_count=%u\n", submit.live_emit_count);
+		printf("submit_live_launch_count=%u\n",
+		       submit.live_launch_count);
+		printf("submit_live_dispatch_count=%u\n",
+		       submit.live_dispatch_count);
+		printf("submit_live_retired_count=%u\n",
+		       submit.live_retired_count);
+		printf("submit_live_context=%u\n", submit.live_context);
+		printf("submit_live_context_name=%s\n",
+		       context_name(submit.live_context));
+		printf("submit_live_cmd_type=%u\n", submit.live_cmd_type);
+		printf("submit_live_cmd_type_name=%s\n",
+		       cmd_type_name(submit.live_cmd_type));
+		printf("submit_live_owner_state=%u\n", submit.live_owner_state);
+		printf("submit_live_owner_state_name=%s\n",
+		       owner_state_name(submit.live_owner_state));
+		printf("submit_live_issued_packets=%u\n",
+		       submit.live_issued_packets);
+		printf("submit_live_completed_packets=%u\n",
+		       submit.live_completed_packets);
+		printf("submit_live_dependency_active_count=%u\n",
+		       submit.live_dependency_active_count);
+		printf("submit_live_refilled_from_complete=%u\n",
+		       submit.live_refilled_from_complete);
+		printf("submit_live_queue_packet_count=%u\n",
+		       submit.live_queue_packet_count);
+		printf("submit_live_queue_epoch=%u\n", submit.live_queue_epoch);
+		printf("submit_live_queue_base_offset=0x%x\n",
+		       submit.live_queue_base_offset);
+		printf("submit_live_queue_size=0x%x\n", submit.live_queue_size);
+		printf("submit_live_queue_packet_size=0x%x\n",
+		       submit.live_queue_packet_size);
+		printf("submit_live_ccb_offset=0x%x\n", submit.live_ccb_offset);
+		printf("submit_live_ccb_write_offset=0x%x\n",
+		       submit.live_ccb_write_offset);
+		printf("submit_live_ccb_read_offset=0x%x\n",
+		       submit.live_ccb_read_offset);
+		printf("submit_live_sync_offset=0x%x\n", submit.live_sync_offset);
+		printf("submit_live_sync_complete_seq=0x%x\n",
+		       submit.live_sync_complete_seq);
+		printf("submit_live_sync_pending_seq=0x%x\n",
+		       submit.live_sync_pending_seq);
+		printf("submit_live_sync_flags=0x%x\n", submit.live_sync_flags);
+		printf("submit_live_owner_offset=0x%x\n",
+		       submit.live_owner_offset);
+		printf("submit_live_owner_issue_cookie=0x%x\n",
+		       submit.live_owner_issue_cookie);
+		printf("submit_live_owner_complete_cookie=0x%x\n",
+		       submit.live_owner_complete_cookie);
+		printf("submit_live_global_issue_ticket=%u\n",
+		       submit.live_global_issue_ticket);
+		printf("submit_live_global_running_ticket=%u\n",
+		       submit.live_global_running_ticket);
+		printf("submit_live_global_complete_ticket=%u\n",
+		       submit.live_global_complete_ticket);
+		printf("submit_live_ctrl_flags=0x%x\n", submit.live_ctrl_flags);
+		printf("submit_live_report_flags=0x%x\n",
+		       submit.live_report_flags);
+		printf("submit_live_num_ta_status_vals=%u\n",
+		       submit.live_num_ta_status_vals);
+		printf("submit_live_num_3d_status_vals=%u\n",
+		       submit.live_num_3d_status_vals);
+		printf("submit_live_ta_dependency=%u\n",
+		       submit.live_ta_dependency);
+		printf("submit_live_status_ta_offset=0x%x\n",
+		       submit.live_status_ta_offset);
+		printf("submit_live_status_3d_offset=0x%x\n",
+		       submit.live_status_3d_offset);
+		printf("submit_live_status_stride=0x%x\n",
+		       submit.live_status_stride);
+		printf("submit_live_status_value_seed=0x%x\n",
+		       submit.live_status_value_seed);
+		printf("submit_live_control_object_id=%u\n",
+		       submit.live_control_object_id);
+		printf("submit_live_status_object_id=%u\n",
+		       submit.live_status_object_id);
+		printf("submit_live_ccb_service_address=0x%x\n",
+		       submit.live_ccb_service_address);
+		printf("submit_live_ccb_cache_control=0x%x\n",
+		       submit.live_ccb_cache_control);
+		printf("submit_live_ccb_data0=0x%x\n", submit.live_ccb_data0);
+		printf("submit_live_ccb_data1=0x%x\n", submit.live_ccb_data1);
+		printf("submit_live_control_gpu_va32=0x%x\n",
+		       submit.live_control_gpu_va32);
+		printf("submit_live_status_gpu_va32=0x%x\n",
+		       submit.live_status_gpu_va32);
+		printf("submit_live_pds_gpu_va32=0x%x\n",
+		       submit.live_pds_gpu_va32);
+		printf("submit_live_use_gpu_va32=0x%x\n",
+		       submit.live_use_gpu_va32);
+		printf("submit_live_target_gpu_va32=0x%x\n",
+		       submit.live_target_gpu_va32);
+		printf("submit_live_ccb_status_gpu_va32=0x%x\n",
+		       submit.live_ccb_status_gpu_va32);
+		printf("submit_live_config_count=%u\n", submit.live_config_count);
 		printf("submit_result_offset=0x%x\n", submit.result_offset);
 		printf("submit_result_stage=%u\n", submit.result_stage);
 		printf("submit_result_stage_name=%s\n",
@@ -1170,6 +1273,8 @@ int main(int argc, char **argv)
 		       (uint64_t)submit.last_dispatch_jiffies);
 		printf("submit_last_retired_jiffies=%" PRIu64 "\n",
 		       (uint64_t)submit.last_retired_jiffies);
+		printf("submit_last_live_jiffies=%" PRIu64 "\n",
+		       (uint64_t)submit.last_live_jiffies);
 		printf("submit_last_report_jiffies=%" PRIu64 "\n",
 		       (uint64_t)submit.last_report_jiffies);
 		printf("submit_last_result_jiffies=%" PRIu64 "\n",

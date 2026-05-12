@@ -5,6 +5,137 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### Typed SGX submit `live` block and live validation
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drm_lab.h`
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+  - `workloads/psb_sgx_lab_query.c`
+  - `workloads/psb_sgx_lab_submit_op.c`
+  - `scripts/run-vaio-sgx-ioctl-submit-op.sh`
+  - `scripts/run-vaio-sgx-multi-submit.sh`
+- Added a first-class typed control-backed submit `live` block:
+  - new submit op:
+    - `DRM_PSB_SGX_LAB_SUBMIT_OP_LIVE`
+  - new query-side `submit_live_*` fields
+  - new serialized image:
+    - `struct psb_sgx_lab_live_words`
+- Wired `live` through:
+  - control-layout overlap rejection
+  - object access validation
+  - refresh preflight
+  - backing-image validation
+  - typed query readback
+  - focused submit-op validation
+  - typed multi-submit validation
+- Local validation passed:
+  - `git -C third_party/linux-ubuntu-5.4 diff --check -- drivers/gpu/drm/gma500`
+  - `git diff --check -- workloads scripts`
+  - `./scripts/docker-build-workloads-i386.sh`
+  - `./scripts/docker-build-vaio-gma500.sh`
+- Guarded deploy bundle:
+  - [logs/vaio-deploy/20260513-015019-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-015019-guarded-deploy)
+- That deploy rebooted the VAIO onto:
+  - `driver_srcversion=864D7160A07B237AB1A9D36`
+  - `override_module_size=442596`
+  - `lightdm_active=inactive`
+  - `kdump_service_active=active`
+- Exact terminal rerun:
+  - [logs/vaio-plan-session/20260513-015211-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-015211-sgx-plan-session)
+  - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete`
+  - result:
+    - `session_outcome=completed`
+    - `selected_phase_profile=complete`
+    - `final_driver_srcversion=864D7160A07B237AB1A9D36`
+- Focused typed submit bundle:
+  - [logs/vaio-ioctl/20260513-015552-sgx-submit-live-op-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-015552-sgx-submit-live-op-live/summary.log)
+- Final focused typed `live` state:
+  - `SUBMIT_ID=5`
+  - `submit_live_stage_name=retired`
+  - `submit_live_stage_count=1`
+  - `submit_live_prepare_count=1`
+  - `submit_live_arm_count=1`
+  - `submit_live_emit_count=1`
+  - `submit_live_launch_count=1`
+  - `submit_live_dispatch_count=1`
+  - `submit_live_retired_count=1`
+  - `submit_live_owner_state_name=complete`
+  - `submit_live_dependency_active_count=0`
+  - `submit_live_queue_packet_count=0`
+  - `submit_live_queue_epoch=0`
+  - `submit_live_control_gpu_va32=0x807bf000`
+  - `submit_live_status_gpu_va32=0x807cf000`
+  - `submit_live_pds_gpu_va32=0x807c3000`
+  - `submit_live_use_gpu_va32=0x807c7000`
+  - `submit_live_target_gpu_va32=0x807cb000`
+  - `submit_live_ccb_status_gpu_va32=0x807cf000`
+  - `submit_live_config_count=1`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit bundle:
+  - [logs/vaio-ioctl/20260513-015629-sgx-multi-submit-live-op-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-015629-sgx-multi-submit-live-op-live/summary.log)
+- Final typed multi-submit state:
+  - `SUBMIT_A_ID=6`
+  - `SUBMIT_B_ID=7`
+  - submit A:
+    - `submit_live_stage_name=retired`
+    - `submit_live_stage_count=3`
+    - `submit_live_prepare_count=1`
+    - `submit_live_arm_count=3`
+    - `submit_live_emit_count=3`
+    - `submit_live_launch_count=3`
+    - `submit_live_dispatch_count=3`
+    - `submit_live_retired_count=3`
+    - `submit_live_owner_state_name=complete`
+    - `submit_live_dependency_active_count=0`
+    - `submit_live_queue_packet_count=0`
+    - `submit_live_queue_epoch=2`
+    - `submit_live_control_gpu_va32=0x807bf000`
+    - `submit_live_status_gpu_va32=0x807cf000`
+    - `submit_live_pds_gpu_va32=0x807c3000`
+    - `submit_live_use_gpu_va32=0x807c7000`
+    - `submit_live_target_gpu_va32=0x807cb000`
+    - `submit_live_ccb_status_gpu_va32=0x807cf000`
+    - `submit_live_config_count=1`
+  - submit B:
+    - `submit_live_stage_name=retired`
+    - `submit_live_stage_count=2`
+    - `submit_live_prepare_count=1`
+    - `submit_live_arm_count=2`
+    - `submit_live_emit_count=2`
+    - `submit_live_launch_count=2`
+    - `submit_live_dispatch_count=2`
+    - `submit_live_retired_count=2`
+    - `submit_live_owner_state_name=complete`
+    - `submit_live_dependency_active_count=1`
+    - `submit_live_queue_packet_count=0`
+    - `submit_live_queue_epoch=1`
+    - `submit_live_control_gpu_va32=0x807d3000`
+    - `submit_live_status_gpu_va32=0x807e3000`
+    - `submit_live_pds_gpu_va32=0x807d7000`
+    - `submit_live_use_gpu_va32=0x807db000`
+    - `submit_live_target_gpu_va32=0x807df000`
+    - `submit_live_ccb_status_gpu_va32=0x807e3000`
+    - `submit_live_config_count=1`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver stays terminal on the new module:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-015211`
+  - `source_row_module_srcversion=864D7160A07B237AB1A9D36`
+
+Conclusion:
+
+- the typed SGX lab submit image now has an explicit control-backed `live`
+  execution block on top of the shared execution-facing kernel view model
+- the new block is clean on exact `complete`, focused typed submit, and typed
+  multi-submit validation
+- the next useful work is above this validated view set: the first more
+  execution-oriented SGX kernel structure, not more read-side block plumbing
+
 ### Shared SGX live-view exec-record unification and pre-queue CCB fix
 
 - Updated:

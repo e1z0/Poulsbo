@@ -71,6 +71,8 @@ static const char *submit_op_name(uint32_t op)
 		return "owner";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT:
 		return "report";
+	case DRM_PSB_SGX_LAB_SUBMIT_OP_LIVE:
+		return "live";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT:
 		return "result";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
@@ -287,6 +289,7 @@ static int submit_op_uses_selector(uint32_t op)
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_SYNC:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_OWNER:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_REPORT:
+	case DRM_PSB_SGX_LAB_SUBMIT_OP_LIVE:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DESCRIPTOR:
@@ -563,6 +566,14 @@ int main(int argc, char **argv)
 				fprintf(stderr, "invalid report offset: %s\n", argv[argi - 1]);
 				return 2;
 			}
+		} else if (strcmp(op_arg, "live") == 0) {
+			op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_LIVE;
+			if (argc - argi != 1)
+				return 2;
+			if (parse_u32(argv[argi++], &op.live_offset) != 0) {
+				fprintf(stderr, "invalid live offset: %s\n", argv[argi - 1]);
+				return 2;
+			}
 		} else if (strcmp(op_arg, "result") == 0) {
 			op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT;
 			if (argc - argi != 1)
@@ -737,6 +748,7 @@ int main(int argc, char **argv)
 	printf("submit_dependency_ticket=%u\n", op.dependency_ticket);
 	printf("submit_dependency_offset=0x%x\n", op.dependency_offset);
 	printf("submit_report_offset=0x%x\n", op.report_offset);
+	printf("submit_live_offset=0x%x\n", op.live_offset);
 	printf("submit_manifest_offset=0x%x\n", op.manifest_offset);
 	printf("submit_descriptor_offset=0x%x\n", op.descriptor_offset);
 	printf("submit_plan_offset=0x%x\n", op.plan_offset);

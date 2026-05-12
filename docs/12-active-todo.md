@@ -17,9 +17,9 @@ implementation if it materially changes scope.
   - it later timed out at `plan_query_offset`
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
-- the current live override is now the direct guarded-deploy fixed module:
-  - `srcversion 21D34B366D429B395AD45DC`
-  - `override_module_size=434960`
+- the current live override is now the latest guarded-deploy validated module:
+  - `srcversion 864D7160A07B237AB1A9D36`
+  - `override_module_size=442596`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260513-005139-guarded-deploy-direct`
+  - `logs/vaio-deploy/20260513-015019-guarded-deploy`
 - exact live reruns on the fixed module now all complete cleanly:
   - `plan_query_offset`
   - `plan_query_config`
@@ -60,22 +60,22 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260513-005336-sgx-plan-session`
-- the newest shared exec-record live-view batch is now hardware-validated:
-  - regression proof:
-    - `logs/vaio-plan-session/20260513-004821-sgx-plan-session`
+  - `logs/vaio-plan-session/20260513-015211-sgx-plan-session`
+- the newest typed submit `live` block batch is now hardware-validated:
+  - exact proof:
+    - `logs/vaio-plan-session/20260513-015211-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260513-005719-sgx-submit-exec-record-full-live/summary.log`
+    - `logs/vaio-ioctl/20260513-015552-sgx-submit-live-op-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260513-005759-sgx-multi-submit-exec-record-full-live/summary.log`
+    - `logs/vaio-ioctl/20260513-015629-sgx-multi-submit-live-op-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-005336`
-  - `source_row_module_srcversion=21D34B366D429B395AD45DC`
+  - `source_timestamp=20260513-015211`
+  - `source_row_module_srcversion=864D7160A07B237AB1A9D36`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -134,6 +134,7 @@ implementation if it materially changes scope.
   - `sync`
   - `owner`
   - `report`
+  - `live`
   - `manifest`
   - `descriptor`
   - `plan`
@@ -180,9 +181,9 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 21D34B366D429B395AD45DC`
+  `srcversion 864D7160A07B237AB1A9D36`
 - current execution-shaped submit memory model:
-  `queue + ccb + sync + owner + report + result + manifest + descriptor + plan`
+  `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan`
 - current shared execution-shaped kernel record:
   `psb_sgx_lab_submit_exec_record`
 
@@ -190,18 +191,18 @@ implementation if it materially changes scope.
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `21D34B366D429B395AD45DC` as the
+- keep the current guarded-deploy override `864D7160A07B237AB1A9D36` as the
   active headless, panic-safe validation base
 - treat the exact single-submit ladder as closed for the current module:
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the shared exec-record validation bundles as the active typed-submit
+- use the new typed `live`-block validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260513-005719-sgx-submit-exec-record-full-live/summary.log`
+    `logs/vaio-ioctl/20260513-015552-sgx-submit-live-op-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260513-005759-sgx-multi-submit-exec-record-full-live/summary.log`
+    `logs/vaio-ioctl/20260513-015629-sgx-multi-submit-live-op-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -215,9 +216,11 @@ implementation if it materially changes scope.
   question on the fixed module:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
-  - keep moving the shared `psb_sgx_lab_submit_exec_record` toward a more real
-    SGX execution model above the now-shared typed live submit image instead of
-    rebuilding more parallel per-view lab state
+  - keep moving the shared `psb_sgx_lab_submit_exec_record` toward the first
+    more execution-oriented SGX kernel structure above the now-validated typed
+    `queue + ccb + sync + owner + report + live + result + manifest +
+    descriptor + plan` image instead of rebuilding more read-side block
+    plumbing
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
   - `selected_child_phase_selection=request_only` is the child recovery
