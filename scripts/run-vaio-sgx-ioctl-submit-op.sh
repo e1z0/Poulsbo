@@ -19,6 +19,7 @@ remote_keep_tmpdir_on_failure="${REMOTE_KEEP_TMPDIR_ON_FAILURE:-0}"
 autoload_gma500_if_missing="${AUTOLOAD_GMA500_IF_MISSING:-1}"
 gma500_module_name="${GMA500_MODULE_NAME:-gma500_gfx}"
 drm_node_wait_secs="${DRM_NODE_WAIT_SECS:-20}"
+debug_query_after_launch="${DEBUG_QUERY_AFTER_LAUNCH:-0}"
 
 target_probe_stage="${TARGET_PROBE_STAGE:-/root/drm_probe.$$.$RANDOM.new}"
 target_query_stage="${TARGET_QUERY_STAGE:-/root/psb_sgx_lab_query.$$.$RANDOM.new}"
@@ -46,11 +47,12 @@ manifest_offset="${MANIFEST_OFFSET:-0x180}"
 descriptor_offset="${DESCRIPTOR_OFFSET:-0x200}"
 plan_offset="${PLAN_OFFSET:-0x300}"
 live_offset="${LIVE_OFFSET:-0x3c0}"
+issue_plan_offset="${ISSUE_PLAN_OFFSET:-0x4a0}"
 stop_after_stage="${STOP_AFTER_STAGE:-}"
 
 is_valid_stop_stage() {
     case "$1" in
-        ""|sync|owner|report|manifest|descriptor|descriptor_op|descriptor_query|plan|plan_op|plan_query|plan_query_fetch|plan_query_basic|plan_query_offset|plan_query_config|plan_query_snapshot|prepare|prepare_op|prepare_query|arm|emit|validate|launch|issue|running|complete)
+        ""|sync|owner|report|manifest|descriptor|descriptor_op|descriptor_query|plan|plan_op|plan_query|plan_query_fetch|plan_query_basic|plan_query_offset|plan_query_config|plan_query_snapshot|issue_plan|issue_plan_op|issue_plan_query|prepare|prepare_op|prepare_query|arm|emit|validate|launch|issue|running|complete)
             return 0
             ;;
         *)
@@ -60,7 +62,7 @@ is_valid_stop_stage() {
 }
 
 if ! is_valid_stop_stage "${stop_after_stage}"; then
-    echo "STOP_AFTER_STAGE must be one of: sync owner report manifest descriptor descriptor_op descriptor_query plan plan_op plan_query plan_query_fetch plan_query_basic plan_query_offset plan_query_config plan_query_snapshot prepare prepare_op prepare_query arm emit validate launch issue running complete" >&2
+    echo "STOP_AFTER_STAGE must be one of: sync owner report manifest descriptor descriptor_op descriptor_query plan plan_op plan_query plan_query_fetch plan_query_basic plan_query_offset plan_query_config plan_query_snapshot issue_plan issue_plan_op issue_plan_query prepare prepare_op prepare_query arm emit validate launch issue running complete" >&2
     exit 1
 fi
 
@@ -110,6 +112,7 @@ remote_keep_tmpdir_on_failure="${remote_keep_tmpdir_on_failure}"
 autoload_gma500_if_missing="${autoload_gma500_if_missing}"
 gma500_module_name="${gma500_module_name}"
 drm_node_wait_secs="${drm_node_wait_secs}"
+debug_query_after_launch="${debug_query_after_launch}"
 if [[ "\${remote_shell_trace}" == "1" ]]; then
     set -x
 fi
@@ -364,6 +367,41 @@ assert_plan_snapshot_file() {
     grep -q "^submit_plan_use_gpu_va32=\${expected_use_gpu_va}\$" "\${infile}"
     grep -q "^submit_plan_target_gpu_va32=\${expected_target_gpu_va}\$" "\${infile}"
     grep -q "^submit_plan_status_gpu_va32=\${expected_status_gpu_va}\$" "\${infile}"
+}
+
+assert_issue_plan_snapshot_file() {
+    local infile="\$1"
+    local expected_stage="\$2"
+    local expected_stage_count="\$3"
+    local expected_valid="\$4"
+    local expected_owner_state="\$5"
+    local expected_issued_packets="\$6"
+    local expected_refilled_from_complete="\$7"
+    local expected_dependency_active="\$8"
+    local expected_queue_count="\$9"
+    local expected_queue_epoch="\${10}"
+    local expected_control_gpu_va="\${11}"
+    local expected_pds_gpu_va="\${12}"
+    local expected_use_gpu_va="\${13}"
+    local expected_target_gpu_va="\${14}"
+    local expected_status_gpu_va="\${15}"
+
+    grep -q "^submit_issue_plan_offset=${issue_plan_offset}\$" "\${infile}"
+    grep -q '^submit_issue_plan_config_count=1$' "\${infile}"
+    grep -q "^submit_issue_plan_stage_name=\${expected_stage}\$" "\${infile}"
+    grep -q "^submit_issue_plan_stage_count=\${expected_stage_count}\$" "\${infile}"
+    grep -q "^submit_issue_plan_valid=\${expected_valid}\$" "\${infile}"
+    grep -q "^submit_issue_plan_owner_state_name=\${expected_owner_state}\$" "\${infile}"
+    grep -q "^submit_issue_plan_issued_packets=\${expected_issued_packets}\$" "\${infile}"
+    grep -q "^submit_issue_plan_refilled_from_complete=\${expected_refilled_from_complete}\$" "\${infile}"
+    grep -q "^submit_issue_plan_dependency_active_count=\${expected_dependency_active}\$" "\${infile}"
+    grep -q "^submit_issue_plan_queue_packet_count=\${expected_queue_count}\$" "\${infile}"
+    grep -q "^submit_issue_plan_queue_epoch=\${expected_queue_epoch}\$" "\${infile}"
+    grep -q "^submit_issue_plan_control_gpu_va32=\${expected_control_gpu_va}\$" "\${infile}"
+    grep -q "^submit_issue_plan_pds_gpu_va32=\${expected_pds_gpu_va}\$" "\${infile}"
+    grep -q "^submit_issue_plan_use_gpu_va32=\${expected_use_gpu_va}\$" "\${infile}"
+    grep -q "^submit_issue_plan_target_gpu_va32=\${expected_target_gpu_va}\$" "\${infile}"
+    grep -q "^submit_issue_plan_status_gpu_va32=\${expected_status_gpu_va}\$" "\${infile}"
 }
 
 assert_result_snapshot_file() {
@@ -709,6 +747,18 @@ assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_plan.txt" none 0 live qu
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete plan_query_snapshot plan_query plan
 
+run_capture submit_op_issue_plan_focus "\${tmpdir}/submit_op_issue_plan_focus.txt" \
+    "${target_submit_op_bin}" "${target_node}" issue-plan focus "${issue_plan_offset}" queued 1
+mark_stage_complete issue_plan_op
+
+run_capture query_by_id_after_issue_plan "\${tmpdir}/query_by_id_after_issue_plan.txt" \
+    "${target_query_bin}" "${target_node}" "\${submit_id}"
+require_line query_by_id_after_issue_plan "\${tmpdir}/query_by_id_after_issue_plan.txt" "^submit_issue_plan_offset=${issue_plan_offset}\$"
+require_line query_by_id_after_issue_plan "\${tmpdir}/query_by_id_after_issue_plan.txt" '^submit_issue_plan_config_count=1$'
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_issue_plan.txt" none 0 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
+mark_stage_complete issue_plan_query issue_plan
+
 run_capture submit_op_result_focus "\${tmpdir}/submit_op_result_focus.txt" \
     "${target_submit_op_bin}" "${target_node}" result focus "${result_offset}"
 run_capture query_by_id_after_result "\${tmpdir}/query_by_id_after_result.txt" \
@@ -737,6 +787,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepared 1 
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepared 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepared 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_prepare.txt" prepared 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 ccb_pds_gpu_va32=\$(extract_value_from_file "\${tmpdir}/query_by_id_after_prepare.txt" "submit_ccb_pds_gpu_va32")
@@ -774,6 +826,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 queued 
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_arm.txt" armed 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete arm
@@ -805,6 +859,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 1 queu
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_emit.txt" emitted 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete emit
@@ -850,6 +906,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emitted 1 
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emitted 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emitted 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_validate.txt" emitted 1 live queued 0 0 0 1 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete validate
@@ -864,6 +922,10 @@ if [[ "\${launch_rc}" -ne 0 ]]; then
     exit "\${launch_rc}"
 fi
 "${target_query_bin}" "${target_node}" "\${submit_id}" > "\${tmpdir}/query_by_id_after_launch.txt"
+if [[ "\${debug_query_after_launch}" == "1" ]]; then
+    echo "DEBUG_QUERY_BY_ID_AFTER_LAUNCH" >&2
+    cat "\${tmpdir}/query_by_id_after_launch.txt" >&2
+fi
 grep -q '^submit_launch_valid=1$' "\${tmpdir}/query_by_id_after_launch.txt"
 grep -q '^submit_launch_consumed=0$' "\${tmpdir}/query_by_id_after_launch.txt"
 grep -q '^submit_launch_count=1$' "\${tmpdir}/query_by_id_after_launch.txt"
@@ -894,6 +956,32 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launched 1 q
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launched 1 launch queued 1 0 0 2 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launched 1 1 queued 1 0 0 2 0 \
+    "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+grep -q '^submit_issue_plan_queue_base_offset=0x20$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_queue_size=0x40$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_queue_packet_size=0x20$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_queue_tail_packet_count=2$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_queue_head_packet_count=0$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_offset=0x20$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_write_offset=0x0$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_read_offset=0x0$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_sync_offset=0x20$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_sync_complete_seq=0x40$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_sync_pending_seq=0x42$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_sync_flags=0x1$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_owner_offset=0x40$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_owner_issue_cookie=0x102$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_owner_complete_cookie=0x100$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q "^submit_issue_plan_global_issue_ticket=\${expected_issue_ticket}\$" "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_global_running_ticket=0$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_global_complete_ticket=0$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_service_address=0x1000$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_cache_control=0x0$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_data0=0xc0de0001$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q '^submit_issue_plan_ccb_data1=0xc0de0002$' "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q "^submit_issue_plan_control_object_id=\${object_control}\$" "\${tmpdir}/query_by_id_after_launch.txt"
+grep -q "^submit_issue_plan_status_object_id=\${object_status}\$" "\${tmpdir}/query_by_id_after_launch.txt"
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_launch.txt" launched 1 live queued 1 0 0 1 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete launch
@@ -947,6 +1035,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatched 1 
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatched 1 dispatch queued 1 0 0 2 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatched 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_issue.txt" dispatched 1 dispatch queued 1 0 0 2 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete issue
@@ -982,6 +1072,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_transition_running.txt" 
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_transition_running.txt" dispatched 1 dispatch running 1 1 0 1 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_transition_running.txt" dispatched 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_transition_running.txt" dispatched 1 dispatch running 1 1 0 1 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 mark_stage_complete running
@@ -1018,6 +1110,8 @@ assert_live_snapshot_file "\${tmpdir}/query_by_id_after_transition_complete.txt"
     "\${object_control}" "\${object_status}"
 assert_plan_snapshot_file "\${tmpdir}/query_by_id_after_transition_complete.txt" retired 1 retired complete 1 2 0 0 0 \
     "\${control_gpu_va}" "\${pds_gpu_va}" "\${use_gpu_va}" "\${target_gpu_va}" "\${status_gpu_va}"
+assert_issue_plan_snapshot_file "\${tmpdir}/query_by_id_after_transition_complete.txt" retired 1 0 none 0 0 0 0 0 \
+    0x0 0x0 0x0 0x0 0x0
 assert_result_snapshot_file "\${tmpdir}/query_by_id_after_transition_complete.txt" retired 1 retired complete 1 2 0 0 0 \
     "\${control_gpu_va}" "\${status_gpu_va}"
 grep -q '^submit_retired_valid=1$' "\${tmpdir}/query_by_id_after_transition_complete.txt"
@@ -1173,6 +1267,18 @@ echo "IOCTL_SUBMIT_OP_DESCRIPTOR_FOCUS"
 cat "\${tmpdir}/submit_op_descriptor_focus.txt"
 echo "IOCTL_QUERY_BY_ID_AFTER_DESCRIPTOR"
 cat "\${tmpdir}/query_by_id_after_descriptor.txt"
+echo "IOCTL_SUBMIT_OP_PLAN_FOCUS"
+cat "\${tmpdir}/submit_op_plan_focus.txt"
+echo "IOCTL_QUERY_BY_ID_AFTER_PLAN"
+cat "\${tmpdir}/query_by_id_after_plan.txt"
+echo "IOCTL_SUBMIT_OP_ISSUE_PLAN_FOCUS"
+cat "\${tmpdir}/submit_op_issue_plan_focus.txt"
+echo "IOCTL_QUERY_BY_ID_AFTER_ISSUE_PLAN"
+cat "\${tmpdir}/query_by_id_after_issue_plan.txt"
+echo "IOCTL_SUBMIT_OP_RESULT_FOCUS"
+cat "\${tmpdir}/submit_op_result_focus.txt"
+echo "IOCTL_QUERY_BY_ID_AFTER_RESULT"
+cat "\${tmpdir}/query_by_id_after_result.txt"
 echo "IOCTL_SUBMIT_OP_PREPARE_FOCUS"
 cat "\${tmpdir}/submit_op_prepare_focus.txt"
 echo "IOCTL_QUERY_BY_ID_AFTER_PREPARE"

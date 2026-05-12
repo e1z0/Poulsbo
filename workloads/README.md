@@ -70,6 +70,10 @@ Use small workloads first so register traces stay understandable:
       queue, queue epoch, dependency, sync, owner, ticket, report/manifest/
       descriptor offsets, CCB words, and GPU-VA32 fields from the
       memory-backed control-side plan block
+    - issue-plan offset, stage, stage count, valid state, owner state,
+      issued/refilled state, queue, queue epoch, dependency, sync, owner,
+      ticket, CCB-word, object-ID, and GPU-VA32 fields from the memory-backed
+      control-side issue-plan block
     - resolved slot
     - resolved object ID
     - resolved range ID
@@ -105,7 +109,7 @@ Use small workloads first so register traces stay understandable:
   - runs one bounded SGX lab submit ioctl op
   - currently supports `create`, `focus`, `focus-clear`, `cleanup`, `attach`, `detach`,
     `kick`, `ccb`, `queue`, `status`, `sync`, `owner`, `report`, `result`, `manifest`,
-    `descriptor`, `plan`,
+    `descriptor`, `plan`, `issue-plan`,
     `prepare`, `arm`, `emit`, `launch`, `depend-slot`,
     `depticket-slot`, `depstate-slot`, `depclear-slot`, `validate`, `issue`,
     `transition`, and `drop`

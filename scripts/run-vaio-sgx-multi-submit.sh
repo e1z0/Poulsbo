@@ -756,6 +756,30 @@ assert_plan_snapshot_file() {
     require_snapshot_value "\${infile}" submit_plan_config_count 1
 }
 
+assert_issue_plan_snapshot_file() {
+    local infile="\$1"
+    local expected_stage="\$2"
+    local expected_stage_count="\$3"
+    local expected_valid="\$4"
+    local expected_state="\$5"
+    local expected_issued="\$6"
+    local expected_refilled="\$7"
+    local expected_queue="\$8"
+    local expected_queue_epoch="\$9"
+    local expected_dependency_active="\${10}"
+
+    require_snapshot_value "\${infile}" submit_issue_plan_stage_name "\${expected_stage}"
+    require_snapshot_value "\${infile}" submit_issue_plan_stage_count "\${expected_stage_count}"
+    require_snapshot_value "\${infile}" submit_issue_plan_valid "\${expected_valid}"
+    require_snapshot_value "\${infile}" submit_issue_plan_owner_state_name "\${expected_state}"
+    require_snapshot_value "\${infile}" submit_issue_plan_issued_packets "\${expected_issued}"
+    require_snapshot_value "\${infile}" submit_issue_plan_refilled_from_complete "\${expected_refilled}"
+    require_snapshot_value "\${infile}" submit_issue_plan_queue_packet_count "\${expected_queue}"
+    require_snapshot_value "\${infile}" submit_issue_plan_queue_epoch "\${expected_queue_epoch}"
+    require_snapshot_value "\${infile}" submit_issue_plan_dependency_active_count "\${expected_dependency_active}"
+    require_snapshot_value "\${infile}" submit_issue_plan_config_count 1
+}
+
 assert_result_snapshot_file() {
     local infile="\$1"
     local expected_stage="\$2"
@@ -1136,6 +1160,17 @@ submit_plan() {
     fi
 }
 
+submit_issue_plan() {
+    local submit_id="\$1"
+    local issue_plan_offset="\$2"
+    local owner_state="\$3"
+    local issued_packets="\$4"
+
+    if [[ "\${use_ioctl_submit_setup}" == "1" ]]; then
+        submit_ioctl_capture "issue_plan_\${submit_id}.txt" issue-plan "\${submit_id}" "\${issue_plan_offset}" "\${owner_state}" "\${issued_packets}"
+    fi
+}
+
 submit_live() {
     local submit_id="\$1"
     local live_offset="\$2"
@@ -1416,6 +1451,7 @@ configure_submit() {
     local descriptor_offset="0x200"
     local plan_offset="0x300"
     local live_offset="0x3c0"
+    local issue_plan_offset="0x4a0"
 
     case "\${mode}" in
         wrap)
@@ -1452,6 +1488,7 @@ configure_submit() {
     submit_manifest "\${submit_id}" "\${manifest_offset}"
     submit_descriptor "\${submit_id}" "\${descriptor_offset}"
     submit_plan "\${submit_id}" "\${plan_offset}"
+    submit_issue_plan "\${submit_id}" "\${issue_plan_offset}" queued 1
     submit_result "\${submit_id}" "\${result_offset}"
     submit_prepare "\${submit_id}"
     submit_validate "\${submit_id}"
@@ -1481,6 +1518,8 @@ drive_submit_initial_cycle() {
             assert_live_snapshot_file "\${prefix}_after_prepare_validate.txt" prepared 1 queued 0 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_prepare.txt" prepared 1 live queued 0 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_prepare_validate.txt" prepared 1 live queued 0 0 1 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_prepare.txt" prepared 1 0 none 0 0 0 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_prepare_validate.txt" prepared 1 0 none 0 0 0 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_prepare.txt" prepared 1 live queued 0 0 1 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_prepare_validate.txt" prepared 1 live queued 0 0 1 0 "\${dependency_active_count}"
         fi
@@ -1501,6 +1540,8 @@ drive_submit_initial_cycle() {
             assert_live_snapshot_file "\${prefix}_after_arm_validate.txt" armed 1 queued 0 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_arm.txt" armed 1 live queued 0 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_arm_validate.txt" armed 1 live queued 0 0 1 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_arm.txt" armed 1 0 none 0 0 0 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_arm_validate.txt" armed 1 0 none 0 0 0 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_arm.txt" armed 1 live queued 0 0 1 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_arm_validate.txt" armed 1 live queued 0 0 1 0 "\${dependency_active_count}"
         fi
@@ -1519,6 +1560,8 @@ drive_submit_initial_cycle() {
             assert_live_snapshot_file "\${prefix}_after_emit_validate.txt" emitted 1 queued 0 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_emit.txt" emitted 1 live queued 0 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_emit_validate.txt" emitted 1 live queued 0 0 1 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_emit.txt" emitted 1 0 none 0 0 0 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_emit_validate.txt" emitted 1 0 none 0 0 0 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_emit.txt" emitted 1 live queued 0 0 1 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_emit_validate.txt" emitted 1 live queued 0 0 1 0 "\${dependency_active_count}"
         fi
@@ -1537,6 +1580,8 @@ drive_submit_initial_cycle() {
             assert_live_snapshot_file "\${prefix}_after_launch_validate.txt" launched 1 queued 1 0 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_launch.txt" launched 1 launch queued 1 0 2 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_after_launch_validate.txt" launched 1 launch queued 1 0 2 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_launch.txt" launched 1 1 queued 1 0 2 0 "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_after_launch_validate.txt" launched 1 1 queued 1 0 2 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_launch.txt" launched 1 live queued 1 0 1 0 "\${dependency_active_count}"
             assert_result_snapshot_file "\${prefix}_after_launch_validate.txt" launched 1 live queued 1 0 1 0 "\${dependency_active_count}"
         fi
@@ -1550,6 +1595,7 @@ drive_submit_initial_cycle() {
         assert_descriptor_snapshot_file "\${prefix}_after_issue.txt" dispatched 1 queued 1 0 2 "\${dependency_active_count}"
         assert_live_snapshot_file "\${prefix}_after_issue.txt" dispatched 1 queued 1 0 2 0 "\${dependency_active_count}"
         assert_plan_snapshot_file "\${prefix}_after_issue.txt" dispatched 1 dispatch queued 1 0 2 0 "\${dependency_active_count}"
+        assert_issue_plan_snapshot_file "\${prefix}_after_issue.txt" dispatched 1 0 none 0 0 0 0 "\${dependency_active_count}"
         assert_result_snapshot_file "\${prefix}_after_issue.txt" dispatched 1 dispatch queued 1 0 2 0 "\${dependency_active_count}"
     fi
     submit_validate "\${submit_id}"
@@ -1561,6 +1607,7 @@ drive_submit_initial_cycle() {
         assert_descriptor_snapshot_file "\${prefix}_after_issue_validate.txt" dispatched 1 queued 1 0 2 "\${dependency_active_count}"
         assert_live_snapshot_file "\${prefix}_after_issue_validate.txt" dispatched 1 queued 1 0 2 0 "\${dependency_active_count}"
         assert_plan_snapshot_file "\${prefix}_after_issue_validate.txt" dispatched 1 dispatch queued 1 0 2 0 "\${dependency_active_count}"
+        assert_issue_plan_snapshot_file "\${prefix}_after_issue_validate.txt" dispatched 1 0 none 0 0 0 0 "\${dependency_active_count}"
         assert_result_snapshot_file "\${prefix}_after_issue_validate.txt" dispatched 1 dispatch queued 1 0 2 0 "\${dependency_active_count}"
     fi
     submit_transition "\${submit_id}" running "\${running_completed}" "transition_\${submit_id}_running_\${running_completed}.txt"
@@ -1572,6 +1619,7 @@ drive_submit_initial_cycle() {
         assert_descriptor_snapshot_file "\${prefix}_after_running.txt" dispatched 1 running 1 1 1 "\${dependency_active_count}"
         assert_live_snapshot_file "\${prefix}_after_running.txt" dispatched 1 running 1 1 1 0 "\${dependency_active_count}"
         assert_plan_snapshot_file "\${prefix}_after_running.txt" dispatched 1 dispatch running 1 1 1 0 "\${dependency_active_count}"
+        assert_issue_plan_snapshot_file "\${prefix}_after_running.txt" dispatched 1 0 none 0 0 0 0 "\${dependency_active_count}"
         assert_result_snapshot_file "\${prefix}_after_running.txt" dispatched 1 dispatch running 1 1 1 0 "\${dependency_active_count}"
     fi
     submit_validate "\${submit_id}"
@@ -1583,6 +1631,7 @@ drive_submit_initial_cycle() {
         assert_descriptor_snapshot_file "\${prefix}_after_running_validate.txt" dispatched 1 running 1 1 1 "\${dependency_active_count}"
         assert_live_snapshot_file "\${prefix}_after_running_validate.txt" dispatched 1 running 1 1 1 0 "\${dependency_active_count}"
         assert_plan_snapshot_file "\${prefix}_after_running_validate.txt" dispatched 1 dispatch running 1 1 1 0 "\${dependency_active_count}"
+        assert_issue_plan_snapshot_file "\${prefix}_after_running_validate.txt" dispatched 1 0 none 0 0 0 0 "\${dependency_active_count}"
         assert_result_snapshot_file "\${prefix}_after_running_validate.txt" dispatched 1 dispatch running 1 1 1 0 "\${dependency_active_count}"
     fi
     if [[ -n "\${contend_submit_id}" ]]; then
@@ -1600,6 +1649,7 @@ drive_submit_initial_cycle() {
         assert_descriptor_snapshot_file "\${prefix}_after_complete.txt" retired 1 complete 1 2 0 "\${dependency_active_count}"
         assert_live_snapshot_file "\${prefix}_after_complete.txt" retired 1 complete 1 2 0 0 "\${dependency_active_count}"
         assert_plan_snapshot_file "\${prefix}_after_complete.txt" retired 1 retired complete 1 2 0 0 "\${dependency_active_count}"
+        assert_issue_plan_snapshot_file "\${prefix}_after_complete.txt" retired 1 0 none 0 0 0 0 "\${dependency_active_count}"
         assert_result_snapshot_file "\${prefix}_after_complete.txt" retired 1 retired complete 1 2 0 0 "\${dependency_active_count}"
     fi
     submit_validate "\${submit_id}"
@@ -1612,6 +1662,7 @@ drive_submit_initial_cycle() {
         assert_descriptor_snapshot_file "\${prefix}_after_complete_validate.txt" retired 1 complete 1 2 0 "\${dependency_active_count}"
         assert_live_snapshot_file "\${prefix}_after_complete_validate.txt" retired 1 complete 1 2 0 0 "\${dependency_active_count}"
         assert_plan_snapshot_file "\${prefix}_after_complete_validate.txt" retired 1 retired complete 1 2 0 0 "\${dependency_active_count}"
+        assert_issue_plan_snapshot_file "\${prefix}_after_complete_validate.txt" retired 1 0 none 0 0 0 0 "\${dependency_active_count}"
         assert_result_snapshot_file "\${prefix}_after_complete_validate.txt" retired 1 retired complete 1 2 0 0 "\${dependency_active_count}"
     fi
 }
@@ -1643,6 +1694,8 @@ drive_submit_refill_cycles() {
                 assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_arm_validate.txt" armed "\$((cycle + 1))" complete 0 0 0 "\${dependency_active_count}"
                 assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_arm.txt" armed "\$((cycle + 1))" live complete 0 0 0 "\$((cycle - 1))" "\${dependency_active_count}"
                 assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_arm_validate.txt" armed "\$((cycle + 1))" live complete 0 0 0 "\$((cycle - 1))" "\${dependency_active_count}"
+                assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_arm.txt" armed "\$((cycle + 1))" 0 none 0 0 0 0 "\${dependency_active_count}"
+                assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_arm_validate.txt" armed "\$((cycle + 1))" 0 none 0 0 0 0 "\${dependency_active_count}"
             fi
             submit_emit "\${submit_id}"
             submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_EMIT" "\${prefix}_refill_cycle_\${cycle}_emit.txt"
@@ -1657,6 +1710,8 @@ drive_submit_refill_cycles() {
                 assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_emit_validate.txt" emitted "\$((cycle + 1))" complete 0 0 0 "\${dependency_active_count}"
                 assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_emit.txt" emitted "\$((cycle + 1))" live complete 0 0 0 "\$((cycle - 1))" "\${dependency_active_count}"
                 assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_emit_validate.txt" emitted "\$((cycle + 1))" live complete 0 0 0 "\$((cycle - 1))" "\${dependency_active_count}"
+                assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_emit.txt" emitted "\$((cycle + 1))" 0 none 0 0 0 0 "\${dependency_active_count}"
+                assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_emit_validate.txt" emitted "\$((cycle + 1))" 0 none 0 0 0 0 "\${dependency_active_count}"
             fi
             submit_launch "\${submit_id}" queued 1
             submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_LAUNCH" "\${prefix}_refill_cycle_\${cycle}_launch.txt"
@@ -1671,6 +1726,8 @@ drive_submit_refill_cycles() {
                 assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_launch_validate.txt" launched "\$((cycle + 1))" complete 1 0 0 "\${dependency_active_count}"
                 assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_launch.txt" launched "\$((cycle + 1))" launch queued 1 0 1 "\${cycle}" "\${dependency_active_count}"
                 assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_launch_validate.txt" launched "\$((cycle + 1))" launch queued 1 0 1 "\${cycle}" "\${dependency_active_count}"
+                assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_launch.txt" launched "\$((cycle + 1))" 1 queued 1 1 1 "\${cycle}" "\${dependency_active_count}"
+                assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_launch_validate.txt" launched "\$((cycle + 1))" 1 queued 1 1 1 "\${cycle}" "\${dependency_active_count}"
             fi
         fi
         submit_issue "\${submit_id}" queued 1
@@ -1683,6 +1740,7 @@ drive_submit_refill_cycles() {
             assert_manifest_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue.txt" dispatched "\${expected_count}" queued 1 "\${dependency_active_count}"
             assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue.txt" dispatched "\${expected_count}" queued 1 0 1 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue.txt" dispatched "\${expected_count}" dispatch queued 1 0 1 "\${cycle}" "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue.txt" dispatched "\${expected_count}" 0 none 0 0 0 0 "\${dependency_active_count}"
         fi
         submit_validate "\${submit_id}"
         submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_ISSUE_VALIDATE" "\${prefix}_refill_cycle_\${cycle}_issue_validate.txt"
@@ -1693,6 +1751,7 @@ drive_submit_refill_cycles() {
             assert_manifest_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue_validate.txt" dispatched "\${expected_count}" queued 1 "\${dependency_active_count}"
             assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue_validate.txt" dispatched "\${expected_count}" queued 1 0 1 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue_validate.txt" dispatched "\${expected_count}" dispatch queued 1 0 1 "\${cycle}" "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_issue_validate.txt" dispatched "\${expected_count}" 0 none 0 0 0 0 "\${dependency_active_count}"
         fi
         submit_transition "\${submit_id}" running 0 "transition_\${submit_id}_refill_\${cycle}_running.txt"
         submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_RUNNING" "\${prefix}_refill_cycle_\${cycle}_running.txt"
@@ -1703,6 +1762,7 @@ drive_submit_refill_cycles() {
             assert_manifest_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running.txt" dispatched "\${expected_count}" running 1 "\${dependency_active_count}"
             assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running.txt" dispatched "\${expected_count}" running 1 0 1 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running.txt" dispatched "\${expected_count}" dispatch running 1 0 1 "\${cycle}" "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running.txt" dispatched "\${expected_count}" 0 none 0 0 0 0 "\${dependency_active_count}"
         fi
         submit_validate "\${submit_id}"
         submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_RUNNING_VALIDATE" "\${prefix}_refill_cycle_\${cycle}_running_validate.txt"
@@ -1713,6 +1773,7 @@ drive_submit_refill_cycles() {
             assert_manifest_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running_validate.txt" dispatched "\${expected_count}" running 1 "\${dependency_active_count}"
             assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running_validate.txt" dispatched "\${expected_count}" running 1 0 1 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running_validate.txt" dispatched "\${expected_count}" dispatch running 1 0 1 "\${cycle}" "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_running_validate.txt" dispatched "\${expected_count}" 0 none 0 0 0 0 "\${dependency_active_count}"
         fi
         submit_transition "\${submit_id}" complete 1 "transition_\${submit_id}_refill_\${cycle}_complete.txt"
         submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_COMPLETE" "\${prefix}_refill_cycle_\${cycle}_complete.txt"
@@ -1723,6 +1784,7 @@ drive_submit_refill_cycles() {
             assert_manifest_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete.txt" retired "\${expected_count}" complete 0 "\${dependency_active_count}"
             assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete.txt" retired "\${expected_count}" complete 1 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete.txt" retired "\${expected_count}" retired complete 1 1 0 "\${cycle}" "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete.txt" retired "\${expected_count}" 0 none 0 0 0 0 "\${dependency_active_count}"
         fi
         submit_validate "\${submit_id}"
         submit_focus_dump "\${submit_id}" "\${prefix}_REFILL_CYCLE_\${cycle}_COMPLETE_VALIDATE" "\${prefix}_refill_cycle_\${cycle}_complete_validate.txt"
@@ -1733,6 +1795,7 @@ drive_submit_refill_cycles() {
             assert_manifest_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete_validate.txt" retired "\${expected_count}" complete 0 "\${dependency_active_count}"
             assert_descriptor_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete_validate.txt" retired "\${expected_count}" complete 1 1 0 "\${dependency_active_count}"
             assert_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete_validate.txt" retired "\${expected_count}" retired complete 1 1 0 "\${cycle}" "\${dependency_active_count}"
+            assert_issue_plan_snapshot_file "\${prefix}_refill_cycle_\${cycle}_complete_validate.txt" retired "\${expected_count}" 0 none 0 0 0 0 "\${dependency_active_count}"
         fi
     done
 }

@@ -1321,10 +1321,10 @@ index d4b5720ef..2747dc859 100644
  struct psb_mmu_pd;
 diff --git a/drivers/gpu/drm/gma500/psb_drm_lab.h b/drivers/gpu/drm/gma500/psb_drm_lab.h
 new file mode 100644
-index 000000000..ed3c5f4c4
+index 000000000..cfee864f9
 --- /dev/null
 +++ b/drivers/gpu/drm/gma500/psb_drm_lab.h
-@@ -0,0 +1,916 @@
+@@ -0,0 +1,959 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef _PSB_DRM_LAB_H_
 +#define _PSB_DRM_LAB_H_
@@ -1466,6 +1466,7 @@ index 000000000..ed3c5f4c4
 +#define DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN 28
 +#define DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT 29
 +#define DRM_PSB_SGX_LAB_SUBMIT_OP_LIVE 30
++#define DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN 31
 +
 +#define DRM_PSB_SGX_LAB_OBJECT_OP_ADOPT 1
 +#define DRM_PSB_SGX_LAB_OBJECT_OP_DROP 2
@@ -1913,6 +1914,46 @@ index 000000000..ed3c5f4c4
 +	__u32 plan_target_gpu_va32;
 +	__u32 plan_status_gpu_va32;
 +	__u32 plan_config_count;
++	__u32 issue_plan_offset;
++	__u32 issue_plan_stage;
++	__u32 issue_plan_stage_count;
++	__u32 issue_plan_valid;
++	__u32 issue_plan_owner_state;
++	__u32 issue_plan_issued_packets;
++	__u32 issue_plan_refilled_from_complete;
++	__u32 issue_plan_queue_epoch;
++	__u32 issue_plan_queue_base_offset;
++	__u32 issue_plan_queue_size;
++	__u32 issue_plan_queue_packet_size;
++	__u32 issue_plan_queue_packet_count;
++	__u32 issue_plan_queue_tail_packet_count;
++	__u32 issue_plan_queue_head_packet_count;
++	__u32 issue_plan_ccb_offset;
++	__u32 issue_plan_ccb_write_offset;
++	__u32 issue_plan_ccb_read_offset;
++	__u32 issue_plan_sync_offset;
++	__u32 issue_plan_sync_complete_seq;
++	__u32 issue_plan_sync_pending_seq;
++	__u32 issue_plan_sync_flags;
++	__u32 issue_plan_owner_offset;
++	__u32 issue_plan_owner_issue_cookie;
++	__u32 issue_plan_owner_complete_cookie;
++	__u32 issue_plan_global_issue_ticket;
++	__u32 issue_plan_global_running_ticket;
++	__u32 issue_plan_global_complete_ticket;
++	__u32 issue_plan_dependency_active_count;
++	__u32 issue_plan_ccb_service_address;
++	__u32 issue_plan_ccb_cache_control;
++	__u32 issue_plan_ccb_data0;
++	__u32 issue_plan_ccb_data1;
++	__u32 issue_plan_control_object_id;
++	__u32 issue_plan_status_object_id;
++	__u32 issue_plan_control_gpu_va32;
++	__u32 issue_plan_pds_gpu_va32;
++	__u32 issue_plan_use_gpu_va32;
++	__u32 issue_plan_target_gpu_va32;
++	__u32 issue_plan_status_gpu_va32;
++	__u32 issue_plan_config_count;
 +	__u32 result_offset;
 +	__u32 result_stage;
 +	__u32 result_stage_count;
@@ -1972,6 +2013,7 @@ index 000000000..ed3c5f4c4
 +	__u64 last_manifest_jiffies;
 +	__u64 last_descriptor_jiffies;
 +	__u64 last_plan_jiffies;
++	__u64 last_issue_plan_jiffies;
 +	__u64 last_result_jiffies;
 +	__u32 reserved[1];
 +};
@@ -2197,6 +2239,7 @@ index 000000000..ed3c5f4c4
 +	__u32 manifest_offset;
 +	__u32 descriptor_offset;
 +	__u32 plan_offset;
++	__u32 issue_plan_offset;
 +	__u32 result_offset;
 +};
 +
@@ -2242,7 +2285,7 @@ index 000000000..ed3c5f4c4
 +
 +#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..2ecb173b4 100644
+index d414525ec..7f95ab7ce 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -2262,7 +2305,7 @@ index d414525ec..2ecb173b4 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,14085 @@
+@@ -37,6 +40,14612 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -2358,6 +2401,7 @@ index d414525ec..2ecb173b4 100644
 +#define PSB_SGX_LAB_MANIFEST_DWORDS 27
 +#define PSB_SGX_LAB_DESCRIPTOR_DWORDS 32
 +#define PSB_SGX_LAB_PLAN_DWORDS 41
++#define PSB_SGX_LAB_ISSUE_PLAN_DWORDS 38
 +#define PSB_SGX_LAB_DEPENDENCY_DWORDS 4
 +#define PSB_SGX_LAB_DEPENDENCY_SLOTS 4
 +#define PSB_SGX_LAB_DEPENDENCY_FLAG_READY 0x00000001
@@ -2793,6 +2837,47 @@ index d414525ec..2ecb173b4 100644
 +	u32 status_gpu_va32;
 +};
 +
++struct psb_sgx_lab_issue_plan_words {
++	u32 stage;
++	u32 stage_count;
++	u32 valid;
++	u32 owner_state;
++	u32 issued_packets;
++	u32 refilled_from_complete;
++	u32 queue_epoch;
++	u32 queue_base_offset;
++	u32 queue_size;
++	u32 queue_packet_size;
++	u32 queue_packet_count;
++	u32 queue_tail_packet_count;
++	u32 queue_head_packet_count;
++	u32 ccb_offset;
++	u32 ccb_write_offset;
++	u32 ccb_read_offset;
++	u32 sync_offset;
++	u32 sync_complete_seq;
++	u32 sync_pending_seq;
++	u32 sync_flags;
++	u32 owner_offset;
++	u32 owner_issue_cookie;
++	u32 owner_complete_cookie;
++	u32 global_issue_ticket;
++	u32 global_running_ticket;
++	u32 global_complete_ticket;
++	u32 dependency_active_count;
++	u32 ccb_service_address;
++	u32 ccb_cache_control;
++	u32 ccb_data0;
++	u32 ccb_data1;
++	u32 control_object_id;
++	u32 status_object_id;
++	u32 control_gpu_va32;
++	u32 pds_gpu_va32;
++	u32 use_gpu_va32;
++	u32 target_gpu_va32;
++	u32 status_gpu_va32;
++};
++
 +struct psb_sgx_lab_result_words {
 +	u32 stage;
 +	u32 stage_count;
@@ -2908,12 +2993,14 @@ index d414525ec..2ecb173b4 100644
 +	bool have_manifest;
 +	bool have_descriptor;
 +	bool have_plan;
++	bool have_issue_plan;
 +	bool have_result;
 +	struct psb_sgx_lab_live_words live;
 +	struct psb_sgx_lab_report_words report;
 +	struct psb_sgx_lab_manifest_words manifest;
 +	struct psb_sgx_lab_descriptor_words descriptor;
 +	struct psb_sgx_lab_plan_words plan;
++	struct psb_sgx_lab_issue_plan_words issue_plan;
 +	struct psb_sgx_lab_result_words result;
 +};
 +
@@ -2935,6 +3022,8 @@ index d414525ec..2ecb173b4 100644
 +	      PSB_SGX_LAB_DESCRIPTOR_DWORDS * sizeof(u32));
 +static_assert(sizeof(struct psb_sgx_lab_plan_words) ==
 +	      PSB_SGX_LAB_PLAN_DWORDS * sizeof(u32));
++static_assert(sizeof(struct psb_sgx_lab_issue_plan_words) ==
++	      PSB_SGX_LAB_ISSUE_PLAN_DWORDS * sizeof(u32));
 +static_assert(sizeof(struct psb_sgx_lab_result_words) ==
 +	      PSB_SGX_LAB_RESULT_DWORDS * sizeof(u32));
 +static_assert(sizeof(struct psb_sgx_lab_dependency_words) ==
@@ -3011,6 +3100,7 @@ index d414525ec..2ecb173b4 100644
 +	u32 manifest_offset;
 +	u32 descriptor_offset;
 +	u32 plan_offset;
++	u32 issue_plan_offset;
 +	u32 result_offset;
 +	u32 global_issue_ticket;
 +	u32 global_running_ticket;
@@ -3032,7 +3122,10 @@ index d414525ec..2ecb173b4 100644
 +	u32 manifest_config_count;
 +	u32 descriptor_config_count;
 +	u32 plan_config_count;
++	u32 issue_plan_config_count;
 +	u32 result_config_count;
++	u32 issue_plan_owner_state;
++	u32 issue_plan_packet_count;
 +	u32 queue_epoch;
 +	u32 prepare_count;
 +	u32 report_stage;
@@ -3256,6 +3349,7 @@ index d414525ec..2ecb173b4 100644
 +	unsigned long last_manifest_jiffies;
 +	unsigned long last_descriptor_jiffies;
 +	unsigned long last_plan_jiffies;
++	unsigned long last_issue_plan_jiffies;
 +	unsigned long last_result_jiffies;
 +	unsigned long last_prepare_jiffies;
 +	unsigned long last_arm_jiffies;
@@ -5499,6 +5593,7 @@ index d414525ec..2ecb173b4 100644
 +static int poulsbo_sgx_manifest_region_end(u32 base_offset, u32 *end_out);
 +static int poulsbo_sgx_descriptor_region_end(u32 base_offset, u32 *end_out);
 +static int poulsbo_sgx_plan_region_end(u32 base_offset, u32 *end_out);
++static int poulsbo_sgx_issue_plan_region_end(u32 base_offset, u32 *end_out);
 +static int poulsbo_sgx_result_region_end(u32 base_offset, u32 *end_out);
 +struct psb_sgx_lab_control_layout;
 +static int poulsbo_sgx_validate_submit_control_layout_locked(
@@ -5525,7 +5620,8 @@ index d414525ec..2ecb173b4 100644
 +	return submit->packet_config_count || submit->ccb_config_count ||
 +	       submit->queue_config_count || submit->live_config_count ||
 +	       submit->manifest_config_count ||
-+	       submit->descriptor_config_count || submit->plan_config_count;
++	       submit->descriptor_config_count || submit->plan_config_count ||
++	       submit->issue_plan_config_count;
 +}
 +
 +static bool
@@ -6185,6 +6281,83 @@ index d414525ec..2ecb173b4 100644
 +	return 0;
 +}
 +
++static int poulsbo_sgx_build_submit_issue_plan_view_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_issue_plan_words *issue_plan)
++{
++	struct psb_sgx_lab_submit_view_records records;
++	struct psb_sgx_lab_issue_plan plan;
++	int ret;
++
++	if (!issue_plan)
++		return -EINVAL;
++
++	memset(issue_plan, 0, sizeof(*issue_plan));
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		dev_priv, submit, &records);
++	if (ret)
++		return ret;
++
++	issue_plan->stage = records.live.stage;
++	issue_plan->stage_count = records.live.stage_count;
++
++	if (records.live.stage != PSB_SGX_LAB_REPORT_STAGE_LAUNCHED ||
++	    !submit->launch_valid || submit->launch_consumed ||
++	    !submit->issue_plan_packet_count)
++		return 0;
++
++	if (!poulsbo_sgx_build_issue_plan_locked(
++		    dev_priv, submit, submit->issue_plan_owner_state,
++		    submit->issue_plan_packet_count, &plan))
++		return 0;
++
++	issue_plan->valid = 1;
++	issue_plan->owner_state = plan.owner_state;
++	issue_plan->issued_packets = plan.issued_packets;
++	issue_plan->refilled_from_complete =
++		plan.refilled_from_complete ? 1 : 0;
++	issue_plan->queue_epoch = plan.new_queue_epoch;
++	issue_plan->queue_base_offset = submit->launch_queue_base_offset;
++	issue_plan->queue_size = submit->launch_queue_size;
++	issue_plan->queue_packet_size = submit->launch_queue_packet_size;
++	issue_plan->queue_packet_count = plan.new_packet_count;
++	issue_plan->queue_tail_packet_count = plan.new_tail_packets;
++	issue_plan->queue_head_packet_count = plan.new_head_packets;
++	issue_plan->ccb_offset = submit->launch_ccb_offset;
++	issue_plan->ccb_write_offset = plan.new_write_offset;
++	issue_plan->ccb_read_offset = submit->launch_ccb_read_offset;
++	issue_plan->sync_offset = submit->launch_sync_offset;
++	issue_plan->sync_complete_seq = submit->launch_sync_complete_seq;
++	issue_plan->sync_pending_seq = plan.new_sync_pending_seq;
++	issue_plan->sync_flags = plan.new_sync_flags;
++	issue_plan->owner_offset = submit->launch_owner_offset;
++	issue_plan->owner_issue_cookie = plan.new_owner_issue_cookie;
++	issue_plan->owner_complete_cookie =
++		submit->launch_owner_complete_cookie;
++	issue_plan->global_issue_ticket = plan.new_global_issue_ticket;
++	issue_plan->global_running_ticket =
++		submit->launch_global_running_ticket;
++	issue_plan->global_complete_ticket =
++		submit->launch_global_complete_ticket;
++	issue_plan->dependency_active_count =
++		submit->launch_dependency_active_count;
++	issue_plan->ccb_service_address =
++		submit->launch_ccb_service_address;
++	issue_plan->ccb_cache_control =
++		submit->launch_ccb_cache_control;
++	issue_plan->ccb_data0 = submit->launch_ccb_data0;
++	issue_plan->ccb_data1 = submit->launch_ccb_data1;
++	issue_plan->control_object_id = submit->launch_control_object_id;
++	issue_plan->status_object_id = submit->launch_status_object_id;
++	issue_plan->control_gpu_va32 = (u32)submit->launch_control_gpu_va;
++	issue_plan->pds_gpu_va32 = (u32)submit->launch_pds_gpu_va;
++	issue_plan->use_gpu_va32 = (u32)submit->launch_use_gpu_va;
++	issue_plan->target_gpu_va32 = (u32)submit->launch_target_gpu_va;
++	issue_plan->status_gpu_va32 = (u32)submit->launch_status_gpu_va;
++	return 0;
++}
++
 +static int poulsbo_sgx_build_submit_result_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
@@ -6289,6 +6462,30 @@ index d414525ec..2ecb173b4 100644
 +		sizeof(*plan) / sizeof(u32));
 +}
 +
++static int poulsbo_sgx_write_submit_issue_plan_locked(
++	struct psb_sgx_lab_object *control_obj,
++	u32 issue_plan_offset,
++	const struct psb_sgx_lab_issue_plan_words *issue_plan)
++{
++	return poulsbo_sgx_object_write_words_locked(
++		control_obj, issue_plan_offset, (const u32 *)issue_plan,
++		sizeof(*issue_plan) / sizeof(u32));
++}
++
++static int poulsbo_sgx_read_submit_issue_plan_locked(
++	struct psb_sgx_lab_object *control_obj,
++	u32 issue_plan_offset,
++	struct psb_sgx_lab_issue_plan_words *issue_plan)
++{
++	if (!issue_plan)
++		return -EINVAL;
++
++	memset(issue_plan, 0, sizeof(*issue_plan));
++	return poulsbo_sgx_object_read_words_locked(
++		control_obj, issue_plan_offset, (u32 *)issue_plan,
++		sizeof(*issue_plan) / sizeof(u32));
++}
++
 +static int poulsbo_sgx_refresh_submit_plan_locked(
 +	struct psb_sgx_lab_submit *submit,
 +	const struct psb_sgx_lab_refresh_views *views)
@@ -6307,6 +6504,27 @@ index d414525ec..2ecb173b4 100644
 +		return ret;
 +
 +	submit->last_plan_jiffies = jiffies;
++	return 0;
++}
++
++static int poulsbo_sgx_refresh_submit_issue_plan_locked(
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_refresh_views *views)
++{
++	int ret;
++
++	if (!submit->issue_plan_config_count)
++		return 0;
++	if (!views || !views->control_obj || !views->have_issue_plan)
++		return -EINVAL;
++
++	ret = poulsbo_sgx_write_submit_issue_plan_locked(
++		views->control_obj, submit->issue_plan_offset,
++		&views->issue_plan);
++	if (ret)
++		return ret;
++
++	submit->last_issue_plan_jiffies = jiffies;
 +	return 0;
 +}
 +
@@ -6352,7 +6570,7 @@ index d414525ec..2ecb173b4 100644
 +	if (submit->live_config_count || submit->report_config_count ||
 +	    submit->manifest_config_count ||
 +	    submit->descriptor_config_count || submit->plan_config_count ||
-+	    submit->result_config_count) {
++	    submit->issue_plan_config_count || submit->result_config_count) {
 +		ret = poulsbo_sgx_collect_submit_view_records_locked(
 +			dev_priv, submit, &records);
 +		if (ret)
@@ -6562,6 +6780,14 @@ index d414525ec..2ecb173b4 100644
 +			views->have_plan = true;
 +		}
 +
++		if (submit->issue_plan_config_count) {
++			ret = poulsbo_sgx_build_submit_issue_plan_view_locked(
++				dev_priv, submit, &views->issue_plan);
++			if (ret)
++				return ret;
++			views->have_issue_plan = true;
++		}
++
 +		if (submit->result_config_count) {
 +			memset(&views->result, 0, sizeof(views->result));
 +			views->result.stage = records.result.stage;
@@ -6656,7 +6882,10 @@ index d414525ec..2ecb173b4 100644
 +	ret = poulsbo_sgx_refresh_submit_descriptor_locked(submit, &views);
 +	if (ret)
 +		return ret;
-+	return poulsbo_sgx_refresh_submit_plan_locked(submit, &views);
++	ret = poulsbo_sgx_refresh_submit_plan_locked(submit, &views);
++	if (ret)
++		return ret;
++	return poulsbo_sgx_refresh_submit_issue_plan_locked(submit, &views);
 +}
 +
 +static bool
@@ -6999,6 +7228,19 @@ index d414525ec..2ecb173b4 100644
 +	return 0;
 +}
 +
++static int poulsbo_sgx_issue_plan_region_end(u32 base_offset, u32 *end_out)
++{
++	u64 end;
++
++	end = (u64)base_offset +
++	      (u64)PSB_SGX_LAB_ISSUE_PLAN_DWORDS * sizeof(u32);
++	if (end > U32_MAX)
++		return -EINVAL;
++
++	*end_out = (u32)end;
++	return 0;
++}
++
 +static int poulsbo_sgx_result_region_end(u32 base_offset, u32 *end_out)
 +{
 +	u64 end;
@@ -7038,12 +7280,14 @@ index d414525ec..2ecb173b4 100644
 +	bool manifest_active;
 +	bool descriptor_active;
 +	bool plan_active;
++	bool issue_plan_active;
 +	u32 queue_region_end;
 +	u32 ccb_region_end;
 +	u32 live_region_end;
 +	u32 manifest_region_end;
 +	u32 descriptor_region_end;
 +	u32 plan_region_end;
++	u32 issue_plan_region_end;
 +};
 +
 +static int poulsbo_sgx_ccb_region_end(u32 base_offset, u32 *end_out)
@@ -7242,6 +7486,61 @@ index d414525ec..2ecb173b4 100644
 +			return -EINVAL;
 +	}
 +
++	if (submit->issue_plan_config_count) {
++		int ret;
++
++		ret = poulsbo_sgx_issue_plan_region_end(
++			submit->issue_plan_offset,
++			&layout->issue_plan_region_end);
++		if (ret)
++			return ret;
++		layout->issue_plan_active = true;
++		if (poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end, 0,
++			    PSB_SGX_LAB_CONTROL_QUEUE_HEADER_BYTES))
++			return -EINVAL;
++		if (layout->queue_active &&
++		    poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end,
++			    submit->queue_base_offset,
++			    layout->queue_region_end))
++			return -EINVAL;
++		if (layout->ccb_active &&
++		    poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end,
++			    submit->ccb_offset, layout->ccb_region_end))
++			return -EINVAL;
++		if (layout->manifest_active &&
++		    poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end,
++			    submit->manifest_offset,
++			    layout->manifest_region_end))
++			return -EINVAL;
++		if (layout->descriptor_active &&
++		    poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end,
++			    submit->descriptor_offset,
++			    layout->descriptor_region_end))
++			return -EINVAL;
++		if (layout->plan_active &&
++		    poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end, submit->plan_offset,
++			    layout->plan_region_end))
++			return -EINVAL;
++		if (layout->live_active &&
++		    poulsbo_sgx_regions_overlap(
++			    submit->issue_plan_offset,
++			    layout->issue_plan_region_end, submit->live_offset,
++			    layout->live_region_end))
++			return -EINVAL;
++	}
++
 +	return 0;
 +}
 +
@@ -7300,6 +7599,15 @@ index d414525ec..2ecb173b4 100644
 +		ret = poulsbo_sgx_object_access_ok(
 +			control_obj, submit->plan_offset,
 +			layout->plan_region_end - submit->plan_offset);
++		if (ret)
++			return ret;
++	}
++
++	if (layout->issue_plan_active) {
++		ret = poulsbo_sgx_object_access_ok(
++			control_obj, submit->issue_plan_offset,
++			layout->issue_plan_region_end -
++				submit->issue_plan_offset);
 +		if (ret)
 +			return ret;
 +	}
@@ -8462,6 +8770,30 @@ index d414525ec..2ecb173b4 100644
 +	return 0;
 +}
 +
++static int poulsbo_sgx_validate_submit_issue_plan_image_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_object *control_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_issue_plan_words expected_issue_plan;
++	struct psb_sgx_lab_issue_plan_words ctl_issue_plan;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_issue_plan_locked(
++		control_obj, submit->issue_plan_offset, &ctl_issue_plan);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_issue_plan_view_locked(
++		dev_priv, submit, &expected_issue_plan);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_issue_plan, &expected_issue_plan,
++		   sizeof(expected_issue_plan)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
 +static int poulsbo_sgx_validate_submit_sync_image_locked(
 +	struct psb_sgx_lab_object *status_obj,
 +	struct psb_sgx_lab_submit *submit)
@@ -8635,6 +8967,13 @@ index d414525ec..2ecb173b4 100644
 +
 +	if (submit->plan_config_count) {
 +		ret = poulsbo_sgx_validate_submit_plan_image_locked(
++			dev_priv, control_obj, submit);
++		if (ret)
++			return ret;
++	}
++
++	if (submit->issue_plan_config_count) {
++		ret = poulsbo_sgx_validate_submit_issue_plan_image_locked(
 +			dev_priv, control_obj, submit);
 +		if (ret)
 +			return ret;
@@ -8852,6 +9191,9 @@ index d414525ec..2ecb173b4 100644
 +	    (submit->descriptor_offset & 0x3))
 +		return -EINVAL;
 +	if (submit->plan_config_count && (submit->plan_offset & 0x3))
++		return -EINVAL;
++	if (submit->issue_plan_config_count &&
++	    (submit->issue_plan_offset & 0x3))
 +		return -EINVAL;
 +	if ((submit->queue_base_offset & 0xf) || !submit->queue_size ||
 +	    !submit->queue_packet_size)
@@ -11502,6 +11844,93 @@ index d414525ec..2ecb173b4 100644
 +	return ret;
 +}
 +
++static int poulsbo_sgx_configure_submit_issue_plan(struct drm_device *dev,
++						   u32 submit_id,
++						   u32 issue_plan_offset,
++						   u32 owner_state,
++						   u32 issued_packets)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct psb_sgx_lab_submit *submit;
++	struct psb_sgx_lab_object *control_obj;
++	u32 old_issue_plan_offset;
++	u32 old_issue_plan_config_count;
++	u32 old_issue_plan_owner_state;
++	u32 old_issue_plan_packet_count;
++	int ret;
++
++	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
++	mutex_lock(&dev_priv->sgx_lab_object_mutex);
++	mutex_lock(&dev_priv->gtt_mutex);
++
++	submit = poulsbo_sgx_find_submit_locked(dev_priv, submit_id);
++	if (!submit) {
++		ret = -ENOENT;
++		goto out_unlock;
++	}
++	if (!submit->control_object_id) {
++		ret = -EINVAL;
++		goto out_unlock;
++	}
++	if (issue_plan_offset & 0x3 ||
++	    (owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
++	     owner_state != PSB_SGX_LAB_OWNER_RUNNING) ||
++	    !issued_packets) {
++		ret = -EINVAL;
++		goto out_unlock;
++	}
++
++	control_obj = poulsbo_sgx_find_object_locked(dev_priv,
++						     submit->control_object_id);
++	if (!control_obj) {
++		ret = -ENOENT;
++		goto out_unlock;
++	}
++
++	old_issue_plan_offset = submit->issue_plan_offset;
++	old_issue_plan_config_count = submit->issue_plan_config_count;
++	old_issue_plan_owner_state = submit->issue_plan_owner_state;
++	old_issue_plan_packet_count = submit->issue_plan_packet_count;
++	submit->issue_plan_offset = issue_plan_offset;
++	submit->issue_plan_config_count++;
++	submit->issue_plan_owner_state = owner_state;
++	submit->issue_plan_packet_count = issued_packets;
++	ret = poulsbo_sgx_validate_submit_control_layout_locked(
++		submit, control_obj, NULL);
++	submit->issue_plan_offset = old_issue_plan_offset;
++	submit->issue_plan_config_count = old_issue_plan_config_count;
++	submit->issue_plan_owner_state = old_issue_plan_owner_state;
++	submit->issue_plan_packet_count = old_issue_plan_packet_count;
++	if (ret)
++		goto out_unlock;
++
++	poulsbo_sgx_disarm_submit_locked(submit);
++	submit->issue_plan_offset = issue_plan_offset;
++	submit->issue_plan_config_count++;
++	submit->issue_plan_owner_state = owner_state;
++	submit->issue_plan_packet_count = issued_packets;
++	ret = poulsbo_sgx_refresh_submit_views_locked(dev_priv, submit);
++
++out_unlock:
++	mutex_unlock(&dev_priv->gtt_mutex);
++	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
++	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
++
++	if (!ret)
++		dev_info(dev->dev,
++			 "lab submit issue-plan submit_id=%u offset=%#x owner_state=%s issued_packets=%u stage=%s stage_count=%u\n",
++			 submit_id, issue_plan_offset,
++			 poulsbo_sgx_lab_owner_state_name(owner_state),
++			 issued_packets,
++			 poulsbo_sgx_lab_report_stage_name(
++				 poulsbo_sgx_submit_report_stage_locked(submit)),
++			 poulsbo_sgx_submit_report_stage_count_locked(
++				 submit,
++				 poulsbo_sgx_submit_report_stage_locked(
++					 submit)));
++	return ret;
++}
++
 +static int poulsbo_sgx_transition_submit(struct drm_device *dev,
 +					 u32 submit_id,
 +					 u32 owner_state,
@@ -13750,11 +14179,13 @@ index d414525ec..2ecb173b4 100644
 +	u32 manifest_query_end = 0;
 +	u32 descriptor_query_end = 0;
 +	u32 plan_query_end = 0;
++	u32 issue_plan_query_end = 0;
 +	u32 result_query_end = 0;
 +	struct psb_sgx_lab_live_words live;
 +	struct psb_sgx_lab_manifest_words manifest;
 +	struct psb_sgx_lab_descriptor_words descriptor;
 +	struct psb_sgx_lab_plan_words plan;
++	struct psb_sgx_lab_issue_plan_words issue_plan;
 +	struct psb_sgx_lab_result_words result;
 +	u32 request_flags = query->flags;
 +	u32 request_submit_id = query->submit_id;
@@ -14226,6 +14657,46 @@ index d414525ec..2ecb173b4 100644
 +	query->plan_target_gpu_va32 = 0;
 +	query->plan_status_gpu_va32 = 0;
 +	query->plan_config_count = submit->plan_config_count;
++	query->issue_plan_offset = submit->issue_plan_offset;
++	query->issue_plan_stage = 0;
++	query->issue_plan_stage_count = 0;
++	query->issue_plan_valid = 0;
++	query->issue_plan_owner_state = 0;
++	query->issue_plan_issued_packets = 0;
++	query->issue_plan_refilled_from_complete = 0;
++	query->issue_plan_queue_epoch = 0;
++	query->issue_plan_queue_base_offset = 0;
++	query->issue_plan_queue_size = 0;
++	query->issue_plan_queue_packet_size = 0;
++	query->issue_plan_queue_packet_count = 0;
++	query->issue_plan_queue_tail_packet_count = 0;
++	query->issue_plan_queue_head_packet_count = 0;
++	query->issue_plan_ccb_offset = 0;
++	query->issue_plan_ccb_write_offset = 0;
++	query->issue_plan_ccb_read_offset = 0;
++	query->issue_plan_sync_offset = 0;
++	query->issue_plan_sync_complete_seq = 0;
++	query->issue_plan_sync_pending_seq = 0;
++	query->issue_plan_sync_flags = 0;
++	query->issue_plan_owner_offset = 0;
++	query->issue_plan_owner_issue_cookie = 0;
++	query->issue_plan_owner_complete_cookie = 0;
++	query->issue_plan_global_issue_ticket = 0;
++	query->issue_plan_global_running_ticket = 0;
++	query->issue_plan_global_complete_ticket = 0;
++	query->issue_plan_dependency_active_count = 0;
++	query->issue_plan_ccb_service_address = 0;
++	query->issue_plan_ccb_cache_control = 0;
++	query->issue_plan_ccb_data0 = 0;
++	query->issue_plan_ccb_data1 = 0;
++	query->issue_plan_control_object_id = 0;
++	query->issue_plan_status_object_id = 0;
++	query->issue_plan_control_gpu_va32 = 0;
++	query->issue_plan_pds_gpu_va32 = 0;
++	query->issue_plan_use_gpu_va32 = 0;
++	query->issue_plan_target_gpu_va32 = 0;
++	query->issue_plan_status_gpu_va32 = 0;
++	query->issue_plan_config_count = submit->issue_plan_config_count;
 +	query->issue_count = submit->issue_count;
 +	query->transition_count = submit->transition_count;
 +	query->dependency_slot_count = DRM_PSB_SGX_LAB_DEPENDENCY_SLOTS;
@@ -14589,6 +15060,78 @@ index d414525ec..2ecb173b4 100644
 +		query->plan_status_gpu_va32 = plan.status_gpu_va32;
 +	}
 +	query->last_plan_jiffies = submit->last_plan_jiffies;
++	if (control_obj && submit->issue_plan_config_count &&
++	    !poulsbo_sgx_issue_plan_region_end(submit->issue_plan_offset,
++					       &issue_plan_query_end) &&
++	    !poulsbo_sgx_object_access_ok(control_obj,
++					  submit->issue_plan_offset,
++					  issue_plan_query_end -
++						  submit->issue_plan_offset) &&
++	    !poulsbo_sgx_read_submit_issue_plan_locked(
++		    control_obj, submit->issue_plan_offset, &issue_plan)) {
++		query->issue_plan_stage = issue_plan.stage;
++		query->issue_plan_stage_count = issue_plan.stage_count;
++		query->issue_plan_valid = issue_plan.valid;
++		query->issue_plan_owner_state = issue_plan.owner_state;
++		query->issue_plan_issued_packets = issue_plan.issued_packets;
++		query->issue_plan_refilled_from_complete =
++			issue_plan.refilled_from_complete;
++		query->issue_plan_queue_epoch = issue_plan.queue_epoch;
++		query->issue_plan_queue_base_offset =
++			issue_plan.queue_base_offset;
++		query->issue_plan_queue_size = issue_plan.queue_size;
++		query->issue_plan_queue_packet_size =
++			issue_plan.queue_packet_size;
++		query->issue_plan_queue_packet_count =
++			issue_plan.queue_packet_count;
++		query->issue_plan_queue_tail_packet_count =
++			issue_plan.queue_tail_packet_count;
++		query->issue_plan_queue_head_packet_count =
++			issue_plan.queue_head_packet_count;
++		query->issue_plan_ccb_offset = issue_plan.ccb_offset;
++		query->issue_plan_ccb_write_offset =
++			issue_plan.ccb_write_offset;
++		query->issue_plan_ccb_read_offset =
++			issue_plan.ccb_read_offset;
++		query->issue_plan_sync_offset = issue_plan.sync_offset;
++		query->issue_plan_sync_complete_seq =
++			issue_plan.sync_complete_seq;
++		query->issue_plan_sync_pending_seq =
++			issue_plan.sync_pending_seq;
++		query->issue_plan_sync_flags = issue_plan.sync_flags;
++		query->issue_plan_owner_offset = issue_plan.owner_offset;
++		query->issue_plan_owner_issue_cookie =
++			issue_plan.owner_issue_cookie;
++		query->issue_plan_owner_complete_cookie =
++			issue_plan.owner_complete_cookie;
++		query->issue_plan_global_issue_ticket =
++			issue_plan.global_issue_ticket;
++		query->issue_plan_global_running_ticket =
++			issue_plan.global_running_ticket;
++		query->issue_plan_global_complete_ticket =
++			issue_plan.global_complete_ticket;
++		query->issue_plan_dependency_active_count =
++			issue_plan.dependency_active_count;
++		query->issue_plan_ccb_service_address =
++			issue_plan.ccb_service_address;
++		query->issue_plan_ccb_cache_control =
++			issue_plan.ccb_cache_control;
++		query->issue_plan_ccb_data0 = issue_plan.ccb_data0;
++		query->issue_plan_ccb_data1 = issue_plan.ccb_data1;
++		query->issue_plan_control_object_id =
++			issue_plan.control_object_id;
++		query->issue_plan_status_object_id =
++			issue_plan.status_object_id;
++		query->issue_plan_control_gpu_va32 =
++			issue_plan.control_gpu_va32;
++		query->issue_plan_pds_gpu_va32 = issue_plan.pds_gpu_va32;
++		query->issue_plan_use_gpu_va32 = issue_plan.use_gpu_va32;
++		query->issue_plan_target_gpu_va32 =
++			issue_plan.target_gpu_va32;
++		query->issue_plan_status_gpu_va32 =
++			issue_plan.status_gpu_va32;
++	}
++	query->last_issue_plan_jiffies = submit->last_issue_plan_jiffies;
 +}
 +
 +static void poulsbo_sgx_fill_coord_query_locked(
@@ -15529,6 +16072,9 @@ index d414525ec..2ecb173b4 100644
 +	if (op->plan_offset &&
 +	    op->op != DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN)
 +		return -EINVAL;
++	if (op->issue_plan_offset &&
++	    op->op != DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN)
++		return -EINVAL;
 +	if (op->result_offset &&
 +	    op->op != DRM_PSB_SGX_LAB_SUBMIT_OP_RESULT)
 +		return -EINVAL;
@@ -16107,6 +16653,30 @@ index d414525ec..2ecb173b4 100644
 +		ret = poulsbo_sgx_configure_submit_plan(dev, submit_id,
 +							op->plan_offset);
 +		break;
++	case DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN:
++		if (op->context || op->slot || op->object_id ||
++		    op->cmd_type || op->ccb_offset || op->ctrl_flags ||
++		    op->num_ta_status_vals || op->num_3d_status_vals ||
++		    op->ta_dependency || op->ccb_write_offset ||
++		    op->ccb_read_offset || op->ccb_service_address ||
++		    op->ccb_cache_control || op->ccb_data0 || op->ccb_data1 ||
++		    op->queue_base_offset || op->queue_size ||
++		    op->queue_packet_size || op->queue_packet_count ||
++		    op->status_ta_offset || op->status_3d_offset ||
++		    op->status_stride || op->status_value_seed ||
++		    op->sync_offset || op->sync_complete_seq ||
++		    op->sync_pending_seq || op->sync_flags ||
++		    op->owner_offset || op->owner_issue_cookie ||
++		    op->owner_complete_cookie || dependency_fields_present ||
++		    !op->issue_plan_offset)
++			return -EINVAL;
++		if (op->owner_state != DRM_PSB_SGX_LAB_OWNER_QUEUED &&
++		    op->owner_state != DRM_PSB_SGX_LAB_OWNER_RUNNING)
++			return -EINVAL;
++		ret = poulsbo_sgx_configure_submit_issue_plan(
++			dev, submit_id, op->issue_plan_offset,
++			op->owner_state, op->packet_count);
++		break;
 +	case DRM_PSB_SGX_LAB_SUBMIT_OP_DEPEND_SLOT:
 +		if (op->owner_state || op->packet_count || op->context ||
 +		    op->slot || op->object_id || op->cmd_type ||
@@ -16348,7 +16918,7 @@ index d414525ec..2ecb173b4 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +14184,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +14711,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -16371,7 +16941,7 @@ index d414525ec..2ecb173b4 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +14222,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +14749,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -16379,7 +16949,7 @@ index d414525ec..2ecb173b4 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +14250,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +14777,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -16399,7 +16969,7 @@ index d414525ec..2ecb173b4 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +14337,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +14864,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -16412,7 +16982,7 @@ index d414525ec..2ecb173b4 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +14487,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +15014,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);

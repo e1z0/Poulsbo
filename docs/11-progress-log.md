@@ -10314,3 +10314,91 @@ Conclusion:
   - `source_timestamp=20260513-012335`
 - Documented in:
   - `docs/164-sgx-submit-view-record-collection.md`
+
+### SGX submit issue-plan block
+
+- Added one new typed submit configure op:
+  - `DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN`
+- Added one new memory-backed control-side submit block:
+  - `issue-plan`
+- Kernel-side changes in:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drm_lab.h`
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Userspace and focused / multi-submit validation changes in:
+  - `workloads/psb_sgx_lab_submit_op.c`
+  - `workloads/psb_sgx_lab_query.c`
+  - `scripts/run-vaio-sgx-ioctl-submit-op.sh`
+  - `scripts/run-vaio-sgx-multi-submit.sh`
+- The new `issue-plan` block now snapshots launch-time control-side state:
+  - stage and stage count
+  - valid state
+  - owner state
+  - issued packet count
+  - refill-from-complete state
+  - queue and queue-epoch state
+  - sync, owner-cookie, and ticket state
+  - CCB words
+  - control/status object ids
+  - control/status/PDS/USE/target GPU-VA32 words
+- The top-level exact no-redeploy `plan` proof on the new module also now
+  passes cleanly:
+  - `logs/vaio-plan-session/20260513-024621-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=228151D0E1E224804A6E1E6`
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-023337-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=228151D0E1E224804A6E1E6`
+    - `override_module_size=446824`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-023956-sgx-submit-issue-plan-live/summary.log`
+  - final focused proof:
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_stage_count=1`
+    - `submit_issue_plan_valid=0`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-024024-sgx-multi-submit-issue-plan-live/summary.log`
+  - final typed run proved:
+    - submit A final:
+      - `submit_issue_plan_stage_name=retired`
+      - `submit_issue_plan_stage_count=3`
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_issue_plan_stage_name=retired`
+      - `submit_issue_plan_stage_count=2`
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-024621`
+- Documented in:
+  - `docs/166-sgx-lab-submit-issue-plan-op-ioctl.md`

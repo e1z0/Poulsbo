@@ -1259,6 +1259,90 @@ int main(int argc, char **argv)
 		       submit.plan_status_gpu_va32);
 		printf("submit_plan_config_count=%u\n",
 		       submit.plan_config_count);
+		printf("submit_issue_plan_offset=0x%x\n",
+		       submit.issue_plan_offset);
+		printf("submit_issue_plan_stage=%u\n",
+		       submit.issue_plan_stage);
+		printf("submit_issue_plan_stage_name=%s\n",
+		       report_stage_name(submit.issue_plan_stage));
+		printf("submit_issue_plan_stage_count=%u\n",
+		       submit.issue_plan_stage_count);
+		printf("submit_issue_plan_valid=%u\n",
+		       submit.issue_plan_valid);
+		printf("submit_issue_plan_owner_state=%u\n",
+		       submit.issue_plan_owner_state);
+		printf("submit_issue_plan_owner_state_name=%s\n",
+		       owner_state_name(submit.issue_plan_owner_state));
+		printf("submit_issue_plan_issued_packets=%u\n",
+		       submit.issue_plan_issued_packets);
+		printf("submit_issue_plan_refilled_from_complete=%u\n",
+		       submit.issue_plan_refilled_from_complete);
+		printf("submit_issue_plan_queue_epoch=%u\n",
+		       submit.issue_plan_queue_epoch);
+		printf("submit_issue_plan_queue_base_offset=0x%x\n",
+		       submit.issue_plan_queue_base_offset);
+		printf("submit_issue_plan_queue_size=0x%x\n",
+		       submit.issue_plan_queue_size);
+		printf("submit_issue_plan_queue_packet_size=0x%x\n",
+		       submit.issue_plan_queue_packet_size);
+		printf("submit_issue_plan_queue_packet_count=%u\n",
+		       submit.issue_plan_queue_packet_count);
+		printf("submit_issue_plan_queue_tail_packet_count=%u\n",
+		       submit.issue_plan_queue_tail_packet_count);
+		printf("submit_issue_plan_queue_head_packet_count=%u\n",
+		       submit.issue_plan_queue_head_packet_count);
+		printf("submit_issue_plan_ccb_offset=0x%x\n",
+		       submit.issue_plan_ccb_offset);
+		printf("submit_issue_plan_ccb_write_offset=0x%x\n",
+		       submit.issue_plan_ccb_write_offset);
+		printf("submit_issue_plan_ccb_read_offset=0x%x\n",
+		       submit.issue_plan_ccb_read_offset);
+		printf("submit_issue_plan_sync_offset=0x%x\n",
+		       submit.issue_plan_sync_offset);
+		printf("submit_issue_plan_sync_complete_seq=0x%x\n",
+		       submit.issue_plan_sync_complete_seq);
+		printf("submit_issue_plan_sync_pending_seq=0x%x\n",
+		       submit.issue_plan_sync_pending_seq);
+		printf("submit_issue_plan_sync_flags=0x%x\n",
+		       submit.issue_plan_sync_flags);
+		printf("submit_issue_plan_owner_offset=0x%x\n",
+		       submit.issue_plan_owner_offset);
+		printf("submit_issue_plan_owner_issue_cookie=0x%x\n",
+		       submit.issue_plan_owner_issue_cookie);
+		printf("submit_issue_plan_owner_complete_cookie=0x%x\n",
+		       submit.issue_plan_owner_complete_cookie);
+		printf("submit_issue_plan_global_issue_ticket=%u\n",
+		       submit.issue_plan_global_issue_ticket);
+		printf("submit_issue_plan_global_running_ticket=%u\n",
+		       submit.issue_plan_global_running_ticket);
+		printf("submit_issue_plan_global_complete_ticket=%u\n",
+		       submit.issue_plan_global_complete_ticket);
+		printf("submit_issue_plan_dependency_active_count=%u\n",
+		       submit.issue_plan_dependency_active_count);
+		printf("submit_issue_plan_ccb_service_address=0x%x\n",
+		       submit.issue_plan_ccb_service_address);
+		printf("submit_issue_plan_ccb_cache_control=0x%x\n",
+		       submit.issue_plan_ccb_cache_control);
+		printf("submit_issue_plan_ccb_data0=0x%x\n",
+		       submit.issue_plan_ccb_data0);
+		printf("submit_issue_plan_ccb_data1=0x%x\n",
+		       submit.issue_plan_ccb_data1);
+		printf("submit_issue_plan_control_object_id=%u\n",
+		       submit.issue_plan_control_object_id);
+		printf("submit_issue_plan_status_object_id=%u\n",
+		       submit.issue_plan_status_object_id);
+		printf("submit_issue_plan_control_gpu_va32=0x%x\n",
+		       submit.issue_plan_control_gpu_va32);
+		printf("submit_issue_plan_pds_gpu_va32=0x%x\n",
+		       submit.issue_plan_pds_gpu_va32);
+		printf("submit_issue_plan_use_gpu_va32=0x%x\n",
+		       submit.issue_plan_use_gpu_va32);
+		printf("submit_issue_plan_target_gpu_va32=0x%x\n",
+		       submit.issue_plan_target_gpu_va32);
+		printf("submit_issue_plan_status_gpu_va32=0x%x\n",
+		       submit.issue_plan_status_gpu_va32);
+		printf("submit_issue_plan_config_count=%u\n",
+		       submit.issue_plan_config_count);
 		printf("submit_issue_count=%u\n", submit.issue_count);
 		printf("submit_transition_count=%u\n", submit.transition_count);
 		printf("submit_last_prepare_jiffies=%" PRIu64 "\n",
@@ -1285,6 +1369,8 @@ int main(int argc, char **argv)
 		       (uint64_t)submit.last_descriptor_jiffies);
 		printf("submit_last_plan_jiffies=%" PRIu64 "\n",
 		       (uint64_t)submit.last_plan_jiffies);
+		printf("submit_last_issue_plan_jiffies=%" PRIu64 "\n",
+		       (uint64_t)submit.last_issue_plan_jiffies);
 		printf("submit_ta_dependency=%u\n", submit.ta_dependency);
 		printf("submit_num_ta_status_vals=%u\n",
 		       submit.num_ta_status_vals);

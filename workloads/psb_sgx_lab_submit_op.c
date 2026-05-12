@@ -81,6 +81,8 @@ static const char *submit_op_name(uint32_t op)
 		return "descriptor";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN:
 		return "plan";
+	case DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN:
+		return "issue-plan";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DEPEND_SLOT:
 		return "depend-slot";
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DEPTICKET_SLOT:
@@ -294,6 +296,7 @@ static int submit_op_uses_selector(uint32_t op)
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_MANIFEST:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DESCRIPTOR:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_PLAN:
+	case DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DEPEND_SLOT:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DEPTICKET_SLOT:
 	case DRM_PSB_SGX_LAB_SUBMIT_OP_DEPSTATE_SLOT:
@@ -320,7 +323,7 @@ int main(int argc, char **argv)
 	}
 	if (argc - argi < 1) {
 		fprintf(stderr,
-			"usage: %s [/dev/dri/card0] <create|drop|focus|focus-clear|cleanup|validate|prepare|arm|emit|launch|issue|transition|attach|detach|kick|ccb|queue|status|sync|owner|report|result|manifest|descriptor|plan|depend-slot|depticket-slot|depstate-slot|depclear-slot> ...\n",
+			"usage: %s [/dev/dri/card0] <create|drop|focus|focus-clear|cleanup|validate|prepare|arm|emit|launch|issue|transition|attach|detach|kick|ccb|queue|status|sync|owner|report|result|manifest|descriptor|plan|issue-plan|depend-slot|depticket-slot|depstate-slot|depclear-slot> ...\n",
 			argv[0]);
 		return 2;
 	}
@@ -609,6 +612,25 @@ int main(int argc, char **argv)
 				argv[argi - 1]);
 			return 2;
 		}
+	} else if (strcmp(op_arg, "issue-plan") == 0) {
+		op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE_PLAN;
+		if (argc - argi != 3)
+			return 2;
+		if (parse_u32(argv[argi++], &op.issue_plan_offset) != 0) {
+			fprintf(stderr, "invalid issue-plan offset: %s\n",
+				argv[argi - 1]);
+			return 2;
+		}
+		if (parse_owner_state(argv[argi++], &op.owner_state) != 0) {
+			fprintf(stderr, "invalid owner state: %s\n",
+				argv[argi - 1]);
+			return 2;
+		}
+		if (parse_u32(argv[argi++], &op.packet_count) != 0) {
+			fprintf(stderr, "invalid packet count: %s\n",
+				argv[argi - 1]);
+			return 2;
+		}
 	} else if (strcmp(op_arg, "depend-slot") == 0) {
 		op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_DEPEND_SLOT;
 		if (argc - argi != 2)
@@ -752,6 +774,7 @@ int main(int argc, char **argv)
 	printf("submit_manifest_offset=0x%x\n", op.manifest_offset);
 	printf("submit_descriptor_offset=0x%x\n", op.descriptor_offset);
 	printf("submit_plan_offset=0x%x\n", op.plan_offset);
+	printf("submit_issue_plan_offset=0x%x\n", op.issue_plan_offset);
 	printf("submit_owner_state=%u\n", op.owner_state);
 	printf("submit_owner_state_name=%s\n",
 	       owner_state_name(op.owner_state));
