@@ -1,0 +1,1 @@
+./scripts/run-vaio-sgx-ioctl-range-query.sh: line 37: adopt_role: unbound variable

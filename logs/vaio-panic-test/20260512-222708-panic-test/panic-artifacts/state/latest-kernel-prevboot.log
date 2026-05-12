@@ -1,0 +1,961 @@
+-- Logs begin at Thu 2026-02-12 21:19:17 EET, end at Tue 2026-05-12 22:34:17 EEST. --
+geg. 12 22:27:25 devnull-vaio kernel: Linux version 5.4.0-150-generic (buildd@bos03-amd64-017) (gcc version 7.5.0 (Ubuntu 7.5.0-3ubuntu1~18.04)) #167~18.04.1-Ubuntu SMP Wed May 24 00:51:14 UTC 2023 (Ubuntu 5.4.0-150.167~18.04.1-generic 5.4.233)
+geg. 12 22:27:25 devnull-vaio kernel: KERNEL supported cpus:
+geg. 12 22:27:25 devnull-vaio kernel:   Intel GenuineIntel
+geg. 12 22:27:25 devnull-vaio kernel:   AMD AuthenticAMD
+geg. 12 22:27:25 devnull-vaio kernel:   Hygon HygonGenuine
+geg. 12 22:27:25 devnull-vaio kernel:   NSC Geode by NSC
+geg. 12 22:27:25 devnull-vaio kernel:   Cyrix CyrixInstead
+geg. 12 22:27:25 devnull-vaio kernel:   Centaur CentaurHauls
+geg. 12 22:27:25 devnull-vaio kernel:   Transmeta GenuineTMx86
+geg. 12 22:27:25 devnull-vaio kernel:   Transmeta TransmetaCPU
+geg. 12 22:27:25 devnull-vaio kernel:   UMC UMC UMC UMC
+geg. 12 22:27:25 devnull-vaio kernel:   zhaoxin   Shanghai  
+geg. 12 22:27:25 devnull-vaio kernel: Disabled fast string operations
+geg. 12 22:27:25 devnull-vaio kernel: x86/fpu: x87 FPU will use FXSAVE
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-provided physical RAM map:
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-e820: [mem 0x0000000000001000-0x000000000009fbff] usable
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-e820: [mem 0x000000000c000000-0x0000000017f5cfff] usable
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-e820: [mem 0x0000000017fffc00-0x0000000017ffffff] usable
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-e820: [mem 0x000000007f64e000-0x000000007f655fff] ACPI NVS
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-e820: [mem 0x000000007f6a2000-0x000000007f6defff] ACPI NVS
+geg. 12 22:27:25 devnull-vaio kernel: BIOS-e820: [mem 0x000000007f6df000-0x000000007f6eefff] ACPI data
+geg. 12 22:27:25 devnull-vaio kernel: NX (Execute Disable) protection: active
+geg. 12 22:27:25 devnull-vaio kernel: SMBIOS 2.4 present.
+geg. 12 22:27:25 devnull-vaio kernel: DMI: Sony Corporation VGN-P11Z_Q/VAIO, BIOS R2073U3 01/13/2010
+geg. 12 22:27:25 devnull-vaio kernel: tsc: Fast TSC calibration using PIT
+geg. 12 22:27:25 devnull-vaio kernel: tsc: Detected 1333.320 MHz processor
+geg. 12 22:27:25 devnull-vaio kernel: e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+geg. 12 22:27:25 devnull-vaio kernel: e820: remove [mem 0x000a0000-0x000fffff] usable
+geg. 12 22:27:25 devnull-vaio kernel: last_pfn = 0x18000 max_arch_pfn = 0x1000000
+geg. 12 22:27:25 devnull-vaio kernel: MTRR default type: uncachable
+geg. 12 22:27:25 devnull-vaio kernel: MTRR fixed ranges enabled:
+geg. 12 22:27:25 devnull-vaio kernel:   00000-9FFFF write-back
+geg. 12 22:27:25 devnull-vaio kernel:   A0000-DFFFF uncachable
+geg. 12 22:27:25 devnull-vaio kernel:   E0000-EFFFF write-through
+geg. 12 22:27:25 devnull-vaio kernel:   F0000-FFFFF write-protect
+geg. 12 22:27:25 devnull-vaio kernel: MTRR variable ranges enabled:
+geg. 12 22:27:25 devnull-vaio kernel:   0 disabled
+geg. 12 22:27:25 devnull-vaio kernel:   1 base 000000000 mask 080000000 write-back
+geg. 12 22:27:25 devnull-vaio kernel:   2 base 07F800000 mask 0FF800000 uncachable
+geg. 12 22:27:25 devnull-vaio kernel:   3 disabled
+geg. 12 22:27:25 devnull-vaio kernel:   4 base 07F6F0000 mask 0FFFF0000 uncachable
+geg. 12 22:27:25 devnull-vaio kernel:   5 disabled
+geg. 12 22:27:25 devnull-vaio kernel:   6 disabled
+geg. 12 22:27:25 devnull-vaio kernel: x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+geg. 12 22:27:25 devnull-vaio kernel: total RAM covered: 2039M
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 64K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 128K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 256K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 512K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 1M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 2M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64K         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 128K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 256K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 512K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 1M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 2M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128K         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 256K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 512K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 1M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 2M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256K         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 512K         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 1M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 2M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512K         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 1M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 2M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1M         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 2M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2M         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 4M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 4M         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 8M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 8M         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 16M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 32M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 64M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 128M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 256M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 512M         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 1G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 16M         chunk_size: 2G         num_reg: 7          lose cover RAM: 8128K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 32M         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 64M         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 128M         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 256M         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 512M         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 1G         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 32M         chunk_size: 2G         num_reg: 6          lose cover RAM: 24512K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64M         chunk_size: 64M         num_reg: 5          lose cover RAM: 57280K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64M         chunk_size: 128M         num_reg: 5          lose cover RAM: 57280K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64M         chunk_size: 256M         num_reg: 5          lose cover RAM: 57280K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64M         chunk_size: 512M         num_reg: 5          lose cover RAM: 57280K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64M         chunk_size: 1G         num_reg: 5          lose cover RAM: 57280K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 64M         chunk_size: 2G         num_reg: 5          lose cover RAM: 57280K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128M         chunk_size: 128M         num_reg: 4          lose cover RAM: 122816K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128M         chunk_size: 256M         num_reg: 4          lose cover RAM: 122816K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128M         chunk_size: 512M         num_reg: 4          lose cover RAM: 122816K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128M         chunk_size: 1G         num_reg: 4          lose cover RAM: 122816K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 128M         chunk_size: 2G         num_reg: 4          lose cover RAM: 122816K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256M         chunk_size: 256M         num_reg: 3          lose cover RAM: 253888K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256M         chunk_size: 512M         num_reg: 3          lose cover RAM: 253888K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256M         chunk_size: 1G         num_reg: 3          lose cover RAM: 253888K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 256M         chunk_size: 2G         num_reg: 3          lose cover RAM: 253888K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512M         chunk_size: 512M         num_reg: 2          lose cover RAM: 516032K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512M         chunk_size: 1G         num_reg: 2          lose cover RAM: 516032K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 512M         chunk_size: 2G         num_reg: 2          lose cover RAM: 516032K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1G         chunk_size: 1G         num_reg: 1          lose cover RAM: 1040320K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 1G         chunk_size: 2G         num_reg: 1          lose cover RAM: 1040320K
+geg. 12 22:27:25 devnull-vaio kernel:  gran_size: 2G         chunk_size: 2G         num_reg: 0          lose cover RAM: 2088896K
+geg. 12 22:27:25 devnull-vaio kernel: mtrr_cleanup: can not find optimal value
+geg. 12 22:27:25 devnull-vaio kernel: please specify mtrr_gran_size/mtrr_chunk_size
+geg. 12 22:27:25 devnull-vaio kernel: e820: update [mem 0x7f6f0000-0x7f6fffff] usable ==> reserved
+geg. 12 22:27:25 devnull-vaio kernel: check: Scanning 1 areas for low memory corruption
+geg. 12 22:27:25 devnull-vaio kernel: initial memory mapped: [mem 0x00000000-0x129fffff]
+geg. 12 22:27:25 devnull-vaio kernel: RAMDISK: [mem 0x17877000-0x17f4ffff]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Early table checksum verification disabled
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: RSDP 0x00000000000FE020 000024 (v02 Sony  )
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: XSDT 0x000000007F6EE120 000064 (v01 Sony   VAIO     20100113      01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: FACP 0x000000007F6ED000 0000F4 (v03 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI BIOS Warning (bug): Invalid length for FADT/Pm1aControlBlock: 32, using default 16 (20190816/tbfadt-674)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: DSDT 0x000000007F6E2000 00574D (v01 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: FACS 0x000000007F6A6000 000040
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: FACS 0x000000007F6A6000 000040
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: HPET 0x000000007F6EC000 000038 (v01 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: APIC 0x000000007F6EB000 000068 (v01 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: MCFG 0x000000007F6EA000 00003C (v01 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: SLIC 0x000000007F6E9000 000176 (v01 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: ASF! 0x000000007F6E8000 0000A5 (v32 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: BOOT 0x000000007F6E1000 000028 (v01 Sony   VAIO     20100113 MSFT 01000013)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: SSDT 0x000000007F6DF000 0004CE (v02 Sony   VAIO     20100113 INTL 20051117)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving FACP table memory at [mem 0x7f6ed000-0x7f6ed0f3]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving DSDT table memory at [mem 0x7f6e2000-0x7f6e774c]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving FACS table memory at [mem 0x7f6a6000-0x7f6a603f]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving FACS table memory at [mem 0x7f6a6000-0x7f6a603f]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving HPET table memory at [mem 0x7f6ec000-0x7f6ec037]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving APIC table memory at [mem 0x7f6eb000-0x7f6eb067]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving MCFG table memory at [mem 0x7f6ea000-0x7f6ea03b]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving SLIC table memory at [mem 0x7f6e9000-0x7f6e9175]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving ASF! table memory at [mem 0x7f6e8000-0x7f6e80a4]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving BOOT table memory at [mem 0x7f6e1000-0x7f6e1027]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Reserving SSDT table memory at [mem 0x7f6df000-0x7f6df4cd]
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Local APIC address 0xfee00000
+geg. 12 22:27:25 devnull-vaio kernel: 0MB HIGHMEM available.
+geg. 12 22:27:25 devnull-vaio kernel: 384MB LOWMEM available.
+geg. 12 22:27:25 devnull-vaio kernel:   mapped low ram: 0 - 17f5d000
+geg. 12 22:27:25 devnull-vaio kernel:   low ram: 0 - 18000000
+geg. 12 22:27:25 devnull-vaio kernel: Zone ranges:
+geg. 12 22:27:25 devnull-vaio kernel:   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+geg. 12 22:27:25 devnull-vaio kernel:   Normal   [mem 0x0000000001000000-0x0000000017ffffff]
+geg. 12 22:27:25 devnull-vaio kernel:   HighMem  empty
+geg. 12 22:27:25 devnull-vaio kernel: Movable zone start for each node
+geg. 12 22:27:25 devnull-vaio kernel: Early memory node ranges
+geg. 12 22:27:25 devnull-vaio kernel:   node   0: [mem 0x0000000000001000-0x000000000009efff]
+geg. 12 22:27:25 devnull-vaio kernel:   node   0: [mem 0x000000000c000000-0x0000000017f5cfff]
+geg. 12 22:27:25 devnull-vaio kernel: Zeroed struct page in unavailable ranges: 81925 pages
+geg. 12 22:27:25 devnull-vaio kernel: Initmem setup node 0 [mem 0x0000000000001000-0x0000000017f5cfff]
+geg. 12 22:27:25 devnull-vaio kernel: On node 0 totalpages: 49147
+geg. 12 22:27:25 devnull-vaio kernel:   DMA zone: 2 pages used for memmap
+geg. 12 22:27:25 devnull-vaio kernel:   DMA zone: 0 pages reserved
+geg. 12 22:27:25 devnull-vaio kernel:   DMA zone: 158 pages, LIFO batch:0
+geg. 12 22:27:25 devnull-vaio kernel:   Normal zone: 479 pages used for memmap
+geg. 12 22:27:25 devnull-vaio kernel:   Normal zone: 48989 pages, LIFO batch:15
+geg. 12 22:27:25 devnull-vaio kernel: Using APIC driver default
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: PM-Timer IO Port: 0x408
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Local APIC address 0xfee00000
+geg. 12 22:27:25 devnull-vaio kernel: APIC: NR_CPUS/possible_cpus limit of 1 almost reached. Keeping one slot for boot cpu.  Processor 0/0x0 ignored.
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: LAPIC_NMI (acpi_id[0x00] high edge lint[0x1])
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: LAPIC_NMI (acpi_id[0x01] high edge lint[0x1])
+geg. 12 22:27:25 devnull-vaio kernel: IOAPIC[0]: apic_id 8, version 32, address 0xfec00000, GSI 0-23
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: IRQ0 used by override.
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: IRQ9 used by override.
+geg. 12 22:27:25 devnull-vaio kernel: Using ACPI (MADT) for SMP configuration information
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: HPET id: 0x8086a201 base: 0xfed00000
+geg. 12 22:27:25 devnull-vaio kernel: smpboot: 2 Processors exceeds NR_CPUS limit of 1
+geg. 12 22:27:25 devnull-vaio kernel: smpboot: Allowing 1 CPUs, 0 hotplug CPUs
+geg. 12 22:27:25 devnull-vaio kernel: PM: Registered nosave memory: [mem 0x00000000-0x00000fff]
+geg. 12 22:27:25 devnull-vaio kernel: PM: Registered nosave memory: [mem 0x0009f000-0x0bffffff]
+geg. 12 22:27:25 devnull-vaio kernel: PM: Registered nosave memory: [mem 0x17f5d000-0x17ffffff]
+geg. 12 22:27:25 devnull-vaio kernel: [mem 0x7f6ef000-0xffffffff] available for PCI devices
+geg. 12 22:27:25 devnull-vaio kernel: Booting paravirtualized kernel on bare hardware
+geg. 12 22:27:25 devnull-vaio kernel: clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645519600211568 ns
+geg. 12 22:27:25 devnull-vaio kernel: setup_percpu: NR_CPUS:8 nr_cpumask_bits:8 nr_cpu_ids:1 nr_node_ids:1
+geg. 12 22:27:25 devnull-vaio kernel: percpu: Embedded 33 pages/cpu s104972 r0 d30196 u135168
+geg. 12 22:27:25 devnull-vaio kernel: pcpu-alloc: s104972 r0 d30196 u135168 alloc=33*4096
+geg. 12 22:27:25 devnull-vaio kernel: pcpu-alloc: [0] 0 
+geg. 12 22:27:25 devnull-vaio kernel: Built 1 zonelists, mobility grouping on.  Total pages: 48666
+geg. 12 22:27:25 devnull-vaio kernel: Kernel command line: BOOT_IMAGE=/boot/vmlinuz-5.4.0-150-generic root=UUID=e9e903b1-e9af-4b83-ba20-6ef5f5abbcf6 ro quiet splash panic=10 panic_on_oops=1 vt.handoff=1 reset_devices systemd.unit=kdump-tools-dump.service nr_cpus=1 irqpoll nousb elfcorehdr=392564K
+geg. 12 22:27:25 devnull-vaio kernel: Misrouted IRQ fixup and polling support enabled
+geg. 12 22:27:25 devnull-vaio kernel: This may significantly impact system performance
+geg. 12 22:27:25 devnull-vaio kernel: Dentry cache hash table entries: 32768 (order: 5, 131072 bytes, linear)
+geg. 12 22:27:25 devnull-vaio kernel: Inode-cache hash table entries: 16384 (order: 4, 65536 bytes, linear)
+geg. 12 22:27:25 devnull-vaio kernel: Initializing CPU#0
+geg. 12 22:27:25 devnull-vaio kernel: mem auto-init: stack:off, heap alloc:on, heap free:off
+geg. 12 22:27:25 devnull-vaio kernel: Initializing HighMem for node 0 (00000000:00000000)
+geg. 12 22:27:25 devnull-vaio kernel: Memory: 161904K/196588K available (10077K kernel code, 936K rwdata, 8336K rodata, 1188K init, 832K bss, 34684K reserved, 0K cma-reserved, 0K highmem)
+geg. 12 22:27:25 devnull-vaio kernel: virtual kernel memory layout:
+                                          fixmap  : 0xfff16000 - 0xfffff000   ( 932 kB)
+                                        cpu_entry : 0xffa00000 - 0xffb39000   (1252 kB)
+                                          pkmap   : 0xff600000 - 0xff800000   (2048 kB)
+                                          vmalloc : 0xd8800000 - 0xff5fe000   ( 621 MB)
+                                          lowmem  : 0xc0000000 - 0xd8000000   ( 384 MB)
+                                            .init : 0xd2300000 - 0xd2429000   (1188 kB)
+                                            .data : 0xd19d7558 - 0xd22e8100   (9282 kB)
+                                            .text : 0xd1000000 - 0xd19d7558   (10077 kB)
+geg. 12 22:27:25 devnull-vaio kernel: Checking if this processor honours the WP bit even in supervisor mode...Ok.
+geg. 12 22:27:25 devnull-vaio kernel: SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+geg. 12 22:27:25 devnull-vaio kernel: ftrace: allocating 41744 entries in 82 pages
+geg. 12 22:27:25 devnull-vaio kernel: rcu: Hierarchical RCU implementation.
+geg. 12 22:27:25 devnull-vaio kernel: rcu:         RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=1.
+geg. 12 22:27:25 devnull-vaio kernel:         Tasks RCU enabled.
+geg. 12 22:27:25 devnull-vaio kernel: rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+geg. 12 22:27:25 devnull-vaio kernel: rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+geg. 12 22:27:25 devnull-vaio kernel: NR_IRQS: 2304, nr_irqs: 256, preallocated irqs: 16
+geg. 12 22:27:25 devnull-vaio kernel: Spurious LAPIC timer interrupt on cpu 0
+geg. 12 22:27:25 devnull-vaio kernel: do_IRQ: 0.39 No irq handler for vector
+geg. 12 22:27:25 devnull-vaio kernel: vt handoff: transparent VT on vt#1
+geg. 12 22:27:25 devnull-vaio kernel: Console: colour dummy device 80x25
+geg. 12 22:27:25 devnull-vaio kernel: printk: console [tty0] enabled
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Core revision 20190816
+geg. 12 22:27:25 devnull-vaio kernel: clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 133484882848 ns
+geg. 12 22:27:25 devnull-vaio kernel: APIC: Switch to symmetric I/O mode setup
+geg. 12 22:27:25 devnull-vaio kernel: Enabling APIC mode:  Flat.  Using 1 I/O APICs
+geg. 12 22:27:25 devnull-vaio kernel: ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+geg. 12 22:27:25 devnull-vaio kernel: clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x133812278d1, max_idle_ns: 440795214891 ns
+geg. 12 22:27:25 devnull-vaio kernel: Calibrating delay loop (skipped), value calculated using timer frequency.. 2666.64 BogoMIPS (lpj=5333280)
+geg. 12 22:27:25 devnull-vaio kernel: pid_max: default: 32768 minimum: 301
+geg. 12 22:27:25 devnull-vaio kernel: LSM: Security Framework initializing
+geg. 12 22:27:25 devnull-vaio kernel: Yama: becoming mindful.
+geg. 12 22:27:25 devnull-vaio kernel: AppArmor: AppArmor initialized
+geg. 12 22:27:25 devnull-vaio kernel: Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+geg. 12 22:27:25 devnull-vaio kernel: Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+geg. 12 22:27:25 devnull-vaio kernel: *** VALIDATE tmpfs ***
+geg. 12 22:27:25 devnull-vaio kernel: *** VALIDATE proc ***
+geg. 12 22:27:25 devnull-vaio kernel: *** VALIDATE cgroup1 ***
+geg. 12 22:27:25 devnull-vaio kernel: *** VALIDATE cgroup2 ***
+geg. 12 22:27:25 devnull-vaio kernel: Disabled fast string operations
+geg. 12 22:27:25 devnull-vaio kernel: mce: CPU0: Thermal monitoring enabled (TM2)
+geg. 12 22:27:25 devnull-vaio kernel: process: using mwait in idle threads
+geg. 12 22:27:25 devnull-vaio kernel: Last level iTLB entries: 4KB 32, 2MB 0, 4MB 0
+geg. 12 22:27:25 devnull-vaio kernel: Last level dTLB entries: 4KB 64, 2MB 0, 4MB 8, 1GB 0
+geg. 12 22:27:25 devnull-vaio kernel: Freeing SMP alternatives memory: 40K
+geg. 12 22:27:25 devnull-vaio kernel: smpboot: CPU0: Intel(R) Atom(TM) CPU Z520   @ 1.33GHz (family: 0x6, model: 0x1c, stepping: 0x2)
+geg. 12 22:27:25 devnull-vaio kernel: Performance Events: PEBS fmt0+, LBR disabled due to erratumAtom events, Broken BIOS detected, complain to your hardware vendor.
+geg. 12 22:27:25 devnull-vaio kernel: [Firmware Bug]: the BIOS has corrupted hw-PMU resources (MSR 38d is b0)
+geg. 12 22:27:25 devnull-vaio kernel: Intel PMU driver.
+geg. 12 22:27:25 devnull-vaio kernel: ... version:                3
+geg. 12 22:27:25 devnull-vaio kernel: ... bit width:              40
+geg. 12 22:27:25 devnull-vaio kernel: ... generic registers:      2
+geg. 12 22:27:25 devnull-vaio kernel: ... value mask:             000000ffffffffff
+geg. 12 22:27:25 devnull-vaio kernel: ... max period:             000000007fffffff
+geg. 12 22:27:25 devnull-vaio kernel: ... fixed-purpose events:   3
+geg. 12 22:27:25 devnull-vaio kernel: ... event mask:             0000000700000003
+geg. 12 22:27:25 devnull-vaio kernel: rcu: Hierarchical SRCU implementation.
+geg. 12 22:27:25 devnull-vaio kernel: NMI watchdog: Enabled. Permanently consumes one hw-PMU counter.
+geg. 12 22:27:25 devnull-vaio kernel: smp: Bringing up secondary CPUs ...
+geg. 12 22:27:25 devnull-vaio kernel: smp: Brought up 1 node, 1 CPU
+geg. 12 22:27:25 devnull-vaio kernel: smpboot: Max logical packages: 2
+geg. 12 22:27:25 devnull-vaio kernel: smpboot: Total of 1 processors activated (2666.64 BogoMIPS)
+geg. 12 22:27:25 devnull-vaio kernel: allocated 524288 bytes of page_ext
+geg. 12 22:27:25 devnull-vaio kernel: devtmpfs: initialized
+geg. 12 22:27:25 devnull-vaio kernel: PM: Registering ACPI NVS region [mem 0x7f64e000-0x7f655fff] (32768 bytes)
+geg. 12 22:27:25 devnull-vaio kernel: PM: Registering ACPI NVS region [mem 0x7f6a2000-0x7f6defff] (249856 bytes)
+geg. 12 22:27:25 devnull-vaio kernel: clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+geg. 12 22:27:25 devnull-vaio kernel: futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+geg. 12 22:27:25 devnull-vaio kernel: pinctrl core: initialized pinctrl subsystem
+geg. 12 22:27:25 devnull-vaio kernel: PM: RTC time: 19:27:20, date: 2026-05-12
+geg. 12 22:27:25 devnull-vaio kernel: NET: Registered protocol family 16
+geg. 12 22:27:25 devnull-vaio kernel: audit: initializing netlink subsys (disabled)
+geg. 12 22:27:25 devnull-vaio kernel: EISA bus registered
+geg. 12 22:27:25 devnull-vaio kernel: cpuidle: using governor ladder
+geg. 12 22:27:25 devnull-vaio kernel: cpuidle: using governor menu
+geg. 12 22:27:25 devnull-vaio kernel: Simple Boot Flag at 0x44 set to 0x1
+geg. 12 22:27:25 devnull-vaio kernel: ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: bus type PCI registered
+geg. 12 22:27:25 devnull-vaio kernel: acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+geg. 12 22:27:25 devnull-vaio kernel: PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
+geg. 12 22:27:25 devnull-vaio kernel: PCI: not using MMCONFIG
+geg. 12 22:27:25 devnull-vaio kernel: PCI: Using configuration type 1 for base access
+geg. 12 22:27:25 devnull-vaio kernel: audit: type=2000 audit(1778614039.168:1): state=initialized audit_enabled=0 res=1
+geg. 12 22:27:25 devnull-vaio kernel: HugeTLB registered 2.00 MiB page size, pre-allocated 0 pages
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(Module Device)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(Processor Device)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(3.0 _SCP Extensions)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(Processor Aggregator Device)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(Linux-Dell-Video)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(Linux-Lenovo-NV-HDMI-Audio)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Added _OSI(Linux-HPI-Hybrid-Graphics)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: 2 ACPI AML tables successfully acquired and loaded
+geg. 12 22:27:25 devnull-vaio kernel: ACPI Error: No handler for Region [ECF2] ((ptrval)) [EmbeddedControl] (20190816/evregion-134)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI Error: Region EmbeddedControl (ID=3) has no handler (20190816/exfldio-265)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI Error: Aborting method \_SB.PCI0.LPCB.SNC.UVPS due to previous error (AE_NOT_EXIST) (20190816/psparse-531)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI Error: Aborting method \_SB.PCI0.LPCB.SNC.SNIN due to previous error (AE_NOT_EXIST) (20190816/psparse-531)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI Error: Aborting method \_SB.PCI0.LPCB.SNC._INI due to previous error (AE_NOT_EXIST) (20190816/psparse-531)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Dynamic OEM Table Load:
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: SSDT 0x00000000D7666900 0000D0 (v02 Sony   VAIO     20100113 INTL 20051117)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Dynamic OEM Table Load:
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: SSDT 0x00000000D7612180 000083 (v02 Sony   VAIO     20100113 INTL 20051117)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: EC: EC started
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: EC: interrupt blocked
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: \_SB_.PCI0.LPCB.H8EC: Used as first EC
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: \_SB_.PCI0.LPCB.H8EC: GPE=0xd, IRQ=-1, EC_CMD/EC_SC=0x66, EC_DATA=0x62
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: \_SB_.PCI0.LPCB.H8EC: Boot DSDT EC used to handle transactions
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Interpreter enabled
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: (supports S0 S3 S4 S5)
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Using IOAPIC for interrupt routing
+geg. 12 22:27:25 devnull-vaio kernel: PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
+geg. 12 22:27:25 devnull-vaio kernel: PCI: MMCONFIG at [mem 0xe0000000-0xefffffff] reserved in ACPI motherboard resources
+geg. 12 22:27:25 devnull-vaio kernel: PCI: Using MMCONFIG for extended config space
+geg. 12 22:27:25 devnull-vaio kernel: PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: Enabled 9 GPEs in block 00 to 1F
+geg. 12 22:27:25 devnull-vaio kernel: ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+geg. 12 22:27:25 devnull-vaio kernel: acpi PNP0A08:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI HPX-Type3]
+geg. 12 22:27:25 devnull-vaio kernel: acpi PNP0A08:00: _OSC failed (AE_NOT_FOUND); disabling ASPM
+geg. 12 22:27:25 devnull-vaio kernel: PCI host bridge to bus 0000:00
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [io  0x0000-0x0cf7 window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [mem 0x7f800000-0x7fffffff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [mem 0x000c0000-0x000dffff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [mem 0x000e0000-0x000effff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [mem 0x000f0000-0x000fffff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebfffff window]
+geg. 12 22:27:25 devnull-vaio kernel: pci_bus 0000:00: root bus resource [bus 00-ff]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:00.0: [8086:8100] type 00 class 0x060000
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:02.0: [8086:8108] type 00 class 0x030000
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:02.0: reg 0x10: [mem 0x94200000-0x9427ffff]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:02.0: reg 0x14: [io  0x6070-0x6077]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:02.0: reg 0x18: [mem 0x80000000-0x8fffffff]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:02.0: reg 0x1c: [mem 0x94280000-0x942bffff]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1b.0: [8086:811b] type 00 class 0x040300
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1b.0: reg 0x10: [mem 0x942c0000-0x942c3fff 64bit]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1b.0: PME# supported from D0 D3hot
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1c.0: [8086:8110] type 01 class 0x060400
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1c.0: PME# supported from D0 D3hot D3cold
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1c.1: [8086:8112] type 01 class 0x060400
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1c.1: PME# supported from D0 D3hot D3cold
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.0: [8086:8114] type 00 class 0x0c0300
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.0: reg 0x20: [io  0x6040-0x605f]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.1: [8086:8115] type 00 class 0x0c0300
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.1: reg 0x20: [io  0x6020-0x603f]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.2: [8086:8116] type 00 class 0x0c0300
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.2: reg 0x20: [io  0x6000-0x601f]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.7: [8086:8117] type 00 class 0x0c0320
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.7: reg 0x10: [mem 0x942c4000-0x942c43ff]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1d.7: PME# supported from D0 D3hot D3cold
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1f.0: [8086:8119] type 00 class 0x060100
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1f.1: [8086:811a] type 00 class 0x010180
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1f.1: reg 0x20: [io  0x6060-0x606f]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1f.1: legacy IDE quirk: reg 0x10: [io  0x01f0-0x01f7]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1f.1: legacy IDE quirk: reg 0x14: [io  0x03f6]
+geg. 12 22:27:25 devnull-vaio kernel: pci 0000:00:1f.1: legacy IDE quirk: reg 0x18: [io  0x0170-0x0177]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1f.1: legacy IDE quirk: reg 0x1c: [io  0x0376]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: [11ab:4380] type 00 class 0x020000
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: reg 0x10: [mem 0x93100000-0x93103fff 64bit]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: reg 0x18: [io  0x4000-0x40ff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: reg 0x30: [mem 0xfffe0000-0xffffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: supports D1 D2
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: PME# supported from D0 D1 D2 D3hot D3cold
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0: PCI bridge to [bus 01]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0:   bridge window [io  0x4000-0x5fff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0:   bridge window [mem 0x93100000-0x941fffff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0:   bridge window [mem 0x90000000-0x90ffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:02:00.0: [168c:002a] type 00 class 0x028000
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:02:00.0: reg 0x10: [mem 0x92000000-0x9200ffff 64bit]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:02:00.0: supports D1
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:02:00.0: PME# supported from D0 D1 D3hot
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1: PCI bridge to [bus 02]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1:   bridge window [io  0x3000-0x3fff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1:   bridge window [mem 0x92000000-0x930fffff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1:   bridge window [mem 0x91000000-0x91ffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: on NUMA node 0
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKA] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKB] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKC] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKD] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKE] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKF] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKG] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: PCI Interrupt Link [LNKH] (IRQs 3 4 5 7 9 10 11 12) *0, disabled.
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: EC: interrupt unblocked
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: EC: event unblocked
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: \_SB_.PCI0.LPCB.H8EC: GPE=0xd, IRQ=-1, EC_CMD/EC_SC=0x66, EC_DATA=0x62
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: \_SB_.PCI0.LPCB.H8EC: Boot DSDT EC used to handle transactions and events
+geg. 12 22:27:26 devnull-vaio kernel: iommu: Default domain type: Translated 
+geg. 12 22:27:26 devnull-vaio kernel: SCSI subsystem initialized
+geg. 12 22:27:26 devnull-vaio kernel: libata version 3.00 loaded.
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:02.0: vgaarb: setting as boot VGA device
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:02.0: vgaarb: VGA device added: decodes=io+mem,owns=io+mem,locks=none
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:02.0: vgaarb: bridge control possible
+geg. 12 22:27:26 devnull-vaio kernel: vgaarb: loaded
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: bus type USB registered
+geg. 12 22:27:26 devnull-vaio kernel: usbcore: registered new interface driver usbfs
+geg. 12 22:27:26 devnull-vaio kernel: usbcore: registered new interface driver hub
+geg. 12 22:27:26 devnull-vaio kernel: usbcore: registered new device driver usb
+geg. 12 22:27:26 devnull-vaio kernel: pps_core: LinuxPPS API ver. 1 registered
+geg. 12 22:27:26 devnull-vaio kernel: pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+geg. 12 22:27:26 devnull-vaio kernel: PTP clock support registered
+geg. 12 22:27:26 devnull-vaio kernel: EDAC MC: Ver: 3.0.0
+geg. 12 22:27:26 devnull-vaio kernel: PCI: Using ACPI for IRQ routing
+geg. 12 22:27:26 devnull-vaio kernel: PCI: pci_cache_line_size set to 64 bytes
+geg. 12 22:27:26 devnull-vaio kernel: e820: reserve RAM buffer [mem 0x0009fc00-0x0009ffff]
+geg. 12 22:27:26 devnull-vaio kernel: e820: reserve RAM buffer [mem 0x17f5d000-0x17ffffff]
+geg. 12 22:27:26 devnull-vaio kernel: NetLabel: Initializing
+geg. 12 22:27:26 devnull-vaio kernel: NetLabel:  domain hash size = 128
+geg. 12 22:27:26 devnull-vaio kernel: NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+geg. 12 22:27:26 devnull-vaio kernel: NetLabel:  unlabeled traffic allowed by default
+geg. 12 22:27:26 devnull-vaio kernel: hpet: 3 channels of 0 reserved for per-cpu timers
+geg. 12 22:27:26 devnull-vaio kernel: hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+geg. 12 22:27:26 devnull-vaio kernel: hpet0: 3 comparators, 64-bit 14.318180 MHz counter
+geg. 12 22:27:26 devnull-vaio kernel: clocksource: Switched to clocksource tsc-early
+geg. 12 22:27:26 devnull-vaio kernel: *** VALIDATE bpf ***
+geg. 12 22:27:26 devnull-vaio kernel: VFS: Disk quotas dquot_6.6.0
+geg. 12 22:27:26 devnull-vaio kernel: VFS: Dquot-cache hash table entries: 1024 (order 0, 4096 bytes)
+geg. 12 22:27:26 devnull-vaio kernel: *** VALIDATE ramfs ***
+geg. 12 22:27:26 devnull-vaio kernel: *** VALIDATE hugetlbfs ***
+geg. 12 22:27:26 devnull-vaio kernel: AppArmor: AppArmor Filesystem Enabled
+geg. 12 22:27:26 devnull-vaio kernel: pnp: PnP ACPI init
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0xe0000000-0xefffffff] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0xfed10000-0xfed13fff] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0x40000000-0x7fffffff] could not be reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0xfec00000-0xfec00fff] could not be reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0xfed40000-0xfed4bfff] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0xfee00000-0xfee00fff] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: [mem 0xffc00000-0xffc3ffff] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:00: Plug and Play ACPI device, IDs PNP0c02 (active)
+geg. 12 22:27:26 devnull-vaio kernel: system 00:01: [mem 0xfed00000-0xfed003ff] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:01: Plug and Play ACPI device, IDs PNP0103 PNP0c01 (active)
+geg. 12 22:27:26 devnull-vaio kernel: pnp 00:02: Plug and Play ACPI device, IDs PNP0b00 (active)
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x2000] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x2004] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0820-0x0823] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0374-0x0375] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0377] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x03f4-0x03f5] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x03f7] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0400-0x040f] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0410-0x041f] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0600-0x063f] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x0500-0x055f] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: [io  0x1040-0x107f] has been reserved
+geg. 12 22:27:26 devnull-vaio kernel: system 00:03: Plug and Play ACPI device, IDs PNP0c02 (active)
+geg. 12 22:27:26 devnull-vaio kernel: pnp 00:04: Plug and Play ACPI device, IDs PNP0303 (active)
+geg. 12 22:27:26 devnull-vaio kernel: pnp 00:05: Plug and Play ACPI device, IDs SNY9010 PNP0f13 (active)
+geg. 12 22:27:26 devnull-vaio kernel: pnp: PnP ACPI: found 6 devices
+geg. 12 22:27:26 devnull-vaio kernel: PnPBIOS: Disabled by ACPI PNP
+geg. 12 22:27:26 devnull-vaio kernel: thermal_sys: Registered thermal governor 'fair_share'
+geg. 12 22:27:26 devnull-vaio kernel: thermal_sys: Registered thermal governor 'bang_bang'
+geg. 12 22:27:26 devnull-vaio kernel: thermal_sys: Registered thermal governor 'step_wise'
+geg. 12 22:27:26 devnull-vaio kernel: thermal_sys: Registered thermal governor 'user_space'
+geg. 12 22:27:26 devnull-vaio kernel: thermal_sys: Registered thermal governor 'power_allocator'
+geg. 12 22:27:26 devnull-vaio kernel: clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: can't claim BAR 6 [mem 0xfffe0000-0xffffffff pref]: no compatible bridge window
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:01:00.0: BAR 6: assigned [mem 0x90000000-0x9001ffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0: PCI bridge to [bus 01]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0:   bridge window [io  0x4000-0x5fff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0:   bridge window [mem 0x93100000-0x941fffff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.0:   bridge window [mem 0x90000000-0x90ffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1: PCI bridge to [bus 02]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1:   bridge window [io  0x3000-0x3fff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1:   bridge window [mem 0x92000000-0x930fffff]
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:1c.1:   bridge window [mem 0x91000000-0x91ffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 4 [io  0x0000-0x0cf7 window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 5 [io  0x0d00-0xffff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 6 [mem 0x000a0000-0x000bffff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 7 [mem 0x7f800000-0x7fffffff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 8 [mem 0x000c0000-0x000dffff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 9 [mem 0x000e0000-0x000effff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 10 [mem 0x000f0000-0x000fffff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:00: resource 11 [mem 0x80000000-0xfebfffff window]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:01: resource 0 [io  0x4000-0x5fff]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:01: resource 1 [mem 0x93100000-0x941fffff]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:01: resource 2 [mem 0x90000000-0x90ffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:02: resource 0 [io  0x3000-0x3fff]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:02: resource 1 [mem 0x92000000-0x930fffff]
+geg. 12 22:27:26 devnull-vaio kernel: pci_bus 0000:02: resource 2 [mem 0x91000000-0x91ffffff pref]
+geg. 12 22:27:26 devnull-vaio kernel: NET: Registered protocol family 2
+geg. 12 22:27:26 devnull-vaio kernel: IP idents hash table entries: 4096 (order: 3, 32768 bytes, linear)
+geg. 12 22:27:26 devnull-vaio kernel: tcp_listen_portaddr_hash hash table entries: 512 (order: 0, 6144 bytes, linear)
+geg. 12 22:27:26 devnull-vaio kernel: TCP established hash table entries: 2048 (order: 1, 8192 bytes, linear)
+geg. 12 22:27:26 devnull-vaio kernel: TCP bind hash table entries: 2048 (order: 2, 16384 bytes, linear)
+geg. 12 22:27:26 devnull-vaio kernel: TCP: Hash tables configured (established 2048 bind 2048)
+geg. 12 22:27:26 devnull-vaio kernel: UDP hash table entries: 256 (order: 1, 8192 bytes, linear)
+geg. 12 22:27:26 devnull-vaio kernel: UDP-Lite hash table entries: 256 (order: 1, 8192 bytes, linear)
+geg. 12 22:27:26 devnull-vaio kernel: NET: Registered protocol family 1
+geg. 12 22:27:26 devnull-vaio kernel: NET: Registered protocol family 44
+geg. 12 22:27:26 devnull-vaio kernel: pci 0000:00:02.0: Video device with shadowed ROM at [mem 0x000c0000-0x000dffff]
+geg. 12 22:27:26 devnull-vaio kernel: PCI: CLS 64 bytes, default 64
+geg. 12 22:27:26 devnull-vaio kernel: Trying to unpack rootfs image as initramfs...
+geg. 12 22:27:26 devnull-vaio kernel: Freeing initrd memory: 7012K
+geg. 12 22:27:26 devnull-vaio kernel: check: Scanning for low memory corruption every 60 seconds
+geg. 12 22:27:26 devnull-vaio kernel: Initialise system trusted keyrings
+geg. 12 22:27:26 devnull-vaio kernel: Key type blacklist registered
+geg. 12 22:27:26 devnull-vaio kernel: workingset: timestamp_bits=14 max_order=16 bucket_order=2
+geg. 12 22:27:26 devnull-vaio kernel: zbud: loaded
+geg. 12 22:27:26 devnull-vaio kernel: squashfs: version 4.0 (2009/01/31) Phillip Lougher
+geg. 12 22:27:26 devnull-vaio kernel: fuse: init (API version 7.31)
+geg. 12 22:27:26 devnull-vaio kernel: *** VALIDATE fuse ***
+geg. 12 22:27:26 devnull-vaio kernel: *** VALIDATE fuse ***
+geg. 12 22:27:26 devnull-vaio kernel: Platform Keyring initialized
+geg. 12 22:27:26 devnull-vaio kernel: Key type asymmetric registered
+geg. 12 22:27:26 devnull-vaio kernel: Asymmetric key parser 'x509' registered
+geg. 12 22:27:26 devnull-vaio kernel: bounce: pool size: 64 pages
+geg. 12 22:27:26 devnull-vaio kernel: Block layer SCSI generic (bsg) driver version 0.4 loaded (major 244)
+geg. 12 22:27:26 devnull-vaio kernel: io scheduler mq-deadline registered
+geg. 12 22:27:26 devnull-vaio kernel: shpchp: Standard Hot Plug PCI Controller Driver version: 0.4
+geg. 12 22:27:26 devnull-vaio kernel: intel_idle: MWAIT substates: 0x3020220
+geg. 12 22:27:26 devnull-vaio kernel: intel_idle: v0.4.1 model 0x1C
+geg. 12 22:27:26 devnull-vaio kernel: tsc: Marking TSC unstable due to TSC halts in idle states deeper than C2
+geg. 12 22:27:26 devnull-vaio kernel: intel_idle: lapic_timer_reliable_states 0x2
+geg. 12 22:27:26 devnull-vaio kernel: clocksource: Switched to clocksource hpet
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: AC Adapter [AC] (on-line)
+geg. 12 22:27:26 devnull-vaio kernel: input: Lid Switch as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input0
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: Lid Switch [LID0]
+geg. 12 22:27:26 devnull-vaio kernel: input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input1
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: Power Button [PWRB]
+geg. 12 22:27:26 devnull-vaio kernel: thermal LNXTHERM:00: registered as thermal_zone0
+geg. 12 22:27:26 devnull-vaio kernel: ACPI: Thermal Zone [ATF0] (58 C)
+geg. 12 22:27:26 devnull-vaio kernel: Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+geg. 12 22:27:26 devnull-vaio kernel: isapnp: Scanning for PnP cards...
+geg. 12 22:27:26 devnull-vaio kernel: battery: ACPI: Battery Slot [BAT0] (battery present)
+geg. 12 22:27:26 devnull-vaio kernel: Linux agpgart interface v0.103
+geg. 12 22:27:26 devnull-vaio kernel: isapnp: No Plug & Play device found
+geg. 12 22:27:26 devnull-vaio kernel: loop: module loaded
+geg. 12 22:27:26 devnull-vaio kernel: tun: Universal TUN/TAP device driver, 1.6
+geg. 12 22:27:26 devnull-vaio kernel: PPP generic driver version 2.4.2
+geg. 12 22:27:26 devnull-vaio kernel: ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci: EHCI PCI platform driver
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci 0000:00:1d.7: EHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci 0000:00:1d.7: new USB bus registered, assigned bus number 1
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci 0000:00:1d.7: debug port 1
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci 0000:00:1d.7: cache line size of 64 is not supported
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci 0000:00:1d.7: irq 20, io mem 0x942c4000
+geg. 12 22:27:26 devnull-vaio kernel: ehci-pci 0000:00:1d.7: USB 2.0 started, EHCI 1.00
+geg. 12 22:27:26 devnull-vaio kernel: usb usb1: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 5.04
+geg. 12 22:27:26 devnull-vaio kernel: usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+geg. 12 22:27:26 devnull-vaio kernel: usb usb1: Product: EHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: usb usb1: Manufacturer: Linux 5.4.0-150-generic ehci_hcd
+geg. 12 22:27:26 devnull-vaio kernel: usb usb1: SerialNumber: 0000:00:1d.7
+geg. 12 22:27:26 devnull-vaio kernel: hub 1-0:1.0: USB hub found
+geg. 12 22:27:26 devnull-vaio kernel: hub 1-0:1.0: 8 ports detected
+geg. 12 22:27:26 devnull-vaio kernel: ehci-platform: EHCI generic platform driver
+geg. 12 22:27:26 devnull-vaio kernel: ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+geg. 12 22:27:26 devnull-vaio kernel: ohci-pci: OHCI PCI platform driver
+geg. 12 22:27:26 devnull-vaio kernel: ohci-platform: OHCI generic platform driver
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd: USB Universal Host Controller Interface driver
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.0: UHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.0: new USB bus registered, assigned bus number 2
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.0: detected 2 ports
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.0: irq 21, io base 0x00006040
+geg. 12 22:27:26 devnull-vaio kernel: usb usb2: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 5.04
+geg. 12 22:27:26 devnull-vaio kernel: usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+geg. 12 22:27:26 devnull-vaio kernel: usb usb2: Product: UHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: usb usb2: Manufacturer: Linux 5.4.0-150-generic uhci_hcd
+geg. 12 22:27:26 devnull-vaio kernel: usb usb2: SerialNumber: 0000:00:1d.0
+geg. 12 22:27:26 devnull-vaio kernel: hub 2-0:1.0: USB hub found
+geg. 12 22:27:26 devnull-vaio kernel: hub 2-0:1.0: 2 ports detected
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.1: UHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.1: new USB bus registered, assigned bus number 3
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.1: detected 2 ports
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.1: irq 22, io base 0x00006020
+geg. 12 22:27:26 devnull-vaio kernel: usb usb3: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 5.04
+geg. 12 22:27:26 devnull-vaio kernel: usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+geg. 12 22:27:26 devnull-vaio kernel: usb usb3: Product: UHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: usb usb3: Manufacturer: Linux 5.4.0-150-generic uhci_hcd
+geg. 12 22:27:26 devnull-vaio kernel: usb usb3: SerialNumber: 0000:00:1d.1
+geg. 12 22:27:26 devnull-vaio kernel: hub 3-0:1.0: USB hub found
+geg. 12 22:27:26 devnull-vaio kernel: hub 3-0:1.0: 2 ports detected
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.2: UHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.2: new USB bus registered, assigned bus number 4
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.2: detected 2 ports
+geg. 12 22:27:26 devnull-vaio kernel: uhci_hcd 0000:00:1d.2: irq 23, io base 0x00006000
+geg. 12 22:27:26 devnull-vaio kernel: usb usb4: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 5.04
+geg. 12 22:27:26 devnull-vaio kernel: usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+geg. 12 22:27:26 devnull-vaio kernel: usb usb4: Product: UHCI Host Controller
+geg. 12 22:27:26 devnull-vaio kernel: usb usb4: Manufacturer: Linux 5.4.0-150-generic uhci_hcd
+geg. 12 22:27:26 devnull-vaio kernel: usb usb4: SerialNumber: 0000:00:1d.2
+geg. 12 22:27:26 devnull-vaio kernel: hub 4-0:1.0: USB hub found
+geg. 12 22:27:26 devnull-vaio kernel: hub 4-0:1.0: 2 ports detected
+geg. 12 22:27:26 devnull-vaio kernel: i8042: PNP: PS/2 Controller [PNP0303:PS2K,PNP0f13:PS2M] at 0x60,0x64 irq 1,12
+geg. 12 22:27:26 devnull-vaio kernel: serio: i8042 KBD port at 0x60,0x64 irq 1
+geg. 12 22:27:26 devnull-vaio kernel: serio: i8042 AUX port at 0x60,0x64 irq 12
+geg. 12 22:27:26 devnull-vaio kernel: mousedev: PS/2 mouse device common for all mice
+geg. 12 22:27:26 devnull-vaio kernel: rtc_cmos 00:02: RTC can wake from S4
+geg. 12 22:27:26 devnull-vaio kernel: rtc_cmos 00:02: registered as rtc0
+geg. 12 22:27:27 devnull-vaio kernel: rtc_cmos 00:02: alarms up to one day, 242 bytes nvram, hpet irqs
+geg. 12 22:27:27 devnull-vaio kernel: i2c /dev entries driver
+geg. 12 22:27:27 devnull-vaio kernel: device-mapper: uevent: version 1.0.3
+geg. 12 22:27:27 devnull-vaio kernel: device-mapper: ioctl: 4.41.0-ioctl (2019-09-16) initialised: dm-devel@redhat.com
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Probing EISA bus 0
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: EISA: Cannot allocate resource for mainboard
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 1
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 2
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 3
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 4
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 5
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 6
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 7
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: Cannot allocate resource for EISA slot 8
+geg. 12 22:27:27 devnull-vaio kernel: platform eisa.0: EISA: Detected 0 cards
+geg. 12 22:27:27 devnull-vaio kernel: cpufreq_nforce2: No nForce2 chipset
+geg. 12 22:27:27 devnull-vaio kernel: intel_pstate: CPU model not supported
+geg. 12 22:27:27 devnull-vaio kernel: ledtrig-cpu: registered to indicate activity on CPUs
+geg. 12 22:27:27 devnull-vaio kernel: drop_monitor: Initializing network drop monitor service
+geg. 12 22:27:27 devnull-vaio kernel: NET: Registered protocol family 10
+geg. 12 22:27:27 devnull-vaio kernel: input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input2
+geg. 12 22:27:27 devnull-vaio kernel: Segment Routing with IPv6
+geg. 12 22:27:27 devnull-vaio kernel: NET: Registered protocol family 17
+geg. 12 22:27:27 devnull-vaio kernel: Key type dns_resolver registered
+geg. 12 22:27:27 devnull-vaio kernel: microcode: sig=0x106c2, pf=0x1, revision=0x217
+geg. 12 22:27:27 devnull-vaio kernel: microcode: Microcode Update Driver: v2.2.
+geg. 12 22:27:27 devnull-vaio kernel: IPI shorthand broadcast: enabled
+geg. 12 22:27:27 devnull-vaio kernel: registered taskstats version 1
+geg. 12 22:27:27 devnull-vaio kernel: Loading compiled-in X.509 certificates
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Build time autogenerated kernel key: 8285a7c3179e245361cef7146cb7f6e5cf450607'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Live Patch Signing: 14df34d1a87cf37625abec039ef2bf521249b969'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Kernel Module Signing: 88f752e560a1e0737e31163a466ad7b70a850c19'
+geg. 12 22:27:27 devnull-vaio kernel: blacklist: Loading compiled-in revocation X.509 certificates
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing: 61482aa2830d0ab2ad5af10b7250da9033ddcef0'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2017): 242ade75ac4a15e50d50c84b0d45ff3eae707a03'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (ESM 2018): 365188c1d374d6b07c3c8f240f8ef722433d6a8b'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2019): c0746fd6c5da3ae827864651ad66ae47fe24b3e8'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v1): a8d54bbb3825cfb94fa13c9f8a594a195c107b8d'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v2): 4cf046892d6fd3c9a5b03f98d845f90851dc6a8c'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (2021 v3): 100437bb6de6e469b581e61cd66bce3ef4ed53af'
+geg. 12 22:27:27 devnull-vaio kernel: Loaded X.509 cert 'Canonical Ltd. Secure Boot Signing (Ubuntu Core 2019): c1d57b8f6b743f23ee41f4f7ee292f06eecadfb9'
+geg. 12 22:27:27 devnull-vaio kernel: zswap: loaded using pool lzo/zbud
+geg. 12 22:27:27 devnull-vaio kernel: Key type ._fscrypt registered
+geg. 12 22:27:27 devnull-vaio kernel: Key type .fscrypt registered
+geg. 12 22:27:27 devnull-vaio kernel: Key type big_key registered
+geg. 12 22:27:27 devnull-vaio kernel: Key type encrypted registered
+geg. 12 22:27:27 devnull-vaio kernel: AppArmor: AppArmor sha1 policy hashing enabled
+geg. 12 22:27:27 devnull-vaio kernel: ima: No TPM chip found, activating TPM-bypass!
+geg. 12 22:27:27 devnull-vaio kernel: ima: Allocated hash algorithm: sha1
+geg. 12 22:27:27 devnull-vaio kernel: ima: No architecture policies found
+geg. 12 22:27:27 devnull-vaio kernel: evm: Initialising EVM extended attributes:
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.selinux
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.SMACK64
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.SMACK64EXEC
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.SMACK64TRANSMUTE
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.SMACK64MMAP
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.apparmor
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.ima
+geg. 12 22:27:27 devnull-vaio kernel: evm: security.capability
+geg. 12 22:27:27 devnull-vaio kernel: evm: HMAC attrs: 0x1
+geg. 12 22:27:27 devnull-vaio kernel: PM:   Magic number: 10:836:495
+geg. 12 22:27:27 devnull-vaio kernel: rtc_cmos 00:02: setting system clock to 2026-05-12T19:27:21 UTC (1778614041)
+geg. 12 22:27:27 devnull-vaio kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.CPU0._PSS], AE_NOT_FOUND (20190816/psargs-330)
+geg. 12 22:27:27 devnull-vaio kernel: ACPI Error: Aborting method \_PR.CPU1._PSS due to previous error (AE_NOT_FOUND) (20190816/psparse-531)
+geg. 12 22:27:27 devnull-vaio kernel: ACPI Error: AE_NOT_FOUND, Evaluating _PSS (20190816/processor_perflib-303)
+geg. 12 22:27:27 devnull-vaio kernel: [Firmware Bug]: BIOS needs update for CPU frequency support
+geg. 12 22:27:27 devnull-vaio kernel: Unstable clock detected, switching default tracing clock to "global"
+                                      If you want to keep using the local clock, then add:
+                                        "trace_clock=local"
+                                      on the kernel command line
+geg. 12 22:27:27 devnull-vaio kernel: Freeing unused kernel image memory: 1188K
+geg. 12 22:27:27 devnull-vaio kernel: Write protecting kernel text and read-only data: 18420k
+geg. 12 22:27:27 devnull-vaio kernel: NX-protecting the kernel data: 12448k
+geg. 12 22:27:27 devnull-vaio kernel: ------------[ cut here ]------------
+geg. 12 22:27:27 devnull-vaio kernel: x86/mm: Found insecure W+X mapping at address 0xc0100000
+geg. 12 22:27:27 devnull-vaio kernel: WARNING: CPU: 0 PID: 1 at /build/linux-hwe-5.4-BCJb0P/linux-hwe-5.4-5.4.0/arch/x86/mm/dump_pagetables.c:260 note_page+0x12a/0x8d0
+geg. 12 22:27:27 devnull-vaio kernel: Modules linked in:
+geg. 12 22:27:27 devnull-vaio kernel: CPU: 0 PID: 1 Comm: swapper/0 Not tainted 5.4.0-150-generic #167~18.04.1-Ubuntu
+geg. 12 22:27:27 devnull-vaio kernel: Hardware name: Sony Corporation VGN-P11Z_Q/VAIO, BIOS R2073U3 01/13/2010
+geg. 12 22:27:27 devnull-vaio kernel: EIP: note_page+0x12a/0x8d0
+geg. 12 22:27:27 devnull-vaio kernel: Code: 00 00 8b 0d ec 2e 2e d2 01 43 28 85 c9 79 29 80 3d 6a 07 2c d2 00 75 20 56 68 f0 fe c6 d1 c6 05 6a 07 2c d2 01 e8 b6 cc 00 00 <0f> 0b 8b 43 18 89 45 f0 58 5a 8d 74 26 00 8b 53 1c 8b 4a 08 85 c9
+geg. 12 22:27:27 devnull-vaio kernel: EAX: 00000038 EBX: d7507f44 ECX: d24553a8 EDX: 00000000
+geg. 12 22:27:27 devnull-vaio kernel: ESI: c0100000 EDI: 00000000 EBP: d7507ee0 ESP: d7507eb0
+geg. 12 22:27:27 devnull-vaio kernel: DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 EFLAGS: 00010292
+geg. 12 22:27:27 devnull-vaio kernel: CR0: 80050033 CR2: bfa42fd4 CR3: 12438000 CR4: 000006f0
+geg. 12 22:27:27 devnull-vaio kernel: Call Trace:
+geg. 12 22:27:27 devnull-vaio kernel:  ptdump_walk_pgd_level_core+0x20b/0x380
+geg. 12 22:27:27 devnull-vaio kernel:  ptdump_walk_pgd_level_checkwx+0x18/0x20
+geg. 12 22:27:27 devnull-vaio kernel:  mark_rodata_ro+0xa5/0xd0
+geg. 12 22:27:27 devnull-vaio kernel:  ? rest_init+0xa0/0xa0
+geg. 12 22:27:27 devnull-vaio kernel:  kernel_init+0x38/0x100
+geg. 12 22:27:27 devnull-vaio kernel:  ret_from_fork+0x19/0x38
+geg. 12 22:27:27 devnull-vaio kernel: ---[ end trace 37ca0023823a903d ]---
+geg. 12 22:27:27 devnull-vaio kernel: x86/mm: Checked W+X mappings: FAILED, 48896 W+X pages found.
+geg. 12 22:27:27 devnull-vaio kernel: Run /init as init process
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-3: new high-speed USB device number 2 using ehci-pci
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-3: New USB device found, idVendor=0af0, idProduct=7601, bcdDevice= 0.00
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-3: New USB device strings: Mfr=2, Product=1, SerialNumber=0
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-3: Product: Globetrotter HSUPA Modem
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-3: Manufacturer: Option N.V.
+geg. 12 22:27:27 devnull-vaio kernel: usb 3-2: new full-speed USB device number 2 using uhci_hcd
+geg. 12 22:27:27 devnull-vaio kernel: usb 3-2: New USB device found, idVendor=044e, idProduct=3017, bcdDevice= 2.27
+geg. 12 22:27:27 devnull-vaio kernel: usb 3-2: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+geg. 12 22:27:27 devnull-vaio kernel: usb 3-2: Product: BCM2046 Bluetooth Device
+geg. 12 22:27:27 devnull-vaio kernel: usb 3-2: Manufacturer: Broadcom Corp
+geg. 12 22:27:27 devnull-vaio kernel: usb 3-2: SerialNumber: 00214FBB1583
+geg. 12 22:27:27 devnull-vaio kernel: pata_sch 0000:00:1f.1: version 0.2
+geg. 12 22:27:27 devnull-vaio kernel: scsi host0: pata_sch
+geg. 12 22:27:27 devnull-vaio kernel: scsi host1: pata_sch
+geg. 12 22:27:27 devnull-vaio kernel: ata1: PATA max UDMA/100 cmd 0x1f0 ctl 0x3f6 bmdma 0x6060 irq 14
+geg. 12 22:27:27 devnull-vaio kernel: ata2: PATA max UDMA/100 cmd 0x170 ctl 0x376 bmdma 0x6068 irq 15
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-8: new high-speed USB device number 4 using ehci-pci
+geg. 12 22:27:27 devnull-vaio kernel: ata1.00: ATA-9: YSZF18-64, O1117A, max UDMA/133
+geg. 12 22:27:27 devnull-vaio kernel: ata1.00: 125044736 sectors, multi 0: LBA48 
+geg. 12 22:27:27 devnull-vaio kernel: scsi 0:0:0:0: Direct-Access     ATA      YSZF18-64        7A   PQ: 0 ANSI: 5
+geg. 12 22:27:27 devnull-vaio kernel: sd 0:0:0:0: [sda] 125044736 512-byte logical blocks: (64.0 GB/59.6 GiB)
+geg. 12 22:27:27 devnull-vaio kernel: sd 0:0:0:0: [sda] Write Protect is off
+geg. 12 22:27:27 devnull-vaio kernel: sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
+geg. 12 22:27:27 devnull-vaio kernel: sd 0:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+geg. 12 22:27:27 devnull-vaio kernel: sd 0:0:0:0: Attached scsi generic sg0 type 0
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-8: New USB device found, idVendor=05ca, idProduct=18b2, bcdDevice=20.01
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-8: New USB device strings: Mfr=1, Product=0, SerialNumber=0
+geg. 12 22:27:27 devnull-vaio kernel: usb 1-8: Manufacturer: Ricoh co. Ltd.
+geg. 12 22:27:27 devnull-vaio kernel:  sda: sda1
+geg. 12 22:27:27 devnull-vaio kernel: sd 0:0:0:0: [sda] Attached SCSI disk
+geg. 12 22:27:27 devnull-vaio kernel: fbcon: Taking over console
+geg. 12 22:27:27 devnull-vaio kernel: EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
+geg. 12 22:27:27 devnull-vaio systemd[1]: systemd 237 running in system mode. (+PAM +AUDIT +SELINUX +IMA +APPARMOR +SMACK +SYSVINIT +UTMP +LIBCRYPTSETUP +GCRYPT +GNUTLS +ACL +XZ +LZ4 +SECCOMP +BLKID +ELFUTILS +KMOD -IDN2 +IDN -PCRE2 default-hierarchy=hybrid)
+geg. 12 22:27:27 devnull-vaio systemd[1]: Detected architecture x86.
+geg. 12 22:27:27 devnull-vaio systemd[1]: Set hostname to <devnull-vaio>.
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio systemd[1]: Set up automount Arbitrary Executable File Formats File System Automount Point.
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio systemd[1]: Created slice System Slice.
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio systemd[1]: Listening on Journal Socket (/dev/log).
+geg. 12 22:27:27 devnull-vaio systemd[1]: Listening on Journal Audit Socket.
+geg. 12 22:27:27 devnull-vaio systemd[1]: Listening on fsck to fsckd communication Socket.
+geg. 12 22:27:27 devnull-vaio systemd[1]: Listening on udev Kernel Socket.
+geg. 12 22:27:27 devnull-vaio systemd[1]: Listening on udev Control Socket.
+geg. 12 22:27:27 devnull-vaio kernel: lp: driver loaded but no devices found
+geg. 12 22:27:27 devnull-vaio kernel: EXT4-fs (sda1): re-mounted. Opts: errors=remount-ro
+geg. 12 22:27:27 devnull-vaio kernel: ppdev: user-space parallel port driver
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd-journal: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd-journal: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:27 devnull-vaio kernel: random: systemd-journal: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:29 devnull-vaio kernel: Adding 2097148k swap on /swapfile.  Priority:-2 extents:6 across:2260988k SSFS
+geg. 12 22:27:29 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:29 devnull-vaio kernel: random: systemd: uninitialized urandom read (16 bytes read)
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.624:2): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/lightdm/lightdm-guest-session" pid=314 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.624:3): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/lightdm/lightdm-guest-session//chromium" pid=314 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.724:4): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/sbin/dhclient" pid=315 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.724:5): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/NetworkManager/nm-dhcp-client.action" pid=315 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.724:6): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/NetworkManager/nm-dhcp-helper" pid=315 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.724:7): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/lib/connman/scripts/dhclient-script" pid=315 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.776:8): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/usr/bin/man" pid=318 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.776:9): apparmor="STATUS" operation="profile_load" profile="unconfined" name="man_filter" pid=318 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.776:10): apparmor="STATUS" operation="profile_load" profile="unconfined" name="man_groff" pid=318 comm="apparmor_parser"
+geg. 12 22:27:30 devnull-vaio kernel: audit: type=1400 audit(1778614050.804:11): apparmor="STATUS" operation="profile_load" profile="unconfined" name="libreoffice-oopslash" pid=319 comm="apparmor_parser"
+geg. 12 22:27:33 devnull-vaio kernel: sony_laptop: detected Type2 model
+geg. 12 22:27:33 devnull-vaio kernel: input: Sony Vaio Keys as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:16/SNY6001:00/input/input4
+geg. 12 22:27:33 devnull-vaio kernel: input: Sony Vaio Jogdial as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/device:16/SNY6001:00/input/input5
+geg. 12 22:27:33 devnull-vaio kernel: sony_laptop: device allocated minor is 59
+geg. 12 22:27:33 devnull-vaio kernel: sony_laptop: SPIC setup done.
+geg. 12 22:27:34 devnull-vaio kernel: sky2: driver version 1.30
+geg. 12 22:27:34 devnull-vaio kernel: sky2 0000:01:00.0: Yukon-2 UL 2 chip revision 0
+geg. 12 22:27:34 devnull-vaio kernel: sky2 0000:01:00.0 eth0: addr 00:1d:ba:6c:07:e3
+geg. 12 22:27:34 devnull-vaio kernel: sony_laptop: SNC setup done.
+geg. 12 22:27:36 devnull-vaio kernel: mc: Linux media interface: v0.10
+geg. 12 22:27:37 devnull-vaio kernel: cfg80211: Loading compiled-in X.509 certificates for regulatory database
+geg. 12 22:27:37 devnull-vaio kernel: videodev: Linux video capture interface: v2.00
+geg. 12 22:27:37 devnull-vaio kernel: cfg80211: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+geg. 12 22:27:37 devnull-vaio kernel: hso: /build/linux-hwe-5.4-BCJb0P/linux-hwe-5.4-5.4.0/drivers/net/usb/hso.c: Option Wireless
+geg. 12 22:27:38 devnull-vaio kernel: usbcore: registered new interface driver hso
+geg. 12 22:27:38 devnull-vaio kernel: Bluetooth: Core ver 2.22
+geg. 12 22:27:38 devnull-vaio kernel: NET: Registered protocol family 31
+geg. 12 22:27:38 devnull-vaio kernel: Bluetooth: HCI device and connection manager initialized
+geg. 12 22:27:38 devnull-vaio kernel: Bluetooth: HCI socket layer initialized
+geg. 12 22:27:38 devnull-vaio kernel: Bluetooth: L2CAP socket layer initialized
+geg. 12 22:27:38 devnull-vaio kernel: Bluetooth: SCO socket layer initialized
+geg. 12 22:27:39 devnull-vaio kernel: gma500_gfx: loading out-of-tree module taints kernel.
+geg. 12 22:27:39 devnull-vaio kernel: gma500_gfx: module verification failed: signature and/or required key missing - tainting kernel
+geg. 12 22:27:39 devnull-vaio kernel: pmd_set_huge: Cannot satisfy [mem 0x7fa00000-0x7fc00000] with a huge-page mapping due to MTRR override.
+geg. 12 22:27:39 devnull-vaio kernel: gma500 0000:00:02.0: 2D engine reset
+geg. 12 22:27:39 devnull-vaio kernel: ACPI: Video Device [GFX0] (multi-head: yes  rom: no  post: no)
+geg. 12 22:27:39 devnull-vaio kernel: acpi device:03: registered as cooling_device1
+geg. 12 22:27:39 devnull-vaio kernel: input: Video Bus as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A08:00/LNXVIDEO:00/input/input6
+geg. 12 22:27:39 devnull-vaio kernel: [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+geg. 12 22:27:39 devnull-vaio kernel: [drm] No driver support for vblank timestamp query.
+geg. 12 22:27:39 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000000
+geg. 12 22:27:39 devnull-vaio kernel: usbcore: registered new interface driver btusb
+geg. 12 22:27:40 devnull-vaio kernel: uvcvideo: Found UVC 1.00 device <unnamed> (05ca:18b2)
+geg. 12 22:27:40 devnull-vaio kernel: input: UVC Camera (05ca:18b2): Sony Vi as /devices/pci0000:00/0000:00:1d.7/usb1/1-8/1-8:1.0/input/input7
+geg. 12 22:27:40 devnull-vaio kernel: usbcore: registered new interface driver uvcvideo
+geg. 12 22:27:40 devnull-vaio kernel: USB Video Class driver (1.1.1)
+geg. 12 22:27:42 devnull-vaio kernel: input: PS/2 Generic Mouse as /devices/platform/i8042/serio1/input/input8
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0: ALC262: SKU not ready 0x411111f0
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0: autoconfig for ALC262: line_outs=1 (0x14/0x0/0x0/0x0/0x0) type:speaker
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0:    hp_outs=1 (0x15/0x0/0x0/0x0/0x0)
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0:    mono: mono_out=0x0
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0:    inputs:
+geg. 12 22:27:46 devnull-vaio kernel: snd_hda_codec_realtek hdaudioC0D0:      Mic=0x12
+geg. 12 22:27:46 devnull-vaio kernel: input: HDA Intel MID Headphone Mic as /devices/pci0000:00/0000:00:1b.0/sound/card0/input9
+geg. 12 22:27:46 devnull-vaio kernel: sky2 0000:01:00.0 enp1s0: renamed from eth0
+geg. 12 22:27:47 devnull-vaio kernel: random: crng init done
+geg. 12 22:27:47 devnull-vaio kernel: random: 187 urandom warning(s) missed due to ratelimiting
+geg. 12 22:27:48 devnull-vaio kernel: sky2 0000:01:00.0 enp1s0: enabling interface
+geg. 12 22:27:49 devnull-vaio kernel: Bluetooth: BNEP (Ethernet Emulation) ver 1.3
+geg. 12 22:27:49 devnull-vaio kernel: Bluetooth: BNEP filters: protocol multicast
+geg. 12 22:27:49 devnull-vaio kernel: Bluetooth: BNEP socket layer initialized
+geg. 12 22:27:50 devnull-vaio kernel: kvm: disabled by bios
+geg. 12 22:27:51 devnull-vaio kernel: intel_powerclamp: No package C-state available
+geg. 12 22:27:51 devnull-vaio kernel: ath: phy0: ASPM enabled: 0x42
+geg. 12 22:27:51 devnull-vaio kernel: ath: EEPROM regdomain: 0x65
+geg. 12 22:27:51 devnull-vaio kernel: ath: EEPROM indicates we should expect a direct regpair map
+geg. 12 22:27:51 devnull-vaio kernel: ath: Country alpha2 being used: 00
+geg. 12 22:27:51 devnull-vaio kernel: ath: Regpair used: 0x65
+geg. 12 22:27:51 devnull-vaio kernel: ieee80211 phy0: Selected rate control algorithm 'minstrel_ht'
+geg. 12 22:27:51 devnull-vaio kernel: ieee80211 phy0: Atheros AR9280 Rev:2 mem=0xd8a10000, irq=17
+geg. 12 22:27:51 devnull-vaio kernel: ath9k 0000:02:00.0 wlp2s0: renamed from wlan0
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: fbdev path=accel_2d pitch_lines=0 accel_2d=yes gtt_roll=0
+geg. 12 22:27:52 devnull-vaio kernel: fbcon: gma500drmfb (fb0) is primary device
+geg. 12 22:27:52 devnull-vaio kernel: Console: switching to colour frame buffer device 200x48
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=0 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000002
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000004
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x1000007
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=16 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000008
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00000a
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00000c
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x100000f
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=32 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000010
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000012
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000014
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=48 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=64 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=80 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=96 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=112 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=128 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=144 w=1600 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: fb0: gma500drmfb frame buffer device
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: Backlight lvds set brightness 7a127a12
+geg. 12 22:27:52 devnull-vaio kernel: [drm] Initialized gma500 1.0.0 20140314 for 0000:00:02.0 on minor 0
+geg. 12 22:27:52 devnull-vaio kernel: gma500 0000:00:02.0: Backlight lvds set brightness 7a127a12
+geg. 12 22:27:53 devnull-vaio kernel: gma500 0000:00:02.0: Backlight lvds set brightness 7a125f36
+geg. 12 22:27:54 devnull-vaio kernel: wlp2s0: authenticate with a8:bd:27:d9:3e:43
+geg. 12 22:27:54 devnull-vaio kernel: wlp2s0: send auth to a8:bd:27:d9:3e:43 (try 1/3)
+geg. 12 22:27:54 devnull-vaio kernel: wlp2s0: authenticated
+geg. 12 22:27:54 devnull-vaio kernel: wlp2s0: associate with a8:bd:27:d9:3e:43 (try 1/3)
+geg. 12 22:27:54 devnull-vaio kernel: wlp2s0: RX AssocResp from a8:bd:27:d9:3e:43 (capab=0x31 status=0 aid=1)
+geg. 12 22:27:54 devnull-vaio kernel: wlp2s0: associated
+geg. 12 22:27:54 devnull-vaio kernel: IPv6: ADDRCONF(NETDEV_CHANGE): wlp2s0: link becomes ready
+geg. 12 22:27:58 devnull-vaio kernel: psbfb_log_imageblit: 165 callbacks suppressed
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=264 dy=176 w=104 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:58 devnull-vaio kernel: psb_sgx_log_irq_summary: 591 callbacks suppressed
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004ba
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=272 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x6 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004bc
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=296 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004be
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=320 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004c0
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=344 dy=208 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:58 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004c2
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=264 dy=176 w=104 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004c4
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=272 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x6 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004c6
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=296 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x6 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004c8
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=320 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004ca
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=344 dy=208 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:27:59 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004cc
+geg. 12 22:28:03 devnull-vaio kernel: psbfb_log_imageblit: 15 callbacks suppressed
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=264 dy=176 w=104 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:03 devnull-vaio kernel: psb_sgx_log_irq_summary: 15 callbacks suppressed
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004ec
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=272 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004ee
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=296 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004f0
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=320 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x6 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004f2
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=344 dy=208 w=8 h=16 image_depth=1 fb_depth=24 fg=0x6 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:03 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004f4
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=264 dy=176 w=104 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004f6
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=272 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004f8
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=296 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004fa
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=320 dy=208 w=24 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004fc
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: 2D imageblit submit: dx=344 dy=208 w=8 h=16 image_depth=1 fb_depth=24 fg=0x6 bg=0x0 fb_flags=0x200000
+geg. 12 22:28:04 devnull-vaio kernel: gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0004fe

@@ -1,0 +1,12 @@
+preflight_overall=remote_usable
+selected_mode=recovery
+selected_script=/root/Poulsbo/scripts/run-vaio-sgx-plan-recovery-session.sh
+selected_rc=1
+selected_session_dir=/root/Poulsbo/logs/vaio-plan-session/20260512-111540-sgx-plan-session/children/20260512-111551-recovery
+selected_result_file=/root/Poulsbo/logs/vaio-plan-session/20260512-111540-sgx-plan-session/children/20260512-111551-recovery/session-result.env
+selected_outcome=validation_failed
+last_overall=remote_usable
+final_driver_srcversion=2BE09D0DC1CCBDB51D2328E
+selected_failed_phase=
+selected_failed_step=
+selected_failed_rc=

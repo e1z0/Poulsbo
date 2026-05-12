@@ -1,0 +1,1 @@
+skipped: guarded deploy not attempted because preflight overall=ssh_port_down

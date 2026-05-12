@@ -1,0 +1,12 @@
+timestamp=2026-05-11T06:46:29+03:00 poll=1 overall=ssh_port_down ping_status=ok tcp_22_status=closed ssh_pubkey_status=connection_refused
+  target_host=10.1.11.218
+  target_user=root
+  timeout_secs=15
+  ping_status=ok
+  tcp_22_status=closed
+  ssh_none_status=connection_refused
+  ssh_none_kex=0
+  ssh_pubkey_status=connection_refused
+  ssh_pubkey_kex=0
+  scp_status=error_1
+  overall=ssh_port_down

@@ -1,0 +1,251 @@
+REMOTE_BIN=/root/poulsbo-workloads/drm_probe
+OBJECT_NODE=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_object
+OBJECTS_NODE=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_objects
+HOLD_SECONDS=15
+RANGE_ID=153
+OBJECT_ID=144
+GTT_STATE_BEFORE
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1165191
+mmu_counts flush=570 set_pd_context=2 insert_pfn_sequence=1 insert_pages=286 remove_pfn_sequence=0 remove_pages=284 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+ranges_shown=7 ranges_total=7 truncated=0
+OBJECTS_BEFORE
+objects_shown=0 objects_total=0 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_DURING
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1201988
+mmu_counts flush=571 set_pd_context=2 insert_pfn_sequence=1 insert_pages=287 remove_pfn_sequence=0 remove_pages=284 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=153 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 roll=0 pin_total=1 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=1201988 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+ranges_shown=8 ranges_total=8 truncated=0
+OBJECTS_AFTER_ADOPT
+object id=144 range_id=153 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 created_jiffies=1202216 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+objects_shown=1 objects_total=1 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_BIND
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1202222
+mmu_counts flush=572 set_pd_context=2 insert_pfn_sequence=1 insert_pages=288 remove_pfn_sequence=0 remove_pages=284 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=153 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=0 sgx_object_id=144 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 last_pin_jiffies=1202222 last_unpin_jiffies=0 last_pf_bind_jiffies=1202222 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=1202216 last_lab_drop_jiffies=0
+ranges_shown=8 ranges_total=8 truncated=0
+OBJECTS_AFTER_BIND
+object id=144 range_id=153 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1202216 last_pf_bind_jiffies=1202222 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+objects_shown=1 objects_total=1 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_UNBIND
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1202225
+mmu_counts flush=573 set_pd_context=2 insert_pfn_sequence=1 insert_pages=288 remove_pfn_sequence=0 remove_pages=285 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=153 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=1 sgx_object_id=144 pf_bind_count=0 pf_bind_total=1 pf_unbind_total=1 last_pin_jiffies=1202222 last_unpin_jiffies=1202225 last_pf_bind_jiffies=1202222 last_pf_unbind_jiffies=1202225 last_lab_adopt_jiffies=1202216 last_lab_drop_jiffies=0
+ranges_shown=8 ranges_total=8 truncated=0
+OBJECTS_AFTER_UNBIND
+object id=144 range_id=153 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=1 pf_unbind_total=1 created_jiffies=1202216 last_pf_bind_jiffies=1202222 last_pf_unbind_jiffies=1202225 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+objects_shown=1 objects_total=1 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_PROBE_EXIT
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1202225
+mmu_counts flush=573 set_pd_context=2 insert_pfn_sequence=1 insert_pages=288 remove_pfn_sequence=0 remove_pages=285 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=153 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=1 sgx_object_id=144 pf_bind_count=0 pf_bind_total=1 pf_unbind_total=1 last_pin_jiffies=1202222 last_unpin_jiffies=1202225 last_pf_bind_jiffies=1202222 last_pf_unbind_jiffies=1202225 last_lab_adopt_jiffies=1202216 last_lab_drop_jiffies=0
+ranges_shown=8 ranges_total=8 truncated=0
+OBJECTS_AFTER_PROBE_EXIT
+object id=144 range_id=153 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=1 pf_unbind_total=1 created_jiffies=1202216 last_pf_bind_jiffies=1202222 last_pf_unbind_jiffies=1202225 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+objects_shown=1 objects_total=1 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_DROP
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1205742
+mmu_counts flush=574 set_pd_context=2 insert_pfn_sequence=1 insert_pages=288 remove_pfn_sequence=0 remove_pages=286 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+ranges_shown=7 ranges_total=7 truncated=0
+OBJECTS_AFTER_DROP
+objects_shown=0 objects_total=0 truncated=0 attr=poulsbo_sgx_objects
+DRM_PROBE_HOLD_LOG
+drm_path=/dev/dri/card0
+drm_path_mode=660 drm_rdev=57856
+drm_open_result=3
+drm_kernel_name=gma500
+drm_kernel_desc=DRM driver for the Intel GMA500, GMA600, GMA3600, GMA3650
+drm_kernel_date=20140314
+drm_kernel_version=1.0.0
+drm_busid=pci:0000:00:02.0
+drm_cap_dumb_buffer=1
+drm_cap_vblank_high_crtc=1
+drm_cap_dumb_preferred_depth=0
+drm_cap_dumb_prefer_shadow=0
+drm_cap_prime=0
+drm_cap_timestamp_monotonic=1
+drm_cap_addfb2_modifiers=0
+drm_cap_syncobj=0
+drm_magic=1
+drm_set_client_cap_universal_planes=0 errno=0
+drm_set_client_cap_atomic=-1 errno=0
+drm_min_size=0x0
+drm_max_size=4096x4096
+drm_counts crtcs=2 encoders=2 connectors=4 fbs=0
+connector[0]_id=37
+connector[0]_type=LVDS
+connector[0]_type_id=1
+connector[0]_connection=connected
+connector[0]_mm=0x0
+connector[0]_modes=1
+connector[0]_encoders=1
+connector[0]_props=7
+connector[0]_encoder_id=38
+connector[0]_mode0=1600x768 1600x768@60
+connector[1]_id=40
+connector[1]_type=SVIDEO
+connector[1]_type_id=1
+connector[1]_connection=disconnected
+connector[1]_mm=0x0
+connector[1]_modes=0
+connector[1]_encoders=1
+connector[1]_props=21
+connector[1]_encoder_id=0
+connector[2]_id=57
+connector[2]_type=SVIDEO
+connector[2]_type_id=2
+connector[2]_connection=disconnected
+connector[2]_mm=0x0
+connector[2]_modes=0
+connector[2]_encoders=1
+connector[2]_props=21
+connector[2]_encoder_id=0
+connector[3]_id=74
+connector[3]_type=VGA
+connector[3]_type_id=1
+connector[3]_connection=disconnected
+connector[3]_mm=0x0
+connector[3]_modes=0
+connector[3]_encoders=1
+connector[3]_props=5
+connector[3]_encoder_id=0
+drm_plane_count=2
+drm_create_dumb=0 errno=0
+drm_create_dumb_handle=1
+drm_create_dumb_pitch=256
+drm_create_dumb_size=16384
+drm_map_dumb=0 errno=0
+drm_map_dumb_offset=278298624
+drm_mmap_write=ok
+drm_prime_handle_to_fd=-1 errno=0
+drm_hold_seconds=15
+drm_hold_complete=1
+drm_destroy_dumb=0 errno=0
+DMESG_TAIL
+[ 4933.868315] gma500 0000:00:02.0: lab submit transition submit_id=33 state=running completed_packets=1 new_read_offset=0x0 new_write_offset=0x20 new_ccb_offset=0x20 outstanding=1 wrapped=0 complete_seq=0x41 complete_cookie=0x101 epoch=0 global_running_ticket=19 global_complete_ticket=0
+[ 4933.896055] gma500 0000:00:02.0: lab submit validate submit_id=33 context=pf status=0 count=3
+[ 4933.960903] gma500 0000:00:02.0: lab submit transition submit_id=33 state=complete completed_packets=1 new_read_offset=0x20 new_write_offset=0x20 new_ccb_offset=0x40 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=19 global_complete_ticket=19
+[ 4933.983926] gma500 0000:00:02.0: lab submit validate submit_id=33 context=pf status=0 count=4
+[ 4934.007874] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=9
+[ 4934.052492] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=10
+[ 4934.105977] gma500 0000:00:02.0: lab submit issue submit_id=35 state=queued issued_packets=1 read_offset=0x0 new_write_offset=0x0 outstanding=2 wrapped=0 pending_seq=0x42 issue_cookie=0x102 epoch=0 refill=0 global_issue_ticket=25 global_running_ticket=0
+[ 4934.131279] gma500 0000:00:02.0: lab submit validate submit_id=35 context=pf status=0 count=2
+[ 4934.157215] gma500 0000:00:02.0: lab submit transition submit_id=35 state=running completed_packets=1 new_read_offset=0x20 new_write_offset=0x0 new_ccb_offset=0x40 outstanding=1 wrapped=0 complete_seq=0x41 complete_cookie=0x101 epoch=0 global_running_ticket=20 global_complete_ticket=0
+[ 4934.181040] gma500 0000:00:02.0: lab submit validate submit_id=35 context=pf status=0 count=3
+[ 4934.205239] gma500 0000:00:02.0: lab submit transition submit_id=35 state=complete completed_packets=1 new_read_offset=0x0 new_write_offset=0x0 new_ccb_offset=0x20 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=20 global_complete_ticket=20
+[ 4934.228468] gma500 0000:00:02.0: lab submit validate submit_id=35 context=pf status=0 count=4
+[ 4934.255188] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=11
+[ 4934.308980] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=12
+[ 4934.353205] gma500 0000:00:02.0: lab submit issue submit_id=36 state=queued issued_packets=1 read_offset=0x0 new_write_offset=0x0 outstanding=2 wrapped=0 pending_seq=0x42 issue_cookie=0x102 epoch=0 refill=0 global_issue_ticket=26 global_running_ticket=0
+[ 4934.377897] gma500 0000:00:02.0: lab submit validate submit_id=36 context=pf status=0 count=2
+[ 4934.402268] gma500 0000:00:02.0: lab submit transition submit_id=36 state=running completed_packets=1 new_read_offset=0x20 new_write_offset=0x0 new_ccb_offset=0x40 outstanding=1 wrapped=0 complete_seq=0x41 complete_cookie=0x101 epoch=0 global_running_ticket=21 global_complete_ticket=0
+[ 4934.425451] gma500 0000:00:02.0: lab submit validate submit_id=36 context=pf status=0 count=3
+[ 4934.451410] gma500 0000:00:02.0: lab submit transition submit_id=36 state=complete completed_packets=1 new_read_offset=0x0 new_write_offset=0x0 new_ccb_offset=0x20 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=21 global_complete_ticket=21
+[ 4934.476023] gma500 0000:00:02.0: lab submit validate submit_id=36 context=pf status=0 count=4
+[ 4934.500955] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=13
+[ 4934.538133] gma500 0000:00:02.0: lab submit issue submit_id=34 state=queued issued_packets=1 read_offset=0x0 new_write_offset=0x0 outstanding=2 wrapped=0 pending_seq=0x42 issue_cookie=0x102 epoch=0 refill=0 global_issue_ticket=27 global_running_ticket=0
+[ 4934.561564] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=14
+[ 4934.585913] gma500 0000:00:02.0: lab submit transition submit_id=34 state=running completed_packets=1 new_read_offset=0x20 new_write_offset=0x0 new_ccb_offset=0x40 outstanding=1 wrapped=0 complete_seq=0x41 complete_cookie=0x101 epoch=0 global_running_ticket=22 global_complete_ticket=0
+[ 4934.611549] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=15
+[ 4934.637378] gma500 0000:00:02.0: lab submit transition submit_id=34 state=complete completed_packets=1 new_read_offset=0x0 new_write_offset=0x0 new_ccb_offset=0x20 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=22 global_complete_ticket=22
+[ 4934.666478] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=16
+[ 4960.853896] gma500 0000:00:02.0: lab submit validate submit_id=33 context=pf status=0 count=5
+[ 4960.877676] gma500 0000:00:02.0: lab submit validate submit_id=34 context=pf status=0 count=17
+[ 4960.905925] gma500 0000:00:02.0: lab submit validate submit_id=35 context=pf status=0 count=5
+[ 4960.930440] gma500 0000:00:02.0: lab submit validate submit_id=36 context=pf status=0 count=5
+[ 4960.954665] gma500 0000:00:02.0: lab submit drop submit_id=33 context=pf
+[ 4960.961035] gma500 0000:00:02.0: lab submit drop submit_id=34 context=pf
+[ 4960.968281] gma500 0000:00:02.0: lab submit drop submit_id=35 context=pf
+[ 4960.974773] gma500 0000:00:02.0: lab submit drop submit_id=36 context=pf
+[ 4960.984862] gma500 0000:00:02.0: lab pf_unbind id=133 name=gem gpu_va=0x81127000 active=0 total=1
+[ 4960.984878] gma500 0000:00:02.0: lab object drop object_id=124 range_id=133 name=gem gpu_va=0x81127000
+[ 4960.991783] gma500 0000:00:02.0: lab pf_unbind id=134 name=gem gpu_va=0x8112b000 active=0 total=1
+[ 4960.991799] gma500 0000:00:02.0: lab object drop object_id=125 range_id=134 name=gem gpu_va=0x8112b000
+[ 4960.998402] gma500 0000:00:02.0: lab pf_unbind id=135 name=gem gpu_va=0x8112f000 active=0 total=1
+[ 4960.998415] gma500 0000:00:02.0: lab object drop object_id=126 range_id=135 name=gem gpu_va=0x8112f000
+[ 4961.008950] gma500 0000:00:02.0: lab pf_unbind id=136 name=gem gpu_va=0x81133000 active=0 total=1
+[ 4961.008964] gma500 0000:00:02.0: lab object drop object_id=127 range_id=136 name=gem gpu_va=0x81133000
+[ 4961.016255] gma500 0000:00:02.0: lab pf_unbind id=137 name=gem gpu_va=0x81137000 active=0 total=1
+[ 4961.016267] gma500 0000:00:02.0: lab object drop object_id=128 range_id=137 name=gem gpu_va=0x81137000
+[ 4961.025709] gma500 0000:00:02.0: lab pf_unbind id=138 name=gem gpu_va=0x8113b000 active=0 total=1
+[ 4961.025726] gma500 0000:00:02.0: lab object drop object_id=129 range_id=138 name=gem gpu_va=0x8113b000
+[ 4961.032837] gma500 0000:00:02.0: lab pf_unbind id=139 name=gem gpu_va=0x8113f000 active=0 total=1
+[ 4961.032851] gma500 0000:00:02.0: lab object drop object_id=130 range_id=139 name=gem gpu_va=0x8113f000
+[ 4961.039985] gma500 0000:00:02.0: lab pf_unbind id=140 name=gem gpu_va=0x81143000 active=0 total=1
+[ 4961.039997] gma500 0000:00:02.0: lab object drop object_id=131 range_id=140 name=gem gpu_va=0x81143000
+[ 4961.046758] gma500 0000:00:02.0: lab pf_unbind id=141 name=gem gpu_va=0x81147000 active=0 total=1
+[ 4961.046775] gma500 0000:00:02.0: lab object drop object_id=132 range_id=141 name=gem gpu_va=0x81147000
+[ 4961.054043] gma500 0000:00:02.0: lab pf_unbind id=142 name=gem gpu_va=0x8114b000 active=0 total=1
+[ 4961.054061] gma500 0000:00:02.0: lab object drop object_id=133 range_id=142 name=gem gpu_va=0x8114b000
+[ 4961.061615] gma500 0000:00:02.0: lab pf_unbind id=143 name=gem gpu_va=0x8114f000 active=0 total=1
+[ 4961.061631] gma500 0000:00:02.0: lab object drop object_id=134 range_id=143 name=gem gpu_va=0x8114f000
+[ 4961.068554] gma500 0000:00:02.0: lab pf_unbind id=145 name=gem gpu_va=0x81153000 active=0 total=1
+[ 4961.068570] gma500 0000:00:02.0: lab object drop object_id=135 range_id=145 name=gem gpu_va=0x81153000
+[ 4961.075781] gma500 0000:00:02.0: lab pf_unbind id=144 name=gem gpu_va=0x81157000 active=0 total=1
+[ 4961.075793] gma500 0000:00:02.0: lab object drop object_id=136 range_id=144 name=gem gpu_va=0x81157000
+[ 4961.081504] gma500 0000:00:02.0: lab pf_unbind id=146 name=gem gpu_va=0x8115b000 active=0 total=1
+[ 4961.081520] gma500 0000:00:02.0: lab object drop object_id=137 range_id=146 name=gem gpu_va=0x8115b000
+[ 4961.092089] gma500 0000:00:02.0: lab pf_unbind id=147 name=gem gpu_va=0x8115f000 active=0 total=1
+[ 4961.092102] gma500 0000:00:02.0: lab object drop object_id=138 range_id=147 name=gem gpu_va=0x8115f000
+[ 4961.097735] gma500 0000:00:02.0: lab pf_unbind id=148 name=gem gpu_va=0x81163000 active=0 total=1
+[ 4961.097751] gma500 0000:00:02.0: lab object drop object_id=139 range_id=148 name=gem gpu_va=0x81163000
+[ 4961.108406] gma500 0000:00:02.0: lab pf_unbind id=149 name=gem gpu_va=0x81167000 active=0 total=1
+[ 4961.108420] gma500 0000:00:02.0: lab object drop object_id=140 range_id=149 name=gem gpu_va=0x81167000
+[ 4961.115281] gma500 0000:00:02.0: lab pf_unbind id=150 name=gem gpu_va=0x8116b000 active=0 total=1
+[ 4961.115293] gma500 0000:00:02.0: lab object drop object_id=141 range_id=150 name=gem gpu_va=0x8116b000
+[ 4961.122043] gma500 0000:00:02.0: lab pf_unbind id=151 name=gem gpu_va=0x8116f000 active=0 total=1
+[ 4961.122059] gma500 0000:00:02.0: lab object drop object_id=142 range_id=151 name=gem gpu_va=0x8116f000
+[ 4961.128807] gma500 0000:00:02.0: lab pf_unbind id=152 name=gem gpu_va=0x81173000 active=0 total=1
+[ 4961.128825] gma500 0000:00:02.0: lab object drop object_id=143 range_id=152 name=gem gpu_va=0x81173000
+[ 5109.227406] gma500 0000:00:02.0: lab object adopt object_id=144 range_id=153 name=gem gpu_va=0x81127000 size=0x4000
+[ 5109.227417] gma500 0000:00:02.0: lab object adopt command completed object_id=144 range_id=153 attr=poulsbo_sgx_object
+[ 5109.251142] gma500 0000:00:02.0: lab pf_bind id=153 name=gem gpu_va=0x81127000 npage=4 active=1 total=1
+[ 5109.265188] gma500 0000:00:02.0: lab pf_unbind id=153 name=gem gpu_va=0x81127000 active=0 total=1
+[ 5123.332993] gma500 0000:00:02.0: lab object drop object_id=144 range_id=153 name=gem gpu_va=0x81127000

@@ -1,0 +1,341 @@
+ATTR=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_lab_2d
+STATE_ATTR=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_state
+REMOTE_QUERY_BIN=/root/poulsbo-workloads/psb_sgx_lab_sgx_state_query
+LOADED=/lib/modules/5.4.0-150-generic/updates/poulsbo/gma500_gfx.ko
+SRCVERSION=85342D8F2786B99DF520799
+STATUS
+echo 'fill dx dy w h color [copy|xor]' > poulsbo_lab_2d
+echo 'copy sx sy dx dy w h' > poulsbo_lab_2d
+echo 'mono dx dy w h fg bg [checker|vertical|horizontal|diagonal|solid]' > poulsbo_lab_2d
+echo 'clear color' > poulsbo_lab_2d
+echo 'sync' > poulsbo_lab_2d
+echo 'pf_bind range_id' > poulsbo_sgx_bind
+echo 'pf_unbind range_id' > poulsbo_sgx_bind
+echo 'adopt range_id' > poulsbo_sgx_object
+echo 'role object_id role_name' > poulsbo_sgx_object
+echo 'class object_id class_name' > poulsbo_sgx_object
+echo 'gpu_use object_id gpu_use_name' > poulsbo_sgx_object
+echo 'context object_id context_name' > poulsbo_sgx_object
+echo 'pf_bind object_id' > poulsbo_sgx_object
+echo 'pf_unbind object_id' > poulsbo_sgx_object
+echo 'drop object_id' > poulsbo_sgx_object
+cat poulsbo_sgx_objects
+echo 'create context_name' > poulsbo_sgx_submit
+echo 'attach submit_id slot_name object_id' > poulsbo_sgx_submit
+echo 'detach submit_id slot_name' > poulsbo_sgx_submit
+echo 'kick submit_id cmd_type ccb_offset ctrl_flags num_ta_status num_3d_status ta_dependency' > poulsbo_sgx_submit
+echo 'depend submit_id dependency_submit_id' > poulsbo_sgx_submit
+echo 'depend2 submit_id dependency_submit_id' > poulsbo_sgx_submit
+echo 'depticket2 submit_id required_ticket' > poulsbo_sgx_submit
+echo 'depend3 submit_id dependency_submit_id' > poulsbo_sgx_submit
+echo 'depticket3 submit_id required_ticket' > poulsbo_sgx_submit
+echo 'depend_slot submit_id slot dependency_submit_id' > poulsbo_sgx_submit
+echo 'depticket_slot submit_id slot required_ticket' > poulsbo_sgx_submit
+echo 'depstate submit_id offset' > poulsbo_sgx_submit
+echo 'depstate2 submit_id offset' > poulsbo_sgx_submit
+echo 'depstate3 submit_id offset' > poulsbo_sgx_submit
+echo 'depstate_slot submit_id slot offset' > poulsbo_sgx_submit
+echo 'depclear_slot submit_id slot' > poulsbo_sgx_submit
+echo 'ccb submit_id write_offset read_offset service cache data0 data1' > poulsbo_sgx_submit
+echo 'queue submit_id base_offset size packet_size packet_count' > poulsbo_sgx_submit
+echo 'status submit_id ta_offset 3d_offset stride seed' > poulsbo_sgx_submit
+echo 'sync submit_id offset complete_seq pending_seq flags' > poulsbo_sgx_submit
+echo 'owner submit_id offset owner_state issue_cookie complete_cookie' > poulsbo_sgx_submit
+echo 'issue submit_id owner_state issued_packets' > poulsbo_sgx_submit
+echo 'transition submit_id owner_state completed_packets' > poulsbo_sgx_submit
+echo 'validate submit_id' > poulsbo_sgx_submit
+echo 'drop submit_id' > poulsbo_sgx_submit
+cat poulsbo_sgx_submits
+cat poulsbo_sgx_state
+cat poulsbo_gtt_state
+fb=1600x768 bpp=32 pitch=8192 path=accel_2d irq_count=0 fault_count=0 last_blit=0x0
+IOCTL_SGX_STATE_CAPTURE_BEFORE
+drm_path=/dev/dri/card0
+sgx_state_query_mode=capture
+sgx_state_query_capture=1
+drm_open_result=3
+sgx_state_ioctl_ret=0 errno=0
+sgx_state_reason=ioctl-sgx-state
+sgx_state_sequence=1
+sgx_state_captured_jiffies=4294906407
+sgx_state_capture_failed=0
+sgx_state_irq_count=0
+sgx_state_fault_count=0
+sgx_state_vdc_irq_mask=0x40001
+sgx_state_gatt_start=0x80000000
+sgx_state_mmu_gatt_start=0xe0000000
+sgx_state_gatt_free_offset=0xe0800000
+sgx_state_mmu_driver_bif_ctrl=0x1ff00
+sgx_state_mmu_needs_tlbflush=0
+sgx_state_mmu_default_pd_context=0
+sgx_state_core_id=0x1130000
+sgx_state_core_revision=0x10201
+sgx_state_clkgatectl=0x1111111
+sgx_state_soft_reset=0x0
+sgx_state_event_status=0x0
+sgx_state_event_status2=0x0
+sgx_state_event_host_enable=0x8000000
+sgx_state_event_host_enable2=0x10
+sgx_state_event_kicker=0x0
+sgx_state_event_kick=0x0
+sgx_state_pds_exec_base=0x20000000
+sgx_state_use_code_base0=0x3ffd3fe
+sgx_state_use_code_base1=0x6a53914
+sgx_state_bif_ctrl=0x0
+sgx_state_bif_int_stat=0x0
+sgx_state_bif_fault=0x0
+sgx_state_bif_dir_list_base0=0x3359b000
+sgx_state_bif_dir_list_base1=0x0
+sgx_state_bif_bank0=0x0
+sgx_state_bif_bank1=0x0
+sgx_state_bif_twod_req_base=0x80000000
+sgx_state_bif_3d_req_base=0x30000000
+sgx_state_twod_socif=0x80
+sgx_state_twod_blit_status=0x0
+IOCTL_SGX_STATE_CACHED_BEFORE
+drm_path=/dev/dri/card0
+sgx_state_query_mode=cached
+sgx_state_query_capture=0
+drm_open_result=3
+sgx_state_ioctl_ret=0 errno=0
+sgx_state_reason=ioctl-sgx-state
+sgx_state_sequence=1
+sgx_state_captured_jiffies=4294906407
+sgx_state_capture_failed=0
+sgx_state_irq_count=0
+sgx_state_fault_count=0
+sgx_state_vdc_irq_mask=0x40001
+sgx_state_gatt_start=0x80000000
+sgx_state_mmu_gatt_start=0xe0000000
+sgx_state_gatt_free_offset=0xe0800000
+sgx_state_mmu_driver_bif_ctrl=0x1ff00
+sgx_state_mmu_needs_tlbflush=0
+sgx_state_mmu_default_pd_context=0
+sgx_state_core_id=0x1130000
+sgx_state_core_revision=0x10201
+sgx_state_clkgatectl=0x1111111
+sgx_state_soft_reset=0x0
+sgx_state_event_status=0x0
+sgx_state_event_status2=0x0
+sgx_state_event_host_enable=0x8000000
+sgx_state_event_host_enable2=0x10
+sgx_state_event_kicker=0x0
+sgx_state_event_kick=0x0
+sgx_state_pds_exec_base=0x20000000
+sgx_state_use_code_base0=0x3ffd3fe
+sgx_state_use_code_base1=0x6a53914
+sgx_state_bif_ctrl=0x0
+sgx_state_bif_int_stat=0x0
+sgx_state_bif_fault=0x0
+sgx_state_bif_dir_list_base0=0x3359b000
+sgx_state_bif_dir_list_base1=0x0
+sgx_state_bif_bank0=0x0
+sgx_state_bif_bank1=0x0
+sgx_state_bif_twod_req_base=0x80000000
+sgx_state_bif_3d_req_base=0x30000000
+sgx_state_twod_socif=0x80
+sgx_state_twod_blit_status=0x0
+SYSFS_SGX_STATE_BEFORE
+reason=poulsbo_sgx_state sequence=2 captured_jiffies=4294906410 capture_failed=0 irq_count=0 fault_count=0 vdc_irq_mask=0x40001
+gatt_start=0x80000000 mmu_gatt_start=0xe0000000 gatt_free_offset=0xe0800000 mmu_bif_ctrl=0x01ff00 mmu_needs_tlbflush=0 mmu_default_pd_context=0
+core_id=0x1130000 core_revision=0x010201 clkgate=0x1111111 soft_reset=0x000000
+event_status=0x000000 event_status2=0x000000 event_enable=0x8000000 event_enable2=0x000010 event_kicker=0x000000 event_kick=0x000000
+pds_exec_base=0x20000000 use_code_base0=0x3ffd3fe use_code_base1=0x6a53914
+bif_ctrl=0x000000 bif_int_stat=0x000000 bif_fault=0x000000 dir0=0x3359b000 dir1=0x000000 bank0=0x000000 bank1=0x000000 2d_base=0x80000000 3d_base=0x30000000
+2d_socif=0x000080 2d_blit_status=0x000000
+IOCTL_SGX_STATE_AFTER_SYSFS_BEFORE
+drm_path=/dev/dri/card0
+sgx_state_query_mode=cached
+sgx_state_query_capture=0
+drm_open_result=3
+sgx_state_ioctl_ret=0 errno=0
+sgx_state_reason=poulsbo_sgx_state
+sgx_state_sequence=2
+sgx_state_captured_jiffies=4294906410
+sgx_state_capture_failed=0
+sgx_state_irq_count=0
+sgx_state_fault_count=0
+sgx_state_vdc_irq_mask=0x40001
+sgx_state_gatt_start=0x80000000
+sgx_state_mmu_gatt_start=0xe0000000
+sgx_state_gatt_free_offset=0xe0800000
+sgx_state_mmu_driver_bif_ctrl=0x1ff00
+sgx_state_mmu_needs_tlbflush=0
+sgx_state_mmu_default_pd_context=0
+sgx_state_core_id=0x1130000
+sgx_state_core_revision=0x10201
+sgx_state_clkgatectl=0x1111111
+sgx_state_soft_reset=0x0
+sgx_state_event_status=0x0
+sgx_state_event_status2=0x0
+sgx_state_event_host_enable=0x8000000
+sgx_state_event_host_enable2=0x10
+sgx_state_event_kicker=0x0
+sgx_state_event_kick=0x0
+sgx_state_pds_exec_base=0x20000000
+sgx_state_use_code_base0=0x3ffd3fe
+sgx_state_use_code_base1=0x6a53914
+sgx_state_bif_ctrl=0x0
+sgx_state_bif_int_stat=0x0
+sgx_state_bif_fault=0x0
+sgx_state_bif_dir_list_base0=0x3359b000
+sgx_state_bif_dir_list_base1=0x0
+sgx_state_bif_bank0=0x0
+sgx_state_bif_bank1=0x0
+sgx_state_bif_twod_req_base=0x80000000
+sgx_state_bif_3d_req_base=0x30000000
+sgx_state_twod_socif=0x80
+sgx_state_twod_blit_status=0x0
+IOCTL_SGX_STATE_CAPTURE_AFTER
+drm_path=/dev/dri/card0
+sgx_state_query_mode=capture
+sgx_state_query_capture=1
+drm_open_result=3
+sgx_state_ioctl_ret=0 errno=0
+sgx_state_reason=ioctl-sgx-state
+sgx_state_sequence=14
+sgx_state_captured_jiffies=4294906667
+sgx_state_capture_failed=0
+sgx_state_irq_count=7
+sgx_state_fault_count=0
+sgx_state_vdc_irq_mask=0x40001
+sgx_state_gatt_start=0x80000000
+sgx_state_mmu_gatt_start=0xe0000000
+sgx_state_gatt_free_offset=0xe0800000
+sgx_state_mmu_driver_bif_ctrl=0x1ff00
+sgx_state_mmu_needs_tlbflush=0
+sgx_state_mmu_default_pd_context=0
+sgx_state_core_id=0x1130000
+sgx_state_core_revision=0x10201
+sgx_state_clkgatectl=0x1111111
+sgx_state_soft_reset=0x0
+sgx_state_event_status=0x0
+sgx_state_event_status2=0x0
+sgx_state_event_host_enable=0x8000000
+sgx_state_event_host_enable2=0x10
+sgx_state_event_kicker=0x0
+sgx_state_event_kick=0x0
+sgx_state_pds_exec_base=0x20000000
+sgx_state_use_code_base0=0x3ffd3fe
+sgx_state_use_code_base1=0x6a53914
+sgx_state_bif_ctrl=0x0
+sgx_state_bif_int_stat=0x0
+sgx_state_bif_fault=0x0
+sgx_state_bif_dir_list_base0=0x3359b000
+sgx_state_bif_dir_list_base1=0x0
+sgx_state_bif_bank0=0x0
+sgx_state_bif_bank1=0x0
+sgx_state_bif_twod_req_base=0x80000000
+sgx_state_bif_3d_req_base=0x30000000
+sgx_state_twod_socif=0x80
+sgx_state_twod_blit_status=0xe
+IOCTL_SGX_STATE_CACHED_AFTER
+drm_path=/dev/dri/card0
+sgx_state_query_mode=cached
+sgx_state_query_capture=0
+drm_open_result=3
+sgx_state_ioctl_ret=0 errno=0
+sgx_state_reason=ioctl-sgx-state
+sgx_state_sequence=14
+sgx_state_captured_jiffies=4294906667
+sgx_state_capture_failed=0
+sgx_state_irq_count=7
+sgx_state_fault_count=0
+sgx_state_vdc_irq_mask=0x40001
+sgx_state_gatt_start=0x80000000
+sgx_state_mmu_gatt_start=0xe0000000
+sgx_state_gatt_free_offset=0xe0800000
+sgx_state_mmu_driver_bif_ctrl=0x1ff00
+sgx_state_mmu_needs_tlbflush=0
+sgx_state_mmu_default_pd_context=0
+sgx_state_core_id=0x1130000
+sgx_state_core_revision=0x10201
+sgx_state_clkgatectl=0x1111111
+sgx_state_soft_reset=0x0
+sgx_state_event_status=0x0
+sgx_state_event_status2=0x0
+sgx_state_event_host_enable=0x8000000
+sgx_state_event_host_enable2=0x10
+sgx_state_event_kicker=0x0
+sgx_state_event_kick=0x0
+sgx_state_pds_exec_base=0x20000000
+sgx_state_use_code_base0=0x3ffd3fe
+sgx_state_use_code_base1=0x6a53914
+sgx_state_bif_ctrl=0x0
+sgx_state_bif_int_stat=0x0
+sgx_state_bif_fault=0x0
+sgx_state_bif_dir_list_base0=0x3359b000
+sgx_state_bif_dir_list_base1=0x0
+sgx_state_bif_bank0=0x0
+sgx_state_bif_bank1=0x0
+sgx_state_bif_twod_req_base=0x80000000
+sgx_state_bif_3d_req_base=0x30000000
+sgx_state_twod_socif=0x80
+sgx_state_twod_blit_status=0xe
+SYSFS_SGX_STATE_AFTER
+reason=poulsbo_sgx_state sequence=15 captured_jiffies=4294906670 capture_failed=0 irq_count=7 fault_count=0 vdc_irq_mask=0x40001
+gatt_start=0x80000000 mmu_gatt_start=0xe0000000 gatt_free_offset=0xe0800000 mmu_bif_ctrl=0x01ff00 mmu_needs_tlbflush=0 mmu_default_pd_context=0
+core_id=0x1130000 core_revision=0x010201 clkgate=0x1111111 soft_reset=0x000000
+event_status=0x000000 event_status2=0x000000 event_enable=0x8000000 event_enable2=0x000010 event_kicker=0x000000 event_kick=0x000000
+pds_exec_base=0x20000000 use_code_base0=0x3ffd3fe use_code_base1=0x6a53914
+bif_ctrl=0x000000 bif_int_stat=0x000000 bif_fault=0x000000 dir0=0x3359b000 dir1=0x000000 bank0=0x000000 bank1=0x000000 2d_base=0x80000000 3d_base=0x30000000
+2d_socif=0x000080 2d_blit_status=0x00000e
+IOCTL_SGX_STATE_AFTER_SYSFS_AFTER
+drm_path=/dev/dri/card0
+sgx_state_query_mode=cached
+sgx_state_query_capture=0
+drm_open_result=3
+sgx_state_ioctl_ret=0 errno=0
+sgx_state_reason=poulsbo_sgx_state
+sgx_state_sequence=15
+sgx_state_captured_jiffies=4294906670
+sgx_state_capture_failed=0
+sgx_state_irq_count=7
+sgx_state_fault_count=0
+sgx_state_vdc_irq_mask=0x40001
+sgx_state_gatt_start=0x80000000
+sgx_state_mmu_gatt_start=0xe0000000
+sgx_state_gatt_free_offset=0xe0800000
+sgx_state_mmu_driver_bif_ctrl=0x1ff00
+sgx_state_mmu_needs_tlbflush=0
+sgx_state_mmu_default_pd_context=0
+sgx_state_core_id=0x1130000
+sgx_state_core_revision=0x10201
+sgx_state_clkgatectl=0x1111111
+sgx_state_soft_reset=0x0
+sgx_state_event_status=0x0
+sgx_state_event_status2=0x0
+sgx_state_event_host_enable=0x8000000
+sgx_state_event_host_enable2=0x10
+sgx_state_event_kicker=0x0
+sgx_state_event_kick=0x0
+sgx_state_pds_exec_base=0x20000000
+sgx_state_use_code_base0=0x3ffd3fe
+sgx_state_use_code_base1=0x6a53914
+sgx_state_bif_ctrl=0x0
+sgx_state_bif_int_stat=0x0
+sgx_state_bif_fault=0x0
+sgx_state_bif_dir_list_base0=0x3359b000
+sgx_state_bif_dir_list_base1=0x0
+sgx_state_bif_bank0=0x0
+sgx_state_bif_bank1=0x0
+sgx_state_bif_twod_req_base=0x80000000
+sgx_state_bif_3d_req_base=0x30000000
+sgx_state_twod_socif=0x80
+sgx_state_twod_blit_status=0xe
+LOGS
+[   56.435687] gma500 0000:00:02.0: lab_2d clear: w=1600 h=768 color=0x0
+[   56.435705] gma500 0000:00:02.0: 2D fillrect submit: dx=0 dy=0 w=1600 h=768 color=0x0 rop=0 fb_depth=24 fb_flags=0x200000
+[   56.442031] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000002
+[   56.442957] gma500 0000:00:02.0: lab_2d fill: dx=32 dy=32 w=200 h=96 color=0xffff rop=0
+[   56.442978] gma500 0000:00:02.0: 2D fillrect submit: dx=32 dy=32 w=200 h=96 color=0xffff rop=0 fb_depth=24 fb_flags=0x200000
+[   56.443141] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000004
+[   56.443782] gma500 0000:00:02.0: lab_2d copy: sx=32 sy=32 dx=320 dy=160 w=200 h=96
+[   56.443802] gma500 0000:00:02.0: 2D copyarea submit: sx=32 sy=32 dx=320 dy=160 w=200 h=96 depth=24 fb_flags=0x200000
+[   56.444210] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000006
+[   56.445323] gma500 0000:00:02.0: lab_2d mono: dx=0 dy=0 w=1600 h=16 fg=0xffffff bg=0x0 pattern=checker
+[   56.445344] gma500 0000:00:02.0: 2D imageblit submit-chunked: dx=0 dy=0 w=1600 h=16 image_depth=1 fb_depth=24 fg=0xffffff bg=0x0 fb_flags=0x200000
+[   56.445851] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000008
+[   56.446323] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00000a
+[   56.446792] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00000c
+[   56.447043] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00000e

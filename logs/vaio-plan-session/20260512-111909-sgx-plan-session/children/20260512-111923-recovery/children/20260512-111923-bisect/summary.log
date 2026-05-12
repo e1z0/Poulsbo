@@ -1,0 +1,33 @@
+probe=1 phase=prepare
+probe_1_phase=prepare
+probe_1_status=bad
+probe_1_reason=phase_failed
+probe_1_phase_rc=1
+probe_1_health_rc=0
+probe_1_health=remote_usable
+probe_1_failed_step=submit_op_kick_focus
+probe_1_failed_rc=1
+probe_1_failed_log=/tmp/tmp.dm9kVqtwbQ/submit_op_kick_focus.txt
+probe_1_remote_tmpdir=
+probe=2 phase=report
+probe_2_phase=report
+probe_2_status=bad
+probe_2_reason=phase_failed
+probe_2_phase_rc=1
+probe_2_health_rc=0
+probe_2_health=remote_usable
+probe_2_failed_step=submit_op_kick_focus
+probe_2_failed_rc=1
+probe_2_failed_log=/tmp/tmp.i3MaWeZV8Q/submit_op_kick_focus.txt
+probe_2_remote_tmpdir=
+probe=3 phase=sync
+probe_3_phase=sync
+probe_3_status=bad
+probe_3_reason=phase_failed
+probe_3_phase_rc=1
+probe_3_health_rc=0
+probe_3_health=remote_usable
+probe_3_failed_step=submit_op_kick_focus
+probe_3_failed_rc=1
+probe_3_failed_log=/tmp/tmp.2B1hKpz9A0/submit_op_kick_focus.txt
+probe_3_remote_tmpdir=

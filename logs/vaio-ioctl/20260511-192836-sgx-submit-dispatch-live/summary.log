@@ -1,0 +1,1 @@
+./scripts/run-vaio-sgx-ioctl-submit-op.sh: line 65: $1: unbound variable

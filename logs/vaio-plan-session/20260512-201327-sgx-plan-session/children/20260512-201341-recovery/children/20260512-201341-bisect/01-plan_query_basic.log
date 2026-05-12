@@ -1,0 +1,11 @@
+TARGET_DRM_NODE_MISSING=/dev/dri/card0
+AUTOLOAD_GMA500_MODULE=gma500_gfx
+TARGET_DRM_NODE_READY=/dev/dri/card0
+STAGE_OK=sync
+STAGE_OK=owner
+STAGE_OK=report
+STAGE_OK=manifest
+STAGE_OK=descriptor_op
+STAGE_OK=descriptor_query
+STAGE_OK=plan_op
+client_loop: send disconnect: Broken pipe

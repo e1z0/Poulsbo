@@ -1,0 +1,414 @@
+REMOTE_PROBE_BIN=/root/poulsbo-workloads/drm_probe
+REMOTE_QUERY_BIN=/root/poulsbo-workloads/psb_sgx_lab_query
+SUBMIT_ID=6
+OBJECT_IDS=26 27 28 29 30
+SUBMIT_STATE_BASE
+focused_submit_id=6 state=present last_focus_jiffies=83882 attr=poulsbo_sgx_submit_state
+submit id=6 context=pf cmd_type=ta ccb_offset=0x20 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x0 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x40 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x41 sync_flags=0x1 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x101 owner_complete_cookie=0x100 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=26 control_gpu_va=0x81133000 pds_object_id=27 pds_gpu_va=0x81137000 use_object_id=28 use_gpu_va=0x8113b000 target_object_id=29 target_gpu_va=0x8113f000 status_object_id=30 status_gpu_va=0x81143000 validate_count=1 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=83875 last_validate_jiffies=83882 last_packet_jiffies=83880 last_ccb_jiffies=83881 last_queue_jiffies=83881 last_status_jiffies=83881 last_sync_jiffies=83881 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=83882 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+COORD_STATE_BASE
+issue_ticket_counter=5 running_ticket_counter=5 complete_ticket_counter=5 last_issue_submit_id=5 last_running_submit_id=5 last_complete_submit_id=5 active_running_valid=0 active_running_submit_id=0 active_running_ticket=0 last_issue_jiffies=4294911182 last_running_jiffies=4294911200 last_complete_jiffies=4294911218 focused_submit_valid=1 focused_submit_id=6 live_submit_count=1 attr=poulsbo_sgx_coord_state
+IOCTL_QUERY_BY_ID_BASE
+drm_path=/dev/dri/card0
+drm_open_result=3
+coord_ioctl_ret=0 errno=0
+coord_focus_valid=1
+coord_focused_submit_id=6
+coord_live_submit_count=1
+coord_live_object_count=5
+coord_issue_ticket=5
+coord_running_ticket=5
+coord_complete_ticket=5
+coord_issue_submit_id=5
+coord_running_submit_id=5
+coord_complete_submit_id=5
+coord_active_running_valid=0
+coord_active_running_submit_id=0
+submit_selector=6
+submit_ioctl_ret=0 errno=0
+submit_resolved_id=6
+submit_context=2
+submit_context_name=pf
+submit_cmd_type=1
+submit_cmd_type_name=ta
+submit_owner_state=1
+submit_owner_state_name=queued
+submit_last_validate_status=0
+submit_validate_count=1
+submit_issue_count=0
+submit_transition_count=0
+submit_ta_dependency=0
+submit_num_ta_status_vals=1
+submit_num_3d_status_vals=1
+submit_ctrl_flags=0x1
+submit_ccb_offset=0x20
+submit_ccb_write_offset=0x20
+submit_ccb_read_offset=0x0
+submit_ccb_service_address=0x1000
+submit_ccb_cache_control=0x0
+submit_ccb_data0=0xc0de0001
+submit_ccb_data1=0xc0de0002
+submit_queue_base_offset=0x20
+submit_queue_size=0x40
+submit_queue_packet_size=0x20
+submit_queue_packet_count=1
+submit_queue_tail_packet_count=1
+submit_queue_head_packet_count=0
+submit_queue_epoch=0
+submit_status_ta_offset=0x80
+submit_status_3d_offset=0xc0
+submit_status_stride=0x4
+submit_status_value_seed=0x5a500000
+submit_sync_offset=0x20
+submit_sync_complete_seq=0x40
+submit_sync_pending_seq=0x41
+submit_sync_flags=0x1
+submit_owner_offset=0x40
+submit_owner_issue_cookie=0x101
+submit_owner_complete_cookie=0x100
+submit_global_issue_ticket=0
+submit_global_running_ticket=0
+submit_global_complete_ticket=0
+submit_control_object_id=26
+submit_pds_object_id=27
+submit_use_object_id=28
+submit_target_object_id=29
+submit_status_object_id=30
+submit_control_gpu_va=0x81133000
+submit_pds_gpu_va=0x81137000
+submit_use_gpu_va=0x8113b000
+submit_target_gpu_va=0x8113f000
+submit_status_gpu_va=0x81143000
+submit_dependency_slot_count=4
+submit_dependency_active_count=0
+dependency[1]_submit_id=0
+dependency[1]_required_ticket=0
+dependency[1]_observed_complete_ticket=0
+dependency[1]_flags=0x0
+dep_flags_names=none
+dependency[2]_submit_id=0
+dependency[2]_required_ticket=0
+dependency[2]_observed_complete_ticket=0
+dependency[2]_flags=0x0
+dep_flags_names=none
+dependency[3]_submit_id=0
+dependency[3]_required_ticket=0
+dependency[3]_observed_complete_ticket=0
+dependency[3]_flags=0x0
+dep_flags_names=none
+dependency[4]_submit_id=0
+dependency[4]_required_ticket=0
+dependency[4]_observed_complete_ticket=0
+dependency[4]_flags=0x0
+dep_flags_names=none
+IOCTL_QUERY_FOCUS_BASE
+drm_path=/dev/dri/card0
+drm_open_result=3
+coord_ioctl_ret=0 errno=0
+coord_focus_valid=1
+coord_focused_submit_id=6
+coord_live_submit_count=1
+coord_live_object_count=5
+coord_issue_ticket=5
+coord_running_ticket=5
+coord_complete_ticket=5
+coord_issue_submit_id=5
+coord_running_submit_id=5
+coord_complete_submit_id=5
+coord_active_running_valid=0
+coord_active_running_submit_id=0
+submit_selector=focus
+submit_ioctl_ret=0 errno=0
+submit_resolved_id=6
+submit_context=2
+submit_context_name=pf
+submit_cmd_type=1
+submit_cmd_type_name=ta
+submit_owner_state=1
+submit_owner_state_name=queued
+submit_last_validate_status=0
+submit_validate_count=1
+submit_issue_count=0
+submit_transition_count=0
+submit_ta_dependency=0
+submit_num_ta_status_vals=1
+submit_num_3d_status_vals=1
+submit_ctrl_flags=0x1
+submit_ccb_offset=0x20
+submit_ccb_write_offset=0x20
+submit_ccb_read_offset=0x0
+submit_ccb_service_address=0x1000
+submit_ccb_cache_control=0x0
+submit_ccb_data0=0xc0de0001
+submit_ccb_data1=0xc0de0002
+submit_queue_base_offset=0x20
+submit_queue_size=0x40
+submit_queue_packet_size=0x20
+submit_queue_packet_count=1
+submit_queue_tail_packet_count=1
+submit_queue_head_packet_count=0
+submit_queue_epoch=0
+submit_status_ta_offset=0x80
+submit_status_3d_offset=0xc0
+submit_status_stride=0x4
+submit_status_value_seed=0x5a500000
+submit_sync_offset=0x20
+submit_sync_complete_seq=0x40
+submit_sync_pending_seq=0x41
+submit_sync_flags=0x1
+submit_owner_offset=0x40
+submit_owner_issue_cookie=0x101
+submit_owner_complete_cookie=0x100
+submit_global_issue_ticket=0
+submit_global_running_ticket=0
+submit_global_complete_ticket=0
+submit_control_object_id=26
+submit_pds_object_id=27
+submit_use_object_id=28
+submit_target_object_id=29
+submit_status_object_id=30
+submit_control_gpu_va=0x81133000
+submit_pds_gpu_va=0x81137000
+submit_use_gpu_va=0x8113b000
+submit_target_gpu_va=0x8113f000
+submit_status_gpu_va=0x81143000
+submit_dependency_slot_count=4
+submit_dependency_active_count=0
+dependency[1]_submit_id=0
+dependency[1]_required_ticket=0
+dependency[1]_observed_complete_ticket=0
+dependency[1]_flags=0x0
+dep_flags_names=none
+dependency[2]_submit_id=0
+dependency[2]_required_ticket=0
+dependency[2]_observed_complete_ticket=0
+dependency[2]_flags=0x0
+dep_flags_names=none
+dependency[3]_submit_id=0
+dependency[3]_required_ticket=0
+dependency[3]_observed_complete_ticket=0
+dependency[3]_flags=0x0
+dep_flags_names=none
+dependency[4]_submit_id=0
+dependency[4]_required_ticket=0
+dependency[4]_observed_complete_ticket=0
+dependency[4]_flags=0x0
+dep_flags_names=none
+SUBMIT_STATE_AFTER_ISSUE
+focused_submit_id=6 state=present last_focus_jiffies=83882 attr=poulsbo_sgx_submit_state
+submit id=6 context=pf cmd_type=ta ccb_offset=0x20 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x0 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x40 queue_packet_size=0x20 queue_packet_count=2 queue_tail_packet_count=2 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x42 sync_flags=0x1 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x102 owner_complete_cookie=0x100 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=26 control_gpu_va=0x81133000 pds_object_id=27 pds_gpu_va=0x81137000 use_object_id=28 use_gpu_va=0x8113b000 target_object_id=29 target_gpu_va=0x8113f000 status_object_id=30 status_gpu_va=0x81143000 validate_count=2 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=6 global_running_ticket=0 global_complete_ticket=0 issue_count=1 transition_count=0 created_jiffies=83875 last_validate_jiffies=83889 last_packet_jiffies=83880 last_ccb_jiffies=83881 last_queue_jiffies=83881 last_status_jiffies=83881 last_sync_jiffies=83881 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=83882 last_epoch_jiffies=0 last_issue_jiffies=83889 last_transition_jiffies=0
+COORD_STATE_AFTER_ISSUE
+issue_ticket_counter=6 running_ticket_counter=5 complete_ticket_counter=5 last_issue_submit_id=6 last_running_submit_id=5 last_complete_submit_id=5 active_running_valid=0 active_running_submit_id=0 active_running_ticket=0 last_issue_jiffies=83889 last_running_jiffies=4294911200 last_complete_jiffies=4294911218 focused_submit_valid=1 focused_submit_id=6 live_submit_count=1 attr=poulsbo_sgx_coord_state
+IOCTL_QUERY_BY_ID_AFTER_ISSUE
+drm_path=/dev/dri/card0
+drm_open_result=3
+coord_ioctl_ret=0 errno=0
+coord_focus_valid=1
+coord_focused_submit_id=6
+coord_live_submit_count=1
+coord_live_object_count=5
+coord_issue_ticket=6
+coord_running_ticket=5
+coord_complete_ticket=5
+coord_issue_submit_id=6
+coord_running_submit_id=5
+coord_complete_submit_id=5
+coord_active_running_valid=0
+coord_active_running_submit_id=0
+submit_selector=6
+submit_ioctl_ret=0 errno=0
+submit_resolved_id=6
+submit_context=2
+submit_context_name=pf
+submit_cmd_type=1
+submit_cmd_type_name=ta
+submit_owner_state=1
+submit_owner_state_name=queued
+submit_last_validate_status=0
+submit_validate_count=2
+submit_issue_count=1
+submit_transition_count=0
+submit_ta_dependency=0
+submit_num_ta_status_vals=1
+submit_num_3d_status_vals=1
+submit_ctrl_flags=0x1
+submit_ccb_offset=0x20
+submit_ccb_write_offset=0x0
+submit_ccb_read_offset=0x0
+submit_ccb_service_address=0x1000
+submit_ccb_cache_control=0x0
+submit_ccb_data0=0xc0de0001
+submit_ccb_data1=0xc0de0002
+submit_queue_base_offset=0x20
+submit_queue_size=0x40
+submit_queue_packet_size=0x20
+submit_queue_packet_count=2
+submit_queue_tail_packet_count=2
+submit_queue_head_packet_count=0
+submit_queue_epoch=0
+submit_status_ta_offset=0x80
+submit_status_3d_offset=0xc0
+submit_status_stride=0x4
+submit_status_value_seed=0x5a500000
+submit_sync_offset=0x20
+submit_sync_complete_seq=0x40
+submit_sync_pending_seq=0x42
+submit_sync_flags=0x1
+submit_owner_offset=0x40
+submit_owner_issue_cookie=0x102
+submit_owner_complete_cookie=0x100
+submit_global_issue_ticket=6
+submit_global_running_ticket=0
+submit_global_complete_ticket=0
+submit_control_object_id=26
+submit_pds_object_id=27
+submit_use_object_id=28
+submit_target_object_id=29
+submit_status_object_id=30
+submit_control_gpu_va=0x81133000
+submit_pds_gpu_va=0x81137000
+submit_use_gpu_va=0x8113b000
+submit_target_gpu_va=0x8113f000
+submit_status_gpu_va=0x81143000
+submit_dependency_slot_count=4
+submit_dependency_active_count=0
+dependency[1]_submit_id=0
+dependency[1]_required_ticket=0
+dependency[1]_observed_complete_ticket=0
+dependency[1]_flags=0x0
+dep_flags_names=none
+dependency[2]_submit_id=0
+dependency[2]_required_ticket=0
+dependency[2]_observed_complete_ticket=0
+dependency[2]_flags=0x0
+dep_flags_names=none
+dependency[3]_submit_id=0
+dependency[3]_required_ticket=0
+dependency[3]_observed_complete_ticket=0
+dependency[3]_flags=0x0
+dep_flags_names=none
+dependency[4]_submit_id=0
+dependency[4]_required_ticket=0
+dependency[4]_observed_complete_ticket=0
+dependency[4]_flags=0x0
+dep_flags_names=none
+DMESG_TAIL
+[   75.796519] gma500 0000:00:02.0: lab submit transition submit_id=2 state=complete completed_packets=1 new_read_offset=0x0 new_write_offset=0x0 new_ccb_offset=0x20 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=4 global_complete_ticket=4
+[   75.828461] gma500 0000:00:02.0: lab submit validate submit_id=2 context=pf status=0 count=20
+[   75.908365] gma500 0000:00:02.0: lab submit issue submit_id=5 state=queued issued_packets=1 read_offset=0x0 new_write_offset=0x0 outstanding=2 wrapped=0 pending_seq=0x42 issue_cookie=0x102 epoch=0 refill=0 global_issue_ticket=5 global_running_ticket=0
+[   75.943088] gma500 0000:00:02.0: lab submit validate submit_id=5 context=pf status=0 count=2
+[   75.983047] gma500 0000:00:02.0: lab submit transition submit_id=5 state=running completed_packets=1 new_read_offset=0x20 new_write_offset=0x0 new_ccb_offset=0x40 outstanding=1 wrapped=0 complete_seq=0x41 complete_cookie=0x101 epoch=0 global_running_ticket=5 global_complete_ticket=0
+[   76.015409] gma500 0000:00:02.0: lab submit validate submit_id=5 context=pf status=0 count=3
+[   76.054129] gma500 0000:00:02.0: lab submit transition submit_id=5 state=complete completed_packets=1 new_read_offset=0x0 new_write_offset=0x0 new_ccb_offset=0x20 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=5 global_complete_ticket=5
+[   76.083212] gma500 0000:00:02.0: lab submit validate submit_id=5 context=pf status=0 count=4
+[   76.117985] gma500 0000:00:02.0: lab submit validate submit_id=2 context=pf status=0 count=21
+[  100.897898] gma500 0000:00:02.0: lab submit validate submit_id=1 context=pf status=0 count=5
+[  100.922949] gma500 0000:00:02.0: lab submit validate submit_id=2 context=pf status=0 count=22
+[  100.949540] gma500 0000:00:02.0: lab submit validate submit_id=3 context=pf status=0 count=5
+[  100.976035] gma500 0000:00:02.0: lab submit validate submit_id=4 context=pf status=0 count=5
+[  101.002270] gma500 0000:00:02.0: lab submit validate submit_id=5 context=pf status=0 count=5
+[  101.029274] gma500 0000:00:02.0: lab submit drop submit_id=1 context=pf
+[  101.037379] gma500 0000:00:02.0: lab submit drop submit_id=2 context=pf
+[  101.043880] gma500 0000:00:02.0: lab submit drop submit_id=3 context=pf
+[  101.052772] gma500 0000:00:02.0: lab submit drop submit_id=4 context=pf
+[  101.059162] gma500 0000:00:02.0: lab submit drop submit_id=5 context=pf
+[  101.067819] gma500 0000:00:02.0: lab pf_unbind id=10 name=gem gpu_va=0x81127000 active=0 total=1
+[  101.067831] gma500 0000:00:02.0: lab object drop object_id=1 range_id=10 name=gem gpu_va=0x81127000
+[  101.074737] gma500 0000:00:02.0: lab pf_unbind id=11 name=gem gpu_va=0x8112b000 active=0 total=1
+[  101.074753] gma500 0000:00:02.0: lab object drop object_id=2 range_id=11 name=gem gpu_va=0x8112b000
+[  101.082183] gma500 0000:00:02.0: lab pf_unbind id=12 name=gem gpu_va=0x8112f000 active=0 total=1
+[  101.082200] gma500 0000:00:02.0: lab object drop object_id=3 range_id=12 name=gem gpu_va=0x8112f000
+[  101.089247] gma500 0000:00:02.0: lab pf_unbind id=13 name=gem gpu_va=0x81133000 active=0 total=1
+[  101.089262] gma500 0000:00:02.0: lab object drop object_id=4 range_id=13 name=gem gpu_va=0x81133000
+[  101.096342] gma500 0000:00:02.0: lab pf_unbind id=14 name=gem gpu_va=0x81137000 active=0 total=1
+[  101.096358] gma500 0000:00:02.0: lab object drop object_id=5 range_id=14 name=gem gpu_va=0x81137000
+[  101.103201] gma500 0000:00:02.0: lab pf_unbind id=15 name=gem gpu_va=0x8113b000 active=0 total=1
+[  101.103218] gma500 0000:00:02.0: lab object drop object_id=6 range_id=15 name=gem gpu_va=0x8113b000
+[  101.111014] gma500 0000:00:02.0: lab pf_unbind id=16 name=gem gpu_va=0x8113f000 active=0 total=1
+[  101.111030] gma500 0000:00:02.0: lab object drop object_id=7 range_id=16 name=gem gpu_va=0x8113f000
+[  101.119337] gma500 0000:00:02.0: lab pf_unbind id=17 name=gem gpu_va=0x81143000 active=0 total=1
+[  101.119349] gma500 0000:00:02.0: lab object drop object_id=8 range_id=17 name=gem gpu_va=0x81143000
+[  101.126137] gma500 0000:00:02.0: lab pf_unbind id=18 name=gem gpu_va=0x81147000 active=0 total=1
+[  101.126150] gma500 0000:00:02.0: lab object drop object_id=9 range_id=18 name=gem gpu_va=0x81147000
+[  101.136284] gma500 0000:00:02.0: lab pf_unbind id=19 name=gem gpu_va=0x8114b000 active=0 total=1
+[  101.136296] gma500 0000:00:02.0: lab object drop object_id=10 range_id=19 name=gem gpu_va=0x8114b000
+[  101.142129] gma500 0000:00:02.0: lab pf_unbind id=20 name=gem gpu_va=0x8114f000 active=0 total=1
+[  101.142150] gma500 0000:00:02.0: lab object drop object_id=11 range_id=20 name=gem gpu_va=0x8114f000
+[  101.150659] gma500 0000:00:02.0: lab pf_unbind id=21 name=gem gpu_va=0x81153000 active=0 total=1
+[  101.150674] gma500 0000:00:02.0: lab object drop object_id=12 range_id=21 name=gem gpu_va=0x81153000
+[  101.159204] gma500 0000:00:02.0: lab pf_unbind id=22 name=gem gpu_va=0x81157000 active=0 total=1
+[  101.159217] gma500 0000:00:02.0: lab object drop object_id=13 range_id=22 name=gem gpu_va=0x81157000
+[  101.165932] gma500 0000:00:02.0: lab pf_unbind id=23 name=gem gpu_va=0x8115b000 active=0 total=1
+[  101.165945] gma500 0000:00:02.0: lab object drop object_id=14 range_id=23 name=gem gpu_va=0x8115b000
+[  101.172577] gma500 0000:00:02.0: lab pf_unbind id=24 name=gem gpu_va=0x8115f000 active=0 total=1
+[  101.172595] gma500 0000:00:02.0: lab object drop object_id=15 range_id=24 name=gem gpu_va=0x8115f000
+[  101.179252] gma500 0000:00:02.0: lab pf_unbind id=25 name=gem gpu_va=0x81163000 active=0 total=1
+[  101.179268] gma500 0000:00:02.0: lab object drop object_id=16 range_id=25 name=gem gpu_va=0x81163000
+[  101.186242] gma500 0000:00:02.0: lab pf_unbind id=26 name=gem gpu_va=0x81167000 active=0 total=1
+[  101.186260] gma500 0000:00:02.0: lab object drop object_id=17 range_id=26 name=gem gpu_va=0x81167000
+[  101.192872] gma500 0000:00:02.0: lab pf_unbind id=27 name=gem gpu_va=0x8116b000 active=0 total=1
+[  101.192887] gma500 0000:00:02.0: lab object drop object_id=18 range_id=27 name=gem gpu_va=0x8116b000
+[  101.199844] gma500 0000:00:02.0: lab pf_unbind id=28 name=gem gpu_va=0x8116f000 active=0 total=1
+[  101.199861] gma500 0000:00:02.0: lab object drop object_id=19 range_id=28 name=gem gpu_va=0x8116f000
+[  101.206820] gma500 0000:00:02.0: lab pf_unbind id=29 name=gem gpu_va=0x81173000 active=0 total=1
+[  101.206838] gma500 0000:00:02.0: lab object drop object_id=20 range_id=29 name=gem gpu_va=0x81173000
+[  101.213529] gma500 0000:00:02.0: lab pf_unbind id=30 name=gem gpu_va=0x81177000 active=0 total=1
+[  101.213544] gma500 0000:00:02.0: lab object drop object_id=21 range_id=30 name=gem gpu_va=0x81177000
+[  101.220867] gma500 0000:00:02.0: lab pf_unbind id=31 name=gem gpu_va=0x8117b000 active=0 total=1
+[  101.220884] gma500 0000:00:02.0: lab object drop object_id=22 range_id=31 name=gem gpu_va=0x8117b000
+[  101.228360] gma500 0000:00:02.0: lab pf_unbind id=32 name=gem gpu_va=0x8117f000 active=0 total=1
+[  101.228377] gma500 0000:00:02.0: lab object drop object_id=23 range_id=32 name=gem gpu_va=0x8117f000
+[  101.234998] gma500 0000:00:02.0: lab pf_unbind id=33 name=gem gpu_va=0x81183000 active=0 total=1
+[  101.235015] gma500 0000:00:02.0: lab object drop object_id=24 range_id=33 name=gem gpu_va=0x81183000
+[  101.242428] gma500 0000:00:02.0: lab pf_unbind id=34 name=gem gpu_va=0x81187000 active=0 total=1
+[  101.242444] gma500 0000:00:02.0: lab object drop object_id=25 range_id=34 name=gem gpu_va=0x81187000
+[  635.810280] gma500 0000:00:02.0: lab object adopt object_id=26 range_id=38 name=gem gpu_va=0x81133000 size=0x4000
+[  635.810294] gma500 0000:00:02.0: lab object adopt command completed object_id=26 range_id=38 attr=poulsbo_sgx_object
+[  635.810950] gma500 0000:00:02.0: lab object adopt object_id=27 range_id=39 name=gem gpu_va=0x81137000 size=0x4000
+[  635.810959] gma500 0000:00:02.0: lab object adopt command completed object_id=27 range_id=39 attr=poulsbo_sgx_object
+[  635.811817] gma500 0000:00:02.0: lab object adopt object_id=28 range_id=40 name=gem gpu_va=0x8113b000 size=0x4000
+[  635.811830] gma500 0000:00:02.0: lab object adopt command completed object_id=28 range_id=40 attr=poulsbo_sgx_object
+[  635.813148] gma500 0000:00:02.0: lab object adopt object_id=29 range_id=41 name=gem gpu_va=0x8113f000 size=0x4000
+[  635.813162] gma500 0000:00:02.0: lab object adopt command completed object_id=29 range_id=41 attr=poulsbo_sgx_object
+[  635.814353] gma500 0000:00:02.0: lab object adopt object_id=30 range_id=42 name=gem gpu_va=0x81143000 size=0x4000
+[  635.814368] gma500 0000:00:02.0: lab object adopt command completed object_id=30 range_id=42 attr=poulsbo_sgx_object
+[  635.853243] gma500 0000:00:02.0: lab object role object_id=26 role=control
+[  635.853626] gma500 0000:00:02.0: lab object role object_id=27 role=pds
+[  635.853982] gma500 0000:00:02.0: lab object role object_id=28 role=use
+[  635.854358] gma500 0000:00:02.0: lab object role object_id=29 role=target
+[  635.854730] gma500 0000:00:02.0: lab object role object_id=30 role=status
+[  635.855111] gma500 0000:00:02.0: lab object class object_id=26 class=packet
+[  635.855631] gma500 0000:00:02.0: lab object class object_id=27 class=code
+[  635.856382] gma500 0000:00:02.0: lab object class object_id=28 class=code
+[  635.857032] gma500 0000:00:02.0: lab object class object_id=29 class=surface
+[  635.857629] gma500 0000:00:02.0: lab object class object_id=30 class=state
+[  635.858318] gma500 0000:00:02.0: lab object gpu_use object_id=26 gpu_use=control_ccb
+[  635.858955] gma500 0000:00:02.0: lab object gpu_use object_id=27 gpu_use=pds_code
+[  635.860193] gma500 0000:00:02.0: lab object gpu_use object_id=28 gpu_use=use_code
+[  635.860946] gma500 0000:00:02.0: lab object gpu_use object_id=29 gpu_use=render_target
+[  635.861640] gma500 0000:00:02.0: lab object gpu_use object_id=30 gpu_use=status_block
+[  635.862944] gma500 0000:00:02.0: lab object context object_id=26 context=pf
+[  635.863279] gma500 0000:00:02.0: lab pf_bind id=38 name=gem gpu_va=0x81133000 npage=4 active=1 total=1
+[  635.864153] gma500 0000:00:02.0: lab object context object_id=27 context=pf
+[  635.864469] gma500 0000:00:02.0: lab pf_bind id=39 name=gem gpu_va=0x81137000 npage=4 active=1 total=1
+[  635.864745] gma500 0000:00:02.0: lab object context object_id=28 context=pf
+[  635.865012] gma500 0000:00:02.0: lab pf_bind id=40 name=gem gpu_va=0x8113b000 npage=4 active=1 total=1
+[  635.865257] gma500 0000:00:02.0: lab object context object_id=29 context=pf
+[  635.865480] gma500 0000:00:02.0: lab pf_bind id=41 name=gem gpu_va=0x8113f000 npage=4 active=1 total=1
+[  635.865708] gma500 0000:00:02.0: lab object context object_id=30 context=pf
+[  635.865927] gma500 0000:00:02.0: lab pf_bind id=42 name=gem gpu_va=0x81143000 npage=4 active=1 total=1
+[  635.866368] gma500 0000:00:02.0: lab submit create submit_id=6 context=pf
+[  635.866377] gma500 0000:00:02.0: lab submit create command completed submit_id=6 attr=poulsbo_sgx_submit
+[  635.884950] gma500 0000:00:02.0: lab submit kick submit_id=6 cmd=ta ccb_offset=0x20 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0
+[  635.885593] gma500 0000:00:02.0: lab submit attach submit_id=6 slot=control object_id=26
+[  635.886135] gma500 0000:00:02.0: lab submit attach submit_id=6 slot=pds object_id=27
+[  635.886669] gma500 0000:00:02.0: lab submit attach submit_id=6 slot=use object_id=28
+[  635.887232] gma500 0000:00:02.0: lab submit attach submit_id=6 slot=target object_id=29
+[  635.888480] gma500 0000:00:02.0: lab submit attach submit_id=6 slot=status object_id=30
+[  635.889174] gma500 0000:00:02.0: lab submit ccb submit_id=6 write_offset=0x20 read_offset=0x0 service=0x1000 cache=0x0 data0=0xc0de0001 data1=0xc0de0002
+[  635.889708] gma500 0000:00:02.0: lab submit queue submit_id=6 base_offset=0x20 size=0x40 packet_size=0x20 packet_count=1 read_offset=0x0 write_offset=0x20 tail_packets=1 head_packets=0 wrapped=0
+[  635.890271] gma500 0000:00:02.0: lab submit status submit_id=6 ta_offset=0x80 3d_offset=0xc0 stride=0x4 seed=0x5a500000 ta_count=1 3d_count=1
+[  635.890916] gma500 0000:00:02.0: lab submit sync submit_id=6 offset=0x20 read_offset=0x0 write_offset=0x20 complete_seq=0x40 pending_seq=0x41 flags=0x1 wrapped=0 epoch=0 global_issue_ticket=0
+[  635.892242] gma500 0000:00:02.0: lab submit owner submit_id=6 offset=0x40 state=queued issue_cookie=0x101 complete_cookie=0x100 outstanding=0x1 epoch=0 global_complete_ticket=0 global_running_ticket=0
+[  635.892900] gma500 0000:00:02.0: lab submit validate submit_id=6 context=pf status=0 count=1
+[  635.922326] gma500 0000:00:02.0: lab submit issue submit_id=6 state=queued issued_packets=1 read_offset=0x0 new_write_offset=0x0 outstanding=2 wrapped=0 pending_seq=0x42 issue_cookie=0x102 epoch=0 refill=0 global_issue_ticket=6 global_running_ticket=0
+[  635.922925] gma500 0000:00:02.0: lab submit validate submit_id=6 context=pf status=0 count=2

@@ -1,0 +1,16 @@
+target-captures/
+traces/*
+!traces/.gitkeep
+workloads/gles2_clear_x11
+workloads/gles2_triangle_x11
+build/
+module/*.o
+module/*.ko
+module/*.mod
+module/*.mod.c
+module/*.mod.o
+module/.*.cmd
+module/.cache.mk
+module/Module.symvers
+module/modules.order
+module/.tmp_versions/

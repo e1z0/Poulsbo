@@ -1,0 +1,14 @@
+bisect_rc=2
+bisect_session_dir=/root/Poulsbo/logs/vaio-ioctl/20260512-145704-sgx-submit-op-phase-investigation-profile-propagation/children/20260512-145704-bisect
+bisect_result_file=/root/Poulsbo/logs/vaio-ioctl/20260512-145704-sgx-submit-op-phase-investigation-profile-propagation/children/20260512-145704-bisect/session-result.env
+bisect_outcome=blocked_preflight
+bisect_last_good_phase=
+bisect_first_bad_phase=
+bisect_first_bad_reason=
+bisect_first_bad_failed_step=
+bisect_first_bad_failed_rc=
+bisect_first_bad_failed_log=
+bisect_first_bad_remote_tmpdir=
+bisect_last_overall=ssh_port_down
+bisect_preflight_overall=ssh_port_down
+bisect_final_driver_srcversion=unknown

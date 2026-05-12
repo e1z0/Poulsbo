@@ -1,0 +1,1 @@
+skipped: pre-deploy state not captured because preflight overall=ssh_port_down

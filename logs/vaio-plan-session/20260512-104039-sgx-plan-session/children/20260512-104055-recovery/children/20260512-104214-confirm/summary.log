@@ -1,0 +1,3 @@
+phase=sync
+phase_sync_rc=1
+phase_sync_health=remote_usable

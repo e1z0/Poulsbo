@@ -1,0 +1,112 @@
+Get:1 http://security.ubuntu.com/ubuntu bionic-security InRelease [102 kB]
+Hit:2 http://lt.archive.ubuntu.com/ubuntu bionic InRelease
+Get:3 http://lt.archive.ubuntu.com/ubuntu bionic-updates InRelease [102 kB]
+Get:4 http://lt.archive.ubuntu.com/ubuntu bionic-backports InRelease [102 kB]
+Get:5 http://security.ubuntu.com/ubuntu bionic-security/main i386 DEP-11 Metadata [76.9 kB]
+Get:6 http://security.ubuntu.com/ubuntu bionic-security/universe i386 DEP-11 Metadata [61.9 kB]
+Get:7 http://security.ubuntu.com/ubuntu bionic-security/multiverse i386 DEP-11 Metadata [2464 B]
+Get:8 http://lt.archive.ubuntu.com/ubuntu bionic-updates/main i386 DEP-11 Metadata [296 kB]
+Get:9 http://lt.archive.ubuntu.com/ubuntu bionic-updates/universe i386 DEP-11 Metadata [302 kB]
+Get:10 http://lt.archive.ubuntu.com/ubuntu bionic-updates/multiverse i386 DEP-11 Metadata [2468 B]
+Get:11 http://lt.archive.ubuntu.com/ubuntu bionic-backports/main i386 DEP-11 Metadata [5356 B]
+Get:12 http://lt.archive.ubuntu.com/ubuntu bionic-backports/universe i386 DEP-11 Metadata [10.1 kB]
+Fetched 1063 kB in 4s (249 kB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+Recommended packages:
+  crash
+The following NEW packages will be installed:
+  kdump-tools kexec-tools makedumpfile
+0 upgraded, 3 newly installed, 0 to remove and 403 not upgraded.
+Need to get 273 kB of archives.
+After this operation, 882 kB of additional disk space will be used.
+Get:1 http://lt.archive.ubuntu.com/ubuntu bionic-updates/main i386 kexec-tools i386 1:2.0.16-1ubuntu1.1 [80.4 kB]
+Get:2 http://lt.archive.ubuntu.com/ubuntu bionic-updates/main i386 makedumpfile i386 1:1.6.5-1ubuntu1~18.04.7 [169 kB]
+Get:3 http://lt.archive.ubuntu.com/ubuntu bionic-updates/main i386 kdump-tools i386 1:1.6.5-1ubuntu1~18.04.7 [23.6 kB]
+Preconfiguring packages ...
+Fetched 273 kB in 0s (561 kB/s)
+Selecting previously unselected package kexec-tools.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 190055 files and directories currently installed.)
+Preparing to unpack .../kexec-tools_1%3a2.0.16-1ubuntu1.1_i386.deb ...
+Unpacking kexec-tools (1:2.0.16-1ubuntu1.1) ...
+Selecting previously unselected package makedumpfile.
+Preparing to unpack .../makedumpfile_1%3a1.6.5-1ubuntu1~18.04.7_i386.deb ...
+Unpacking makedumpfile (1:1.6.5-1ubuntu1~18.04.7) ...
+Selecting previously unselected package kdump-tools.
+Preparing to unpack .../kdump-tools_1%3a1.6.5-1ubuntu1~18.04.7_i386.deb ...
+Unpacking kdump-tools (1:1.6.5-1ubuntu1~18.04.7) ...
+Setting up kexec-tools (1:2.0.16-1ubuntu1.1) ...
+Generating /etc/default/kexec...
+Setting up makedumpfile (1:1.6.5-1ubuntu1~18.04.7) ...
+Setting up kdump-tools (1:1.6.5-1ubuntu1~18.04.7) ...
+
+Creating config file /etc/default/kdump-tools with new version
+Sourcing file `/etc/default/grub'
+Sourcing file `/etc/default/grub.d/kdump-tools.cfg'
+Generating grub configuration file ...
+Found linux image: /boot/vmlinuz-5.4.0-150-generic
+Found initrd image: /boot/initrd.img-5.4.0-150-generic
+Found linux image: /boot/vmlinuz-5.4.0-42-generic
+Found initrd image: /boot/initrd.img-5.4.0-42-generic
+Found memtest86+ image: /boot/memtest86+.elf
+Found memtest86+ image: /boot/memtest86+.bin
+done
+Created symlink /etc/systemd/system/multi-user.target.wants/kdump-tools.service → /lib/systemd/system/kdump-tools.service.
+kdump-tools-dump.service is a disabled or a static unit, not starting it.
+Processing triggers for man-db (2.8.3-2ubuntu0.1) ...
+Processing triggers for ureadahead (0.100.0-21) ...
+ureadahead will be reprofiled on next reboot
+Processing triggers for systemd (237-3ubuntu10.42) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/poulsbo-panic-collect.service → /etc/systemd/system/poulsbo-panic-collect.service.
+Sourcing file `/etc/default/grub'
+Sourcing file `/etc/default/grub.d/50-poulsbo-panic-kdump.cfg'
+Sourcing file `/etc/default/grub.d/kdump-tools.cfg'
+Generating grub configuration file ...
+Found linux image: /boot/vmlinuz-5.4.0-150-generic
+Found initrd image: /boot/initrd.img-5.4.0-150-generic
+Found linux image: /boot/vmlinuz-5.4.0-42-generic
+Found initrd image: /boot/initrd.img-5.4.0-42-generic
+Found memtest86+ image: /boot/memtest86+.elf
+Found memtest86+ image: /boot/memtest86+.bin
+done
+update-initramfs: Generating /boot/initrd.img-5.4.0-150-generic
+packages_installed=1
+sysctl_changed=1
+grub_changed=1
+kdump_defaults_changed=1
+collector_changed=1
+reboot_required=1
+configured_crashkernel=128M
+configured_panic_timeout_secs=10
+configured_panic_on_oops=1
+configured_sysrq=1
+current_cmdline=BOOT_IMAGE=/boot/vmlinuz-5.4.0-150-generic root=UUID=e9e903b1-e9af-4b83-ba20-6ef5f5abbcf6 ro quiet splash vt.handoff=1
+current_crashkernel_cmdline_value=absent
+current_kernel_panic=10
+current_kernel_panic_on_oops=1
+current_kernel_sysrq=1
+kdump_enabled=enabled
+kdump_active=active
+collector_enabled=enabled
+collector_active=inactive
+kdump_status_begin
+ * no crashkernel= parameter in the kernel cmdline
+ * Invalid symlink : /var/lib/kdump/initrd.img
+ * Invalid symlink : /var/lib/kdump/vmlinuz
+current state   : Not ready to kdump
+kdump_status_end
+panic_latest_begin
+collected_at=2026-05-12T22:21:41+03:00
+current_boot_id=8a2a7dcc-9de6-43ca-94d8-84d22a704ab5
+prevboot_log_present=1
+journal_panic_matches=0
+latest_vmcore_present=0
+latest_vmcore_path=
+latest_vmcore_dir=
+latest_vmcore_size=0
+latest_vmcore_dmesg_present=0
+latest_vmcore_dmesg_path=
+latest_pstore_entries=none
+panic_latest_end

@@ -1,0 +1,12 @@
+kernel=5.4.0-150-generic
+driver_module_name=gma500_gfx
+driver_modinfo_path=/lib/modules/5.4.0-150-generic/updates/poulsbo/gma500_gfx.ko
+driver_srcversion=8CB35627334C3560115D1F6
+override_module_path=/lib/modules/5.4.0-150-generic/updates/poulsbo/gma500_gfx.ko
+override_module_present=1
+override_module_size=383644
+rollback_service_enabled=enabled
+rollback_service_active=inactive
+rollback_pending_present=0
+rollback_backup_present=1
+rollback_backup_size=382696

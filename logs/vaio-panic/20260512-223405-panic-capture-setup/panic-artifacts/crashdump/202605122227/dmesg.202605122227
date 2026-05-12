@@ -1,0 +1,842 @@
+[   44.204205] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   44.204270] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007a6
+[   47.468211] psbfb_log_imageblit: 15 callbacks suppressed
+[   47.468244] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   47.468332] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   47.468355] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007c6
+[   47.672259] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   47.672340] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007c8
+[   47.876330] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   47.876409] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007ca
+[   48.080401] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   48.080511] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007cc
+[   48.284229] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   48.284309] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007ce
+[   48.488354] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   48.488457] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007d0
+[   48.692239] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   48.692323] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007d2
+[   48.896240] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   48.896333] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007d4
+[   49.100372] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   49.100481] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007d6
+[   49.304377] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   49.304484] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007d8
+[   52.568353] psbfb_log_imageblit: 15 callbacks suppressed
+[   52.568380] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   52.568445] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   52.568460] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007f8
+[   52.772382] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   52.772489] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007fa
+[   52.976385] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   52.976494] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007fc
+[   53.180222] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   53.180328] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0007fe
+[   53.384235] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   53.384315] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000800
+[   53.588386] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   53.588494] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000802
+[   53.792244] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   53.792317] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000804
+[   53.996336] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   53.996414] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000806
+[   54.200386] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   54.200493] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000808
+[   54.404241] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   54.404323] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00080a
+[   57.668364] psbfb_log_imageblit: 15 callbacks suppressed
+[   57.668391] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   57.668496] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   57.668517] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00082a
+[   57.872347] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   57.872425] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00082c
+[   58.076274] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   58.076369] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00082e
+[   58.280318] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   58.280440] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000830
+[   58.484411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   58.484516] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000832
+[   58.688397] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   58.688521] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000834
+[   58.892410] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   58.892532] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000836
+[   59.096168] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   59.096247] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000838
+[   59.300340] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   59.300447] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00083a
+[   59.504353] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   59.504463] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00083c
+[   62.768232] psbfb_log_imageblit: 15 callbacks suppressed
+[   62.768262] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   62.768329] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   62.768343] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00085c
+[   62.972276] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   62.972386] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00085e
+[   63.176224] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   63.176312] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000860
+[   63.380314] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   63.380424] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000862
+[   63.584222] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   63.584317] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000864
+[   63.788390] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   63.788499] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000866
+[   63.992291] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   63.992398] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000868
+[   64.196270] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   64.196378] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00086a
+[   64.400314] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   64.400423] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00086c
+[   64.604398] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   64.604506] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00086e
+[   67.868277] psbfb_log_imageblit: 15 callbacks suppressed
+[   67.868310] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   67.868398] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   67.868424] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00088e
+[   68.072321] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   68.072430] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000890
+[   68.276309] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   68.276417] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000892
+[   68.480385] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   68.480495] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000894
+[   68.684414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   68.684495] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000896
+[   68.888363] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   68.888473] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000898
+[   69.092403] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   69.092483] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00089a
+[   69.296401] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   69.296510] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00089c
+[   69.500385] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   69.500493] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00089e
+[   69.704356] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   69.704466] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008a0
+[   72.968133] psbfb_log_imageblit: 15 callbacks suppressed
+[   72.968154] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   72.968209] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   72.968221] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008c0
+[   73.172191] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   73.172254] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008c2
+[   73.380207] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   73.380268] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008c4
+[   73.584166] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   73.584233] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008c6
+[   73.788122] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   73.788184] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008c8
+[   73.992117] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   73.992186] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008ca
+[   74.196135] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   74.196200] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008cc
+[   74.400143] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   74.400208] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008ce
+[   74.604152] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   74.604218] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008d0
+[   74.808456] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   74.808561] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008d2
+[   77.953526] perf: interrupt took too long (2541 > 2500), lowering kernel.perf_event_max_sample_rate to 78500
+[   78.072150] psbfb_log_imageblit: 15 callbacks suppressed
+[   78.072171] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   78.072230] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   78.072241] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008f2
+[   78.276200] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   78.276267] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008f4
+[   78.480222] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   78.480285] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008f6
+[   78.684263] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   78.684330] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008f8
+[   78.888229] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   78.888297] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008fa
+[   79.092269] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   79.092334] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008fc
+[   79.296255] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   79.296325] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0008fe
+[   79.500239] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   79.500309] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000900
+[   79.705162] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   79.705230] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000902
+[   79.908441] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   79.908547] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000904
+[   83.172395] psbfb_log_imageblit: 15 callbacks suppressed
+[   83.172430] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   83.172519] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   83.172541] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000924
+[   83.376422] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   83.376534] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000926
+[   83.580417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   83.580526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000928
+[   83.784533] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   83.784621] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00092a
+[   83.988427] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   83.988539] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00092c
+[   84.192413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   84.192518] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00092e
+[   84.396414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   84.396496] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000930
+[   84.600411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   84.600520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000932
+[   84.804400] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   84.804509] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000934
+[   85.008411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   85.008522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000936
+[   88.272420] psbfb_log_imageblit: 15 callbacks suppressed
+[   88.272447] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   88.272552] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   88.272580] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000956
+[   88.476428] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   88.476551] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000958
+[   88.680424] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   88.680548] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00095a
+[   88.884425] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   88.884550] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00095c
+[   89.088424] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   89.088546] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00095e
+[   89.292403] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   89.292527] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000960
+[   89.496423] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   89.496548] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000962
+[   89.700426] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   89.700551] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000964
+[   89.904435] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   89.904559] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000966
+[   90.108435] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   90.108560] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000968
+[   93.372421] psbfb_log_imageblit: 15 callbacks suppressed
+[   93.372448] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   93.372554] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   93.372583] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000988
+[   93.576449] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   93.576573] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00098a
+[   93.780436] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   93.780562] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00098c
+[   93.984428] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   93.984550] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00098e
+[   94.188425] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   94.188549] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000990
+[   94.392427] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   94.392552] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000992
+[   94.596426] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   94.596552] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000994
+[   94.800443] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   94.800568] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000996
+[   95.004282] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   95.004380] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000998
+[   95.208377] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   95.208486] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x00099a
+[   98.472395] psbfb_log_imageblit: 15 callbacks suppressed
+[   98.472430] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   98.472520] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[   98.472544] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009ba
+[   98.676407] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   98.676515] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009bc
+[   98.880710] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   98.880832] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009be
+[   99.084486] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   99.084610] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009c0
+[   99.288488] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   99.288594] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009c2
+[   99.492481] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   99.492605] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009c4
+[   99.696406] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   99.696530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009c6
+[   99.900397] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[   99.900521] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009c8
+[  100.104403] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  100.104537] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009ca
+[  100.308457] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  100.308581] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009cc
+[  103.572373] psbfb_log_imageblit: 15 callbacks suppressed
+[  103.572408] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  103.572495] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  103.572520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009ec
+[  103.776521] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  103.776610] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009ee
+[  103.980320] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  103.980430] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009f0
+[  104.184413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  104.184523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009f2
+[  104.388414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  104.388525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009f4
+[  104.592413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  104.592522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009f6
+[  104.796401] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  104.796483] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009f8
+[  105.000415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  105.000493] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009fa
+[  105.204420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  105.204530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009fc
+[  105.408416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  105.408527] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x0009fe
+[  108.672401] psbfb_log_imageblit: 15 callbacks suppressed
+[  108.672436] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  108.672524] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  108.672545] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a1e
+[  108.876416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  108.876527] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a20
+[  109.080412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  109.080523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a22
+[  109.284426] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  109.284534] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a24
+[  109.488417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  109.488525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a26
+[  109.692414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  109.692524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a28
+[  109.896412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  109.896522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a2a
+[  110.100398] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  110.100507] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a2c
+[  110.304139] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  110.304220] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a2e
+[  110.508449] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  110.508574] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a30
+[  113.772398] psbfb_log_imageblit: 15 callbacks suppressed
+[  113.772425] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  113.772531] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  113.772554] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a50
+[  113.976480] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  113.976588] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a52
+[  114.180394] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  114.180505] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a54
+[  114.384419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  114.384530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a56
+[  114.588414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  114.588524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a58
+[  114.792310] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  114.792381] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a5a
+[  114.996432] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  114.996526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a5c
+[  115.200414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  115.200522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a5e
+[  115.404417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  115.404528] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a60
+[  115.608416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  115.608494] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a62
+[  118.872535] psbfb_log_imageblit: 15 callbacks suppressed
+[  118.872569] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  118.872683] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  118.872705] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a82
+[  119.076484] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  119.076609] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a84
+[  119.280445] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  119.280572] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a86
+[  119.484401] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  119.484507] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a88
+[  119.688397] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  119.688520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a8a
+[  119.892400] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  119.892522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a8c
+[  120.096403] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  120.096526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a8e
+[  120.300400] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  120.300522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a90
+[  120.504411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  120.504535] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a92
+[  120.708446] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  120.708572] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000a94
+[  123.972423] psbfb_log_imageblit: 15 callbacks suppressed
+[  123.972451] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  123.972557] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  123.972586] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ab4
+[  124.176444] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  124.176569] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ab6
+[  124.380445] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  124.380570] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ab8
+[  124.584412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  124.584517] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000aba
+[  124.788397] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  124.788520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000abc
+[  124.992399] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  124.992523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000abe
+[  125.196398] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  125.196521] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ac0
+[  125.400403] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  125.400527] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ac2
+[  125.604437] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  125.604536] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ac4
+[  125.808411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  125.808519] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ac6
+[  129.072391] psbfb_log_imageblit: 15 callbacks suppressed
+[  129.072427] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  129.072516] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  129.072543] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ae6
+[  129.276410] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  129.276493] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ae8
+[  129.480411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  129.480522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000aea
+[  129.684400] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  129.684482] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000aec
+[  129.888225] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  129.888299] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000aee
+[  130.092454] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  130.092562] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000af0
+[  130.296322] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  130.296405] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000af2
+[  130.500416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  130.500526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000af4
+[  130.704328] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  130.704407] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000af6
+[  130.908412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  130.908522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000af8
+[  134.172394] psbfb_log_imageblit: 15 callbacks suppressed
+[  134.172431] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  134.172518] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  134.172542] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b18
+[  134.376404] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  134.376515] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b1a
+[  134.580417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  134.580528] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b1c
+[  134.784417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  134.784526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b1e
+[  134.992437] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  134.992515] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b20
+[  135.196417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  135.196524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b22
+[  135.400411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  135.400519] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b24
+[  135.604419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  135.604527] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b26
+[  135.808417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  135.808525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b28
+[  136.012408] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  136.012516] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b2a
+[  139.276416] psbfb_log_imageblit: 15 callbacks suppressed
+[  139.276443] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  139.276499] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  139.276511] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b4a
+[  139.480223] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  139.480295] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b4c
+[  139.684388] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  139.684479] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b4e
+[  139.888428] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  139.888551] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b50
+[  140.092425] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  140.092533] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b52
+[  140.296424] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  140.296536] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b54
+[  140.500416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  140.500526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b56
+[  140.704419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  140.704528] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b58
+[  140.908415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  140.908523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b5a
+[  141.112415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  141.112523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b5c
+[  144.376176] psbfb_log_imageblit: 15 callbacks suppressed
+[  144.376197] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  144.376252] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  144.376264] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b7c
+[  144.580218] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  144.580287] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b7e
+[  144.784220] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  144.784293] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b80
+[  144.988182] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  144.988249] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b82
+[  145.192200] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  145.192265] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b84
+[  145.396144] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  145.396204] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b86
+[  145.600184] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  145.600248] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b88
+[  145.804183] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  145.804261] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b8a
+[  146.008207] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  146.008274] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b8c
+[  146.212140] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  146.212219] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000b8e
+[  149.476414] psbfb_log_imageblit: 15 callbacks suppressed
+[  149.476451] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  149.476539] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  149.476562] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bae
+[  149.680429] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  149.680541] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bb0
+[  149.884420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  149.884530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bb2
+[  150.088420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  150.088488] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bb4
+[  150.292413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  150.292525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bb6
+[  150.496413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  150.496494] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bb8
+[  150.700427] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  150.700536] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bba
+[  150.904330] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  150.904411] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bbc
+[  151.108415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  151.108523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bbe
+[  151.312421] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  151.312541] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bc0
+[  154.576401] psbfb_log_imageblit: 15 callbacks suppressed
+[  154.576428] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  154.576534] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  154.576557] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000be0
+[  154.780414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  154.780520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000be2
+[  154.988469] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  154.988589] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000be4
+[  155.192412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  155.192537] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000be6
+[  155.396415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  155.396539] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000be8
+[  155.600414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  155.600538] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bea
+[  155.804410] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  155.804534] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bec
+[  156.008419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  156.008544] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bee
+[  156.212426] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  156.212551] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bf0
+[  156.416427] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  156.416551] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000bf2
+[  159.680479] psbfb_log_imageblit: 15 callbacks suppressed
+[  159.680506] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  159.680613] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  159.680640] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c12
+[  159.884327] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  159.884450] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c14
+[  160.088412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  160.088535] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c16
+[  160.292418] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  160.292498] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c18
+[  160.496423] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  160.496531] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c1a
+[  160.700436] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  160.700546] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c1c
+[  160.904322] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  160.904403] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c1e
+[  161.108435] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  161.108543] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c20
+[  161.312328] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  161.312409] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c22
+[  161.516154] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  161.516242] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c24
+[  164.780410] psbfb_log_imageblit: 15 callbacks suppressed
+[  164.780445] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  164.780534] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  164.780555] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c44
+[  164.984418] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  164.984500] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c46
+[  165.188460] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  165.188585] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c48
+[  165.392462] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  165.392567] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c4a
+[  165.596465] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  165.596589] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c4c
+[  165.800458] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  165.800649] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c4e
+[  166.004411] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  166.004535] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c50
+[  166.208415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  166.208540] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c52
+[  166.412449] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  166.412571] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c54
+[  166.616443] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  166.616569] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c56
+[  169.880400] psbfb_log_imageblit: 15 callbacks suppressed
+[  169.880435] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  169.880523] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  169.880549] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c76
+[  170.084148] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  170.084208] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c78
+[  170.288196] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  170.288262] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c7a
+[  170.492217] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  170.492281] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c7c
+[  170.696154] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  170.696218] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c7e
+[  170.900183] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  170.900246] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c80
+[  171.104240] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  171.104309] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c82
+[  171.308200] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  171.308265] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c84
+[  171.512200] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  171.512268] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c86
+[  171.716208] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  171.716270] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000c88
+[  174.980207] psbfb_log_imageblit: 15 callbacks suppressed
+[  174.980250] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  174.980318] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  174.980330] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ca8
+[  175.188636] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  175.188740] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000caa
+[  175.392639] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  175.392756] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cac
+[  175.596407] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  175.596485] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cae
+[  175.800412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  175.800520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cb0
+[  176.004419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  176.004530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cb2
+[  176.208414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  176.208524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cb4
+[  176.412420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  176.412530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cb6
+[  176.616400] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  176.616482] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cb8
+[  176.820410] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  176.820517] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cba
+[  180.084398] psbfb_log_imageblit: 15 callbacks suppressed
+[  180.084434] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  180.084523] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  180.084549] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cda
+[  180.288398] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  180.288481] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cdc
+[  180.492463] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  180.492567] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cde
+[  180.696416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  180.696498] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ce0
+[  180.900415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  180.900529] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ce2
+[  181.104426] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  181.104539] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ce4
+[  181.308439] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  181.308544] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ce6
+[  181.512440] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  181.512540] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ce8
+[  181.716417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  181.716496] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cea
+[  181.920420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  181.920530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000cec
+[  185.184404] psbfb_log_imageblit: 15 callbacks suppressed
+[  185.184438] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  185.184525] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  185.184548] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d0c
+[  185.388447] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  185.388569] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d0e
+[  185.592415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  185.592520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d10
+[  185.796462] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  185.796586] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d12
+[  186.000493] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  186.000617] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d14
+[  186.204489] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  186.204613] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d16
+[  186.408397] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  186.408477] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d18
+[  186.612414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  186.612494] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d1a
+[  186.816412] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  186.816491] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d1c
+[  187.020419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  187.020529] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d1e
+[  190.284436] psbfb_log_imageblit: 15 callbacks suppressed
+[  190.284463] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  190.284568] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  190.284597] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d3e
+[  190.488421] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  190.488531] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d40
+[  190.692416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  190.692525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d42
+[  190.896422] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  190.896533] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d44
+[  191.100417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  191.100498] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d46
+[  191.304418] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  191.304529] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d48
+[  191.508324] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  191.508404] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d4a
+[  191.712417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  191.712527] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d4c
+[  191.916423] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  191.916532] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d4e
+[  192.120436] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  192.120543] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d50
+[  195.384432] psbfb_log_imageblit: 15 callbacks suppressed
+[  195.384460] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  195.384566] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  195.384594] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d70
+[  195.588253] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  195.588347] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d72
+[  195.792413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  195.792521] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d74
+[  195.996415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  195.996524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d76
+[  196.200420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  196.200530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d78
+[  196.404699] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  196.404808] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d7a
+[  196.608444] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  196.608569] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d7c
+[  196.812423] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  196.812545] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d7e
+[  197.016416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  197.016539] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d80
+[  197.220446] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  197.220574] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000d82
+[  200.484234] psbfb_log_imageblit: 15 callbacks suppressed
+[  200.484259] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  200.484320] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  200.484335] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000da2
+[  200.688122] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  200.688181] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000da4
+[  200.892188] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  200.892250] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000da6
+[  201.096849] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  201.096917] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000da8
+[  201.300169] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  201.300234] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000daa
+[  201.504271] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  201.504336] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dac
+[  201.708198] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  201.708262] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dae
+[  201.912234] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  201.912301] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000db0
+[  202.116262] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  202.116333] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000db2
+[  202.320225] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  202.320294] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000db4
+[  205.588424] psbfb_log_imageblit: 15 callbacks suppressed
+[  205.588452] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  205.588558] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  205.588586] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dd4
+[  205.792447] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  205.792572] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dd6
+[  205.996438] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  205.996562] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dd8
+[  206.200462] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  206.200552] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dda
+[  206.408415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  206.408504] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ddc
+[  206.612415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  206.612497] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000dde
+[  206.816278] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  206.816354] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000de0
+[  207.020267] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  207.020385] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000de2
+[  207.224264] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  207.224343] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000de4
+[  207.428416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  207.428506] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000de6
+[  210.692399] psbfb_log_imageblit: 15 callbacks suppressed
+[  210.692435] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  210.692521] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  210.692545] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e06
+[  210.896409] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  210.896517] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e08
+[  211.100393] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  211.100505] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e0a
+[  211.304420] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  211.304529] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e0c
+[  211.508128] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  211.508192] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e0e
+[  211.714117] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  211.714186] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e10
+[  211.916166] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  211.916230] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e12
+[  212.120265] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  212.120328] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e14
+[  212.225115] perf: interrupt took too long (3236 > 3176), lowering kernel.perf_event_max_sample_rate to 61750
+[  212.324227] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  212.324297] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e16
+[  212.528216] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  212.528282] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e18
+[  215.792393] psbfb_log_imageblit: 15 callbacks suppressed
+[  215.792427] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  215.792514] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  215.792535] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e38
+[  215.996414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  215.996524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e3a
+[  216.200448] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  216.200574] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e3c
+[  216.404413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  216.404523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e3e
+[  216.608413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  216.608522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e40
+[  216.812413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  216.812525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e42
+[  217.016417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  217.016526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e44
+[  217.220324] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  217.220404] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e46
+[  217.424419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  217.424530] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e48
+[  217.628414] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  217.628506] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e4a
+[  220.892393] psbfb_log_imageblit: 15 callbacks suppressed
+[  220.892428] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  220.892515] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  220.892538] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e6a
+[  221.096413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  221.096523] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e6c
+[  221.300410] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  221.300520] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e6e
+[  221.504419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  221.504526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e70
+[  221.708330] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  221.708410] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e72
+[  221.912415] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  221.912524] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e74
+[  222.116416] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  222.116525] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e76
+[  222.320413] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  222.320522] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e78
+[  222.524419] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  222.524526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e7a
+[  222.728417] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  222.728526] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e7c
+[  225.996149] psbfb_log_imageblit: 15 callbacks suppressed
+[  225.996171] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  225.996228] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  225.996239] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e9c
+[  226.200233] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  226.200300] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000e9e
+[  226.404281] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  226.404347] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ea0
+[  226.608199] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  226.608264] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ea2
+[  226.812235] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  226.812301] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ea4
+[  227.016227] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  227.016295] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ea6
+[  227.220266] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  227.220329] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ea8
+[  227.424185] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  227.424250] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000eaa
+[  227.628405] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  227.628470] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000eac
+[  227.832150] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  227.832217] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000eae
+[  231.100167] psbfb_log_imageblit: 15 callbacks suppressed
+[  231.100189] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  231.100242] psb_sgx_log_irq_summary: 15 callbacks suppressed
+[  231.100251] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ece
+[  231.304227] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  231.304291] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ed0
+[  231.508203] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  231.508268] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ed2
+[  231.716161] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  231.716225] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ed4
+[  231.920237] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  231.920304] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ed6
+[  232.124196] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  232.124266] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ed8
+[  232.328224] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  232.328291] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000eda
+[  232.532190] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  232.532262] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000edc
+[  232.736265] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  232.736338] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ede
+[  232.940196] gma500 0000:00:02.0: 2D imageblit submit: dx=160 dy=48 w=8 h=16 image_depth=1 fb_depth=24 fg=0x7 bg=0x0 fb_flags=0x200000
+[  232.940262] gma500 0000:00:02.0: SGX irq: stat1=0x88000000 [TWOD_COMPLETE] stat2=0x000000 [none] twod_blit=0x000ee0
+[  234.838976] sysrq: Trigger a crash
+[  234.839330] Kernel panic - not syncing: sysrq triggered crash
+[  234.839850] CPU: 1 PID: 2890 Comm: bash Kdump: loaded Tainted: G           OE     5.4.0-150-generic #167~18.04.1-Ubuntu
+[  234.840901] Hardware name: Sony Corporation VGN-P11Z_Q/VAIO, BIOS R2073U3 01/13/2010
+[  234.841544] Call Trace:
+[  234.841790]  dump_stack+0x60/0x7a
+[  234.842069]  panic+0xbb/0x282
+[  234.842333]  sysrq_handle_crash+0x12/0x20
+[  234.842647]  __handle_sysrq+0x88/0x130
+[  234.842647]  ? sysrq_filter+0x430/0x430
+[  234.842647]  write_sysrq_trigger+0x24/0x40
+[  234.842647]  proc_reg_write+0x36/0x70
+[  234.842647]  ? proc_reg_unlocked_ioctl+0x60/0x60
+[  234.842647]  __vfs_write+0x1c/0x50
+[  234.842647]  vfs_write+0x94/0x1b0
+[  234.842647]  ksys_write+0x89/0xc0
+[  234.842647]  sys_write+0x16/0x20
+[  234.842647]  do_fast_syscall_32+0x7f/0x240
+[  234.842647]  entry_SYSENTER_32+0xac/0xff
+[  234.842647] EIP: 0xb7fb8e65
+[  234.842647] Code: d3 5b 5e 5f 5d c3 8d b4 26 00 00 00 00 b8 00 09 3d 00 eb b5 8b 04 24 c3 8b 34 24 c3 8b 3c 24 c3 90 51 52 55 89 e5 0f 34 cd 80 <5d> 5a 59 c3 90 90 90 90 8d 76 00 58 b8 77 00 00 00 cd 80 90 8d 76
+[  234.842647] EAX: ffffffda EBX: 00000001 ECX: 01242260 EDX: 00000002
+[  234.842647] ESI: 01242260 EDI: 00000002 EBP: b7f73d80 ESP: bfdb5f00
+[  234.842647] DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 007b EFLAGS: 00000246

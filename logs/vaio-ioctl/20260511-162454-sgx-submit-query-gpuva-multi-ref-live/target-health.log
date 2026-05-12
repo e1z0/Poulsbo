@@ -1,0 +1,11 @@
+target_host=10.1.11.218
+target_user=root
+timeout_secs=5
+ping_status=ok
+tcp_22_status=open
+ssh_none_status=auth_rejected
+ssh_none_kex=1
+ssh_pubkey_status=ok
+ssh_pubkey_kex=1
+scp_status=ok
+overall=remote_usable

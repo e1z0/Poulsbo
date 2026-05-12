@@ -1,0 +1,12 @@
+deploy_rc=0
+deploy_session_dir=/root/Poulsbo/logs/vaio-plan-session/20260512-102724-sgx-plan-session/children/20260512-102729-deploy/children/20260512-102729-guarded-deploy
+deploy_result_file=/root/Poulsbo/logs/vaio-plan-session/20260512-102724-sgx-plan-session/children/20260512-102729-deploy/children/20260512-102729-guarded-deploy/session-result.env
+deploy_outcome=completed
+deploy_last_state=remote_usable
+deploy_final_driver_srcversion=
+recovery_rc=1
+recovery_session_dir=/root/Poulsbo/logs/vaio-plan-session/20260512-102724-sgx-plan-session/children/20260512-102729-deploy/children/20260512-103112-plan-recovery
+recovery_result_file=/root/Poulsbo/logs/vaio-plan-session/20260512-102724-sgx-plan-session/children/20260512-102729-deploy/children/20260512-103112-plan-recovery/session-result.env
+recovery_outcome=validation_failed
+recovery_last_state=remote_usable
+recovery_final_driver_srcversion=

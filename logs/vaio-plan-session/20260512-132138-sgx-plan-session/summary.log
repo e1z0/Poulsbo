@@ -1,0 +1,3 @@
+preflight_overall=remote_usable
+selected_mode=recovery
+selected_script=/root/Poulsbo/scripts/run-vaio-sgx-plan-recovery-session.sh

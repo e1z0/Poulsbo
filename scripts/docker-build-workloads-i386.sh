@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+image_tag="${IMAGE_TAG:-poulsbo:workloads-bionic-i386}"
+docker_host="${DOCKER_HOST:-}"
+build_network="${DOCKER_BUILD_NETWORK:-host}"
+run_network="${DOCKER_RUN_NETWORK:-host}"
+
+docker_args=()
+if [[ -n "$docker_host" ]]; then
+    docker_args+=(-H "$docker_host")
+fi
+
+docker "${docker_args[@]}" build \
+    --platform linux/386 \
+    --network "$build_network" \
+    -t "$image_tag" \
+    -f docker/ubuntu-18.04-workloads-i386/Dockerfile \
+    .
+
+docker "${docker_args[@]}" run --rm \
+    --platform linux/386 \
+    --network "$run_network" \
+    -v "$(pwd):/workspace" \
+    -w /workspace \
+    "$image_tag" \
+    bash -lc "make -C workloads clean all"

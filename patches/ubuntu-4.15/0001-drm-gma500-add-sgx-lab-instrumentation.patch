@@ -1,0 +1,269 @@
+diff --git a/drivers/gpu/drm/gma500/psb_drv.h b/drivers/gpu/drm/gma500/psb_drv.h
+index f9814c4ed..fef418bfa 100644
+--- a/drivers/gpu/drm/gma500/psb_drv.h
++++ b/drivers/gpu/drm/gma500/psb_drv.h
+@@ -480,6 +480,17 @@ struct drm_psb_private {
+ 	/* Fencing / irq */
+ 	uint32_t vdc_irq_mask;
+ 	uint32_t pipestat[PSB_NUM_PIPE];
++	struct {
++		u32 irq_count;
++		u32 fault_count;
++		u32 last_stat_1;
++		u32 last_stat_2;
++		u32 last_bif_int_stat;
++		u32 last_bif_fault;
++		u32 last_2d_blit_status;
++		unsigned long last_irq_jiffies;
++		unsigned long last_fault_jiffies;
++	} sgx_irq;
+ 
+ 	spinlock_t irqmask_lock;
+ 
+diff --git a/drivers/gpu/drm/gma500/psb_irq.c b/drivers/gpu/drm/gma500/psb_irq.c
+index 076b6da44..866b97723 100644
+--- a/drivers/gpu/drm/gma500/psb_irq.c
++++ b/drivers/gpu/drm/gma500/psb_irq.c
+@@ -30,6 +30,55 @@
+ #include "psb_irq.h"
+ #include "mdfld_output.h"
+ 
++#define PSB_SGX_LAB_EVENT_MASK _PSB_CE_TWOD_COMPLETE
++
++struct psb_irq_bit_name {
++	u32 bit;
++	const char *name;
++};
++
++static const struct psb_irq_bit_name psb_sgx_stat_1_bits[] = {
++	{ _PSB_CE_TA_DPM_FAULT, "TA_DPM_FAULT" },
++	{ _PSB_CE_TWOD_COMPLETE, "TWOD_COMPLETE" },
++	{ _PSB_CE_DPM_OUT_OF_MEMORY_ZLS, "DPM_OOM_ZLS" },
++	{ _PSB_CE_DPM_TA_MEM_FREE, "DPM_TA_MEM_FREE" },
++	{ _PSB_CE_PIXELBE_END_RENDER, "PIXELBE_END_RENDER" },
++	{ _PSB_CE_SW_EVENT, "SW_EVENT" },
++	{ _PSB_CE_TA_FINISHED, "TA_FINISHED" },
++	{ _PSB_CE_TA_TERMINATE, "TA_TERMINATE" },
++	{ _PSB_CE_DPM_REACHED_MEM_THRESH, "DPM_MEM_THRESH" },
++	{ _PSB_CE_DPM_OUT_OF_MEMORY_GBL, "DPM_OOM_GBL" },
++	{ _PSB_CE_DPM_OUT_OF_MEMORY_MT, "DPM_OOM_MT" },
++	{ _PSB_CE_DPM_3D_MEM_FREE, "DPM_3D_MEM_FREE" },
++};
++
++static const struct psb_irq_bit_name psb_sgx_stat_2_bits[] = {
++	{ _PSB_CE2_BIF_REQUESTER_FAULT, "BIF_REQUESTER_FAULT" },
++};
++
++static const struct psb_irq_bit_name psb_sgx_bif_requester_bits[] = {
++	{ _PSB_CBI_STAT_FAULT_CACHE, "CACHE" },
++	{ _PSB_CBI_STAT_FAULT_TA, "TA" },
++	{ _PSB_CBI_STAT_FAULT_VDM, "VDM" },
++	{ _PSB_CBI_STAT_FAULT_2D, "2D" },
++	{ _PSB_CBI_STAT_FAULT_PBE, "PBE" },
++	{ _PSB_CBI_STAT_FAULT_TSP, "TSP" },
++	{ _PSB_CBI_STAT_FAULT_ISP, "ISP" },
++	{ _PSB_CBI_STAT_FAULT_USSEPDS, "USSEPDS" },
++	{ _PSB_CBI_STAT_FAULT_HOST, "HOST" },
++};
++
+ /*
+  * inline functions
+  */
+@@ -200,50 +249,146 @@ static void psb_vdc_interrupt(struct drm_device *dev, uint32_t vdc_stat)
+ 		mid_pipe_event_handler(dev, 1);
+ }
+ 
++static void
++psb_sgx_format_bits(const struct psb_irq_bit_name *bits, size_t bit_count,
++		    u32 value, char *buf, size_t buf_size)
++{
++	size_t pos = 0;
++	bool first = true;
++	unsigned int i;
++
++	if (!buf_size)
++		return;
++
++	buf[0] = '\0';
++
++	for (i = 0; i < bit_count; i++) {
++		if (!(value & bits[i].bit))
++			continue;
++		if (pos >= buf_size)
++			break;
++		pos += scnprintf(buf + pos, buf_size - pos, "%s%s",
++				 first ? "" : ",", bits[i].name);
++		first = false;
++	}
++
++	if (first)
++		scnprintf(buf, buf_size, "none");
++}
++
++static void
++psb_sgx_snapshot_irq(struct drm_psb_private *dev_priv, u32 stat_1, u32 stat_2,
++		     u32 bif_int_stat, u32 bif_fault, u32 twod_blit_status)
++{
++	dev_priv->sgx_irq.irq_count++;
++	dev_priv->sgx_irq.last_stat_1 = stat_1;
++	dev_priv->sgx_irq.last_stat_2 = stat_2;
++	dev_priv->sgx_irq.last_bif_int_stat = bif_int_stat;
++	dev_priv->sgx_irq.last_bif_fault = bif_fault;
++	dev_priv->sgx_irq.last_2d_blit_status = twod_blit_status;
++	dev_priv->sgx_irq.last_irq_jiffies = jiffies;
++
++	if (stat_2 & _PSB_CE2_BIF_REQUESTER_FAULT) {
++		dev_priv->sgx_irq.fault_count++;
++		dev_priv->sgx_irq.last_fault_jiffies = jiffies;
++	}
++}
++
++static void
++psb_sgx_log_irq_summary(struct drm_device *dev, const char *reason, u32 stat_1,
++			u32 stat_2, u32 bif_int_stat, u32 bif_fault,
++			u32 twod_blit_status, bool is_fault)
++{
++	char stat_1_desc[160];
++	char stat_2_desc[64];
++	char requester_desc[96];
++
++	psb_sgx_format_bits(psb_sgx_stat_1_bits, ARRAY_SIZE(psb_sgx_stat_1_bits),
++			    stat_1, stat_1_desc, sizeof(stat_1_desc));
++	psb_sgx_format_bits(psb_sgx_stat_2_bits, ARRAY_SIZE(psb_sgx_stat_2_bits),
++			    stat_2, stat_2_desc, sizeof(stat_2_desc));
++
++	if (stat_2 & _PSB_CE2_BIF_REQUESTER_FAULT)
++		psb_sgx_format_bits(psb_sgx_bif_requester_bits,
++				    ARRAY_SIZE(psb_sgx_bif_requester_bits),
++				    bif_int_stat, requester_desc,
++				    sizeof(requester_desc));
++	else
++		scnprintf(requester_desc, sizeof(requester_desc), "none");
++
++	if (is_fault) {
++		dev_err(dev->dev,
++			"SGX %s: stat1=%#08x [%s] stat2=%#08x [%s] bif_int=%#08x requesters=%s fault_addr=%#08x twod_blit=%#08x\n",
++			reason, stat_1, stat_1_desc, stat_2, stat_2_desc,
++			bif_int_stat, requester_desc, bif_fault,
++			twod_blit_status);
++		return;
++	}
++
++	dev_info_ratelimited(dev->dev,
++			     "SGX %s: stat1=%#08x [%s] stat2=%#08x [%s] twod_blit=%#08x\n",
++			     reason, stat_1, stat_1_desc, stat_2, stat_2_desc,
++			     twod_blit_status);
++}
++
++static void psb_sgx_dump_fault_registers(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++	dev_err(dev->dev,
++		"SGX regs: core_id=%#08x core_rev=%#08x clkgate=%#08x soft_reset=%#08x event_enable=%#08x event_enable2=%#08x\n",
++		PSB_RSGX32(PSB_CR_CORE_ID),
++		PSB_RSGX32(PSB_CR_CORE_REVISION),
++		PSB_RSGX32(PSB_CR_CLKGATECTL),
++		PSB_RSGX32(PSB_CR_SOFT_RESET),
++		PSB_RSGX32(PSB_CR_EVENT_HOST_ENABLE),
++		PSB_RSGX32(PSB_CR_EVENT_HOST_ENABLE2));
++	dev_err(dev->dev,
++		"SGX BIF: ctrl=%#08x dir0=%#08x dir1=%#08x bank0=%#08x bank1=%#08x 2d_base=%#08x 3d_base=%#08x\n",
++		PSB_RSGX32(PSB_CR_BIF_CTRL),
++		PSB_RSGX32(PSB_CR_BIF_DIR_LIST_BASE0),
++		PSB_RSGX32(PSB_CR_BIF_DIR_LIST_BASE1),
++		PSB_RSGX32(PSB_CR_BIF_BANK0),
++		PSB_RSGX32(PSB_CR_BIF_BANK1),
++		PSB_RSGX32(PSB_CR_BIF_TWOD_REQ_BASE),
++		PSB_RSGX32(PSB_CR_BIF_3D_REQ_BASE));
++}
++
+ /*
+  * SGX interrupt handler
+  */
+ static void psb_sgx_interrupt(struct drm_device *dev, u32 stat_1, u32 stat_2)
+ {
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+-	u32 val, addr;
+-	int error = false;
++	u32 bif_int_stat = 0;
++	u32 bif_fault = 0;
++	u32 twod_blit_status = 0;
++	bool is_fault = false;
+ 
+ 	if (stat_1 & _PSB_CE_TWOD_COMPLETE)
+-		val = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
++		twod_blit_status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
+ 
+ 	if (stat_2 & _PSB_CE2_BIF_REQUESTER_FAULT) {
+-		val = PSB_RSGX32(PSB_CR_BIF_INT_STAT);
+-		addr = PSB_RSGX32(PSB_CR_BIF_FAULT);
+-		if (val) {
+-			if (val & _PSB_CBI_STAT_PF_N_RW)
+-				DRM_ERROR("SGX MMU page fault:");
+-			else
+-				DRM_ERROR("SGX MMU read / write protection fault:");
+-
+-			if (val & _PSB_CBI_STAT_FAULT_CACHE)
+-				DRM_ERROR("\tCache requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_TA)
+-				DRM_ERROR("\tTA requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_VDM)
+-				DRM_ERROR("\tVDM requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_2D)
+-				DRM_ERROR("\t2D requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_PBE)
+-				DRM_ERROR("\tPBE requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_TSP)
+-				DRM_ERROR("\tTSP requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_ISP)
+-				DRM_ERROR("\tISP requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_USSEPDS)
+-				DRM_ERROR("\tUSSEPDS requestor");
+-			if (val & _PSB_CBI_STAT_FAULT_HOST)
+-				DRM_ERROR("\tHost requestor");
+-
+-			DRM_ERROR("\tMMU failing address is 0x%08x.\n",
+-				  (unsigned int)addr);
+-			error = true;
+-		}
++		bif_int_stat = PSB_RSGX32(PSB_CR_BIF_INT_STAT);
++		bif_fault = PSB_RSGX32(PSB_CR_BIF_FAULT);
++		is_fault = true;
++	}
++
++	psb_sgx_snapshot_irq(dev_priv, stat_1, stat_2, bif_int_stat, bif_fault,
++			     twod_blit_status);
++
++	if (is_fault) {
++		dev_err(dev->dev, "SGX MMU %s fault\n",
++			(bif_int_stat & _PSB_CBI_STAT_PF_N_RW) ?
++			"page" : "read/write protection");
++		psb_sgx_log_irq_summary(dev, "fault", stat_1, stat_2,
++					bif_int_stat, bif_fault,
++					twod_blit_status, true);
++		psb_sgx_dump_fault_registers(dev);
++	} else if (stat_1 & ~_PSB_CE_TWOD_COMPLETE) {
++		psb_sgx_log_irq_summary(dev, "irq", stat_1, stat_2,
++					bif_int_stat, bif_fault,
++					twod_blit_status, false);
+ 	}
+ 
+ 	/* Clear bits */
+@@ -354,9 +499,9 @@ int psb_irq_postinstall(struct drm_device *dev)
+ 
+ 	spin_lock_irqsave(&dev_priv->irqmask_lock, irqflags);
+ 
+-	/* Enable 2D and MMU fault interrupts */
++	/* Enable lab-visible SGX events plus MMU requester faults. */
+ 	PSB_WSGX32(_PSB_CE2_BIF_REQUESTER_FAULT, PSB_CR_EVENT_HOST_ENABLE2);
+-	PSB_WSGX32(_PSB_CE_TWOD_COMPLETE, PSB_CR_EVENT_HOST_ENABLE);
++	PSB_WSGX32(PSB_SGX_LAB_EVENT_MASK, PSB_CR_EVENT_HOST_ENABLE);
+ 	PSB_RSGX32(PSB_CR_EVENT_HOST_ENABLE); /* Post */
+ 
+ 	/* This register is safe even if display island is off */
+@@ -671,4 +816,3 @@ u32 psb_get_vblank_counter(struct drm_device *dev, unsigned int pipe)
+ 
+ 	return count;
+ }
+-

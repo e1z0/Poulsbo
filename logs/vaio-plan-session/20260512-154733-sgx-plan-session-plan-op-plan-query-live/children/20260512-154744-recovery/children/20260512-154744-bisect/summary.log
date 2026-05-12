@@ -1,0 +1,22 @@
+probe=1 phase=plan_op
+probe_1_phase=plan_op
+probe_1_status=good
+probe_1_reason=ok
+probe_1_phase_rc=0
+probe_1_health_rc=0
+probe_1_health=remote_usable
+probe_1_failed_step=
+probe_1_failed_rc=
+probe_1_failed_log=
+probe_1_remote_tmpdir=
+probe=2 phase=plan_query
+probe_2_phase=plan_query
+probe_2_status=bad
+probe_2_reason=phase_timeout
+probe_2_phase_rc=124
+probe_2_health_rc=0
+probe_2_health=ssh_port_down
+probe_2_failed_step=
+probe_2_failed_rc=
+probe_2_failed_log=
+probe_2_remote_tmpdir=

@@ -1,0 +1,43 @@
+address,name,block,notes
+0x0000,PSB_CR_CLKGATECTL,core,clock gating control
+0x0010,PSB_CR_CORE_ID,core,core identifier
+0x0014,PSB_CR_CORE_REVISION,core,core revision
+0x0018,PSB_CR_DESIGNER_REV_FIELD1,core,
+0x001C,PSB_CR_DESIGNER_REV_FIELD2,core,
+0x0080,PSB_CR_SOFT_RESET,core,soft reset control
+0x0110,PSB_CR_EVENT_HOST_ENABLE2,event,secondary host interrupt enable
+0x0114,PSB_CR_EVENT_HOST_CLEAR2,event,secondary host interrupt clear
+0x0118,PSB_CR_EVENT_STATUS2,event,secondary event status
+0x012C,PSB_CR_EVENT_STATUS,event,main event status
+0x0130,PSB_CR_EVENT_HOST_ENABLE,event,main host interrupt enable
+0x0134,PSB_CR_EVENT_HOST_CLEAR,event,main host interrupt clear
+0x0A0C,PSB_CR_USE_CODE_BASE0,use,USE code base 0
+0x0A10,PSB_CR_USE_CODE_BASE1,use,
+0x0A14,PSB_CR_USE_CODE_BASE2,use,
+0x0A18,PSB_CR_USE_CODE_BASE3,use,
+0x0A1C,PSB_CR_USE_CODE_BASE4,use,
+0x0A20,PSB_CR_USE_CODE_BASE5,use,
+0x0A24,PSB_CR_USE_CODE_BASE6,use,
+0x0A28,PSB_CR_USE_CODE_BASE7,use,
+0x0A2C,PSB_CR_USE_CODE_BASE8,use,
+0x0A30,PSB_CR_USE_CODE_BASE9,use,
+0x0A34,PSB_CR_USE_CODE_BASE10,use,
+0x0A38,PSB_CR_USE_CODE_BASE11,use,
+0x0A3C,PSB_CR_USE_CODE_BASE12,use,
+0x0A40,PSB_CR_USE_CODE_BASE13,use,
+0x0A44,PSB_CR_USE_CODE_BASE14,use,
+0x0A48,PSB_CR_USE_CODE_BASE15,use,
+0x0AB8,PSB_CR_PDS_EXEC_BASE,pds,PDS execution base
+0x0AC4,PSB_CR_EVENT_KICKER,event,kicker address
+0x0AC8,PSB_CR_EVENT_KICK,event,kick command
+0x0C00,PSB_CR_BIF_CTRL,bif,BIF control
+0x0C04,PSB_CR_BIF_INT_STAT,bif,BIF interrupt status
+0x0C08,PSB_CR_BIF_FAULT,bif,BIF fault status
+0x0C38,PSB_CR_BIF_DIR_LIST_BASE1,bif,directory list base 1
+0x0C78,PSB_CR_BIF_BANK0,bif,BIF bank 0
+0x0C7C,PSB_CR_BIF_BANK1,bif,BIF bank 1
+0x0C84,PSB_CR_BIF_DIR_LIST_BASE0,bif,directory list base 0
+0x0C88,PSB_CR_BIF_TWOD_REQ_BASE,bif,2D request base
+0x0CAC,PSB_CR_BIF_3D_REQ_BASE,bif,3D request base
+0x0E04,PSB_CR_2D_BLIT_STATUS,2d,2D blit status
+0x0E18,PSB_CR_2D_SOCIF,2d,2D slave interface status

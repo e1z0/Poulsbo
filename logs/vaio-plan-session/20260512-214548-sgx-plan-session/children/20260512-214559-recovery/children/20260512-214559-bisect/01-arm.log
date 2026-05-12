@@ -1,0 +1,15 @@
+STAGE_OK=sync
+STAGE_OK=owner
+STAGE_OK=report
+STAGE_OK=manifest
+STAGE_OK=descriptor_op
+STAGE_OK=descriptor_query
+STAGE_OK=plan_op
+STAGE_OK=plan_query_fetch
+STAGE_OK=plan_query_offset
+STAGE_OK=plan_query_config
+STAGE_OK=plan_query_snapshot
+STAGE_OK=prepare_op
+STAGE_OK=prepare_query
+STAGE_OK=arm
+STOP_AFTER_STAGE_REACHED=arm

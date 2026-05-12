@@ -1,0 +1,6 @@
+deploy_rc=2
+deploy_session_dir=/root/Poulsbo/logs/vaio-plan/20260512-000636-sgx-plan-guarded-deploy/children/20260512-000636-guarded-deploy
+deploy_result_file=/root/Poulsbo/logs/vaio-plan/20260512-000636-sgx-plan-guarded-deploy/children/20260512-000636-guarded-deploy/session-result.env
+deploy_outcome=blocked_preflight
+deploy_last_state=ssh_port_down
+deploy_final_driver_srcversion=

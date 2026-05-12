@@ -1,0 +1,14 @@
+session_dir=/root/Poulsbo/logs/vaio-ioctl/20260512-144134-sgx-submit-op-phase-investigation-profile-check/children/20260512-144134-bisect
+summary_log=/root/Poulsbo/logs/vaio-ioctl/20260512-144134-sgx-submit-op-phase-investigation-profile-check/children/20260512-144134-bisect/summary.log
+result_file=/root/Poulsbo/logs/vaio-ioctl/20260512-144134-sgx-submit-op-phase-investigation-profile-check/children/20260512-144134-bisect/session-result.env
+target_host=10.1.11.218
+target_user=root
+timeout_secs=15
+ping_status=fail
+tcp_22_status=closed
+ssh_none_status=no_route
+ssh_none_kex=0
+ssh_pubkey_status=no_route
+ssh_pubkey_kex=0
+scp_status=error_1
+overall=ssh_port_down

@@ -1,0 +1,6 @@
+FAILED_STEP=gtt_before
+FAILED_RC=1
+FAILED_LOG=/tmp/tmp.kNJVCvstKL/gtt_before.txt
+drm_path=/dev/dri/card0
+drm_open_result=-1
+drm_open_errno=2

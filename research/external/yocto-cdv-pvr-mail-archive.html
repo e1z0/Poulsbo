@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>[yocto] [PATCH 2/3] add updated version of linux-3.0.0-cdv.patch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-114x114.png">
+<link rel="apple-touch-icon" sizes="72x72" href="/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="57x57" href="/apple-touch-icon-57x57.png">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="contents" href="thrd2.html#05861" id="c">
+<link rel="index" href="mail2.html#05861" id="i">
+<link rel="prev" href="msg05860.html" id="p">
+<link rel="next" href="msg05868.html" id="n">
+<link rel="canonical" href="https://www.mail-archive.com/yocto@yoctoproject.org/msg05861.html">
+<link rel="stylesheet" href="/normalize.css" media="screen">
+<link rel="stylesheet" href="/master.css" media="screen">
+
+<!--[if lt IE 9]>
+<link rel="stylesheet" href="/ie.css" media="screen">
+<![endif]-->
+</head>
+<body>
+<script language="javascript" type="text/javascript">
+document.onkeydown = NavigateThrough;
+function NavigateThrough (event)
+{
+  if (!document.getElementById) return;
+  if (window.event) event = window.event;
+  if (event.target.tagName == 'INPUT') return;
+  if (event.ctrlKey || event.metaKey) return;
+  var link = null;
+  switch (event.keyCode ? event.keyCode : event.which ? event.which : null) {
+    case 74:
+    case 80:
+      link = document.getElementById ('p');
+      break;
+    case 75:
+    case 78:
+      link = document.getElementById ('n');
+      break;
+    case 69:
+      link = document.getElementById ('e');
+      break;
+    }
+  if (link && link.href) document.location = link.href;
+}
+</script>
+<div itemscope itemtype="http://schema.org/Article" class="container">
+<div class="skipLink">
+<a href="#nav">Skip to site navigation (Press enter)</a>
+</div>
+<div class="content" role="main">
+<div class="msgHead">
+<h1>
+<span class="subject"><a href="/search?l=yocto@yoctoproject.org&amp;q=subject:%22%5C%5Byocto%5C%5D+%5C%5BPATCH+2%5C%2F3%5C%5D+add+updated+version+of+linux%5C-3.0.0%5C-cdv.patch%22&amp;o=newest" rel="nofollow"><span itemprop="name">[yocto] [PATCH 2/3] add updated version of linux-3.0.0-cdv.patch</span></a></span>
+</h1>
+<p class="darkgray font13">
+<span class="sender pipe"><a href="/search?l=yocto@yoctoproject.org&amp;q=from:%22rahul+.+saxena%22" rel="nofollow"><span itemprop="author" itemscope itemtype="http://schema.org/Person"><span itemprop="name">rahul . saxena</span></span></a></span>
+<span class="date"><a href="/search?l=yocto@yoctoproject.org&amp;q=date:20120426" rel="nofollow">Thu, 26 Apr 2012 09:08:36 -0700</a></span>
+</p>
+</div>
+<div itemprop="articleBody" class="msgBody">
+<!--X-Body-of-Message-->
+<pre>From: Rahul Saxena &lt;<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6d1f0c051801431e0c154343432d0403190801430e0200">[email&#160;protected]</a>&gt;
+
+Add updated version of linux-3.0.0-cdv patch for pvr driver
+This version includes vaapi (Video Acceleration API) related fixes</pre><pre>
+
+Note that the patch is too large to post completely, pl see repo for actual 
+changes.
+
+Signed-off-by: Rahul Saxena &lt;<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d0a2b1b8a5bcfea3b1a8fefefe90b9bea4b5bcfeb3bfbd">[email&#160;protected]</a>&gt;
+---
+ drivers/staging/Kconfig                            |    2 +
+ drivers/staging/Makefile                           |    1 +
+ drivers/staging/cdv/Kconfig                        |   51 +
+ drivers/staging/cdv/Makefile                       |  198 +
+ drivers/staging/cdv/bc_video/bufferclass_video.c   |  327 ++
+ drivers/staging/cdv/bc_video/bufferclass_video.h   |  171 +
+ .../staging/cdv/bc_video/bufferclass_video_linux.c |  838 ++++
+ .../staging/cdv/bc_video/bufferclass_video_linux.h |   67 +
+ drivers/staging/cdv/drv/psb_bl.c                   |  135 +
+ drivers/staging/cdv/drv/psb_dpst.c                 |  283 ++
+ drivers/staging/cdv/drv/psb_dpst.h                 |   98 +
+ drivers/staging/cdv/drv/psb_drm.h                  |  565 +++
+ drivers/staging/cdv/drv/psb_drv.c                  | 1900 ++++++++
+ drivers/staging/cdv/drv/psb_drv.h                  | 1207 +++++
+ drivers/staging/cdv/drv/psb_fb.c                   |  808 ++++
+ drivers/staging/cdv/drv/psb_fb.h                   |   59 +
+ drivers/staging/cdv/drv/psb_gtt.c                  | 1048 +++++
+ drivers/staging/cdv/drv/psb_gtt.h                  |  112 +
+ drivers/staging/cdv/drv/psb_hotplug.c              |  439 ++
+ drivers/staging/cdv/drv/psb_hotplug.h              |   90 +
+ drivers/staging/cdv/drv/psb_intel_bios.c           |  363 ++
+ drivers/staging/cdv/drv/psb_intel_bios.h           |  491 ++
+ drivers/staging/cdv/drv/psb_intel_crt.c            |  353 ++
+ drivers/staging/cdv/drv/psb_intel_display.c        | 1761 +++++++
+ drivers/staging/cdv/drv/psb_intel_display.h        |   25 +
+ drivers/staging/cdv/drv/psb_intel_dpll_cdv.c       |  313 ++
+ drivers/staging/cdv/drv/psb_intel_drv.h            |  246 +
+ drivers/staging/cdv/drv/psb_intel_hdmi.c           |  684 +++
+ drivers/staging/cdv/drv/psb_intel_hdmi.h           |  935 ++++
+ drivers/staging/cdv/drv/psb_intel_hdmi_edid.h      | 1057 +++++
+ drivers/staging/cdv/drv/psb_intel_hdmi_reg.h       |  130 +
+ drivers/staging/cdv/drv/psb_intel_i2c.c            |  171 +
+ drivers/staging/cdv/drv/psb_intel_lvds.c           |  861 ++++
+ drivers/staging/cdv/drv/psb_intel_modes.c          |   77 +
+ drivers/staging/cdv/drv/psb_intel_opregion.c       |  340 ++
+ drivers/staging/cdv/drv/psb_intel_reg.h            | 1495 ++++++
+ drivers/staging/cdv/drv/psb_irq.c                  |  689 +++
+ drivers/staging/cdv/drv/psb_irq.h                  |   49 +
+ drivers/staging/cdv/drv/psb_powermgmt.c            |  882 ++++
+ drivers/staging/cdv/drv/psb_powermgmt.h            |   98 +
+ drivers/staging/cdv/drv/psb_pvr_glue.c             |   74 +
+ drivers/staging/cdv/drv/psb_pvr_glue.h             |   26 +
+ drivers/staging/cdv/drv/psb_reg.h                  |  596 +++
+ drivers/staging/cdv/drv/psb_reset.c                |  144 +
+ drivers/staging/cdv/drv/psb_schedule.c             |   51 +
+ drivers/staging/cdv/drv/psb_schedule.h             |   79 +
+ drivers/staging/cdv/drv/psb_sgx.c                  |  943 ++++
+ drivers/staging/cdv/drv/psb_sgx.h                  |   32 +
+ drivers/staging/cdv/drv/psb_socket.c               |  374 ++
+ drivers/staging/cdv/drv/psb_umevents.c             |  491 ++
+ drivers/staging/cdv/drv/psb_umevents.h             |  161 +
+ drivers/staging/cdv/imgv/msvdx_power.c             |  166 +
+ drivers/staging/cdv/imgv/msvdx_power.h             |   48 +
+ drivers/staging/cdv/imgv/psb_buffer.c              |  442 ++
+ drivers/staging/cdv/imgv/psb_fence.c               |  167 +
+ drivers/staging/cdv/imgv/psb_mmu.c                 | 1041 +++++
+ drivers/staging/cdv/imgv/psb_msvdx.c               | 1462 ++++++
+ drivers/staging/cdv/imgv/psb_msvdx.h               | 1393 ++++++
+ drivers/staging/cdv/imgv/psb_msvdxinit.c           | 1183 +++++
+ drivers/staging/cdv/imgv/psb_ttm_fence.c           |  603 +++
+ drivers/staging/cdv/imgv/psb_ttm_fence_api.h       |  272 ++
+ drivers/staging/cdv/imgv/psb_ttm_fence_driver.h    |  302 ++
+ drivers/staging/cdv/imgv/psb_ttm_fence_user.c      |  237 +
+ drivers/staging/cdv/imgv/psb_ttm_fence_user.h      |  140 +
+ drivers/staging/cdv/imgv/psb_ttm_glue.c            |  376 ++
+ drivers/staging/cdv/imgv/psb_ttm_placement_user.c  |  631 +++
+ drivers/staging/cdv/imgv/psb_ttm_placement_user.h  |  252 +
+ drivers/staging/cdv/imgv/psb_ttm_userobj_api.h     |   85 +
+ drivers/staging/cdv/pvr/COPYING                    |  351 ++
+ drivers/staging/cdv/pvr/INSTALL                    |   76 +
+ drivers/staging/cdv/pvr/README                     |   48 +
+ drivers/staging/cdv/pvr/eurasiacon/.gitignore      |    6 +
+ drivers/staging/cdv/pvr/include4/dbgdrvif.h        |  328 ++
+ drivers/staging/cdv/pvr/include4/img_defs.h        |  121 +
+ drivers/staging/cdv/pvr/include4/img_types.h       |  151 +
+ drivers/staging/cdv/pvr/include4/pdumpdefs.h       |  108 +
+ drivers/staging/cdv/pvr/include4/pvr_debug.h       |  148 +
+ drivers/staging/cdv/pvr/include4/pvrmodule.h       |   31 +
+ drivers/staging/cdv/pvr/include4/pvrversion.h      |   61 +
+ drivers/staging/cdv/pvr/include4/services.h        | 1235 +++++
+ drivers/staging/cdv/pvr/include4/servicesext.h     |  846 ++++
+ drivers/staging/cdv/pvr/include4/sgx_options.h     |  237 +
+ drivers/staging/cdv/pvr/include4/sgxapi_km.h       |  423 ++
+ drivers/staging/cdv/pvr/include4/sgxscript.h       |   81 +
+ .../3rdparty/linux_framebuffer_mrst/.gitignore     |    6 +
+ .../linux_framebuffer_mrst/makefile.linux.common   |   37 +
+ .../3rdparty/linux_framebuffer_mrst/mrstlfb.h      |  309 ++
+ .../linux_framebuffer_mrst/mrstlfb_displayclass.c  | 1745 +++++++
+ .../linux_framebuffer_mrst/mrstlfb_linux.c         |  192 +
+ .../include/env/linux-intel/pvr_drm_shared.h       |   50 +
+ .../services4/include/env/linux/pvr_drm_shared.h   |   50 +
+ .../cdv/pvr/services4/include/kernelbuffer.h       |   72 +
+ .../cdv/pvr/services4/include/kerneldisplay.h      |  165 +
+ drivers/staging/cdv/pvr/services4/include/pdump.h  |   37 +
+ .../staging/cdv/pvr/services4/include/pvr_bridge.h | 1784 ++++++++
+ .../cdv/pvr/services4/include/pvr_bridge_km.h      |  305 ++
+ .../staging/cdv/pvr/services4/include/pvrmmap.h    |   44 +
+ .../cdv/pvr/services4/include/pvrsrv_errors.h      |  266 ++
+ .../cdv/pvr/services4/include/servicesint.h        |  391 ++
+ .../staging/cdv/pvr/services4/include/sgx_bridge.h |  644 +++
+ .../cdv/pvr/services4/include/sgx_mkif_km.h        |  347 ++
+ .../staging/cdv/pvr/services4/include/sgxinfo.h    |  470 ++
+ .../cdv/pvr/services4/srvkm/bridged/.gitignore     |    5 +
+ .../services4/srvkm/bridged/bridged_pvr_bridge.c   | 4782 ++++++++++++++++++++
+ .../services4/srvkm/bridged/bridged_pvr_bridge.h   |  252 +
+ .../pvr/services4/srvkm/bridged/bridged_support.c  |   89 +
+ .../pvr/services4/srvkm/bridged/bridged_support.h  |   47 +
+ .../srvkm/bridged/sgx/bridged_sgx_bridge.c         | 3744 +++++++++++++++
+ .../srvkm/bridged/sgx/bridged_sgx_bridge.h         |   42 +
+ .../cdv/pvr/services4/srvkm/common/.gitignore      |    5 +
+ .../pvr/services4/srvkm/common/buffer_manager.c    | 2531 +++++++++++
+ .../cdv/pvr/services4/srvkm/common/deviceclass.c   | 2013 ++++++++
+ .../cdv/pvr/services4/srvkm/common/deviceid.h      |   36 +
+ .../cdv/pvr/services4/srvkm/common/devicemem.c     | 1797 ++++++++
+ .../cdv/pvr/services4/srvkm/common/handle.c        | 1873 ++++++++
+ .../staging/cdv/pvr/services4/srvkm/common/hash.c  |  506 +++
+ .../staging/cdv/pvr/services4/srvkm/common/lists.c |   99 +
+ .../staging/cdv/pvr/services4/srvkm/common/mem.c   |  153 +
+ .../cdv/pvr/services4/srvkm/common/mem_debug.c     |  250 +
+ .../cdv/pvr/services4/srvkm/common/metrics.c       |  160 +
+ .../cdv/pvr/services4/srvkm/common/osfunc_common.c |   31 +
+ .../cdv/pvr/services4/srvkm/common/pdump_common.c  | 2371 ++++++++++
+ .../cdv/pvr/services4/srvkm/common/perproc.c       |  305 ++
+ .../staging/cdv/pvr/services4/srvkm/common/power.c |  719 +++
+ .../cdv/pvr/services4/srvkm/common/pvrsrv.c        | 1338 ++++++
+ .../staging/cdv/pvr/services4/srvkm/common/queue.c | 1079 +++++
+ .../staging/cdv/pvr/services4/srvkm/common/ra.c    | 1725 +++++++
+ .../cdv/pvr/services4/srvkm/common/resman.c        |  751 +++
+ .../cdv/pvr/services4/srvkm/devices/sgx/.gitignore |    5 +
+ .../cdv/pvr/services4/srvkm/devices/sgx/mmu.c      | 3696 +++++++++++++++
+ .../cdv/pvr/services4/srvkm/devices/sgx/mmu.h      |  154 +
+ .../cdv/pvr/services4/srvkm/devices/sgx/pb.c       |  466 ++
+ .../services4/srvkm/devices/sgx/sgx_bridge_km.h    |  160 +
+ .../srvkm/devices/sgx/sgx_ukernel_status_codes.h   | 1024 +++++
+ .../pvr/services4/srvkm/devices/sgx/sgxconfig.h    |  426 ++
+ .../pvr/services4/srvkm/devices/sgx/sgxinfokm.h    |  574 +++
+ .../cdv/pvr/services4/srvkm/devices/sgx/sgxinit.c  | 2824 ++++++++++++
+ .../cdv/pvr/services4/srvkm/devices/sgx/sgxkick.c  |  784 ++++
+ .../cdv/pvr/services4/srvkm/devices/sgx/sgxpower.c |  481 ++
+ .../cdv/pvr/services4/srvkm/devices/sgx/sgxreset.c |  667 +++
+ .../pvr/services4/srvkm/devices/sgx/sgxtransfer.c  |  750 +++
+ .../cdv/pvr/services4/srvkm/devices/sgx/sgxutils.c | 1168 +++++
+ .../cdv/pvr/services4/srvkm/devices/sgx/sgxutils.h |  114 +
+ .../cdv/pvr/services4/srvkm/env/linux/.gitignore   |    5 +
+ .../cdv/pvr/services4/srvkm/env/linux/env_data.h   |   66 +
+ .../pvr/services4/srvkm/env/linux/env_perproc.h    |   56 +
+ .../cdv/pvr/services4/srvkm/env/linux/event.c      |  293 ++
+ .../cdv/pvr/services4/srvkm/env/linux/event.h      |   32 +
+ .../cdv/pvr/services4/srvkm/env/linux/linkage.h    |   52 +
+ .../cdv/pvr/services4/srvkm/env/linux/lock.h       |   32 +
+ .../staging/cdv/pvr/services4/srvkm/env/linux/mm.c | 2027 +++++++++
+ .../staging/cdv/pvr/services4/srvkm/env/linux/mm.h |  336 ++
+ .../cdv/pvr/services4/srvkm/env/linux/mmap.c       | 1151 +++++
+ .../cdv/pvr/services4/srvkm/env/linux/mmap.h       |  122 +
+ .../cdv/pvr/services4/srvkm/env/linux/module.c     |  771 ++++
+ .../cdv/pvr/services4/srvkm/env/linux/mutex.h      |   85 +
+ .../cdv/pvr/services4/srvkm/env/linux/mutils.c     |  136 +
+ .../cdv/pvr/services4/srvkm/env/linux/mutils.h     |  103 +
+ .../cdv/pvr/services4/srvkm/env/linux/osfunc.c     | 3115 +++++++++++++
+ .../cdv/pvr/services4/srvkm/env/linux/osperproc.c  |  113 +
+ .../cdv/pvr/services4/srvkm/env/linux/pdump.c      |  628 +++
+ .../pvr/services4/srvkm/env/linux/private_data.h   |   69 +
+ .../cdv/pvr/services4/srvkm/env/linux/proc.c       |  835 ++++
+ .../cdv/pvr/services4/srvkm/env/linux/proc.h       |  108 +
+ .../pvr/services4/srvkm/env/linux/pvr_bridge_k.c   |  432 ++
+ .../cdv/pvr/services4/srvkm/env/linux/pvr_debug.c  |  424 ++
+ .../cdv/pvr/services4/srvkm/env/linux/pvr_drm.c    |  479 ++
+ .../cdv/pvr/services4/srvkm/env/linux/pvr_drm.h    |  107 +
+ .../cdv/pvr/services4/srvkm/hwdefs/mnemedefs.h     |   94 +
+ .../cdv/pvr/services4/srvkm/hwdefs/sgx535defs.h    |  650 +++
+ .../cdv/pvr/services4/srvkm/hwdefs/sgx540defs.h    |  547 +++
+ .../pvr/services4/srvkm/hwdefs/sgx543_v1.164defs.h | 1284 ++++++
+ .../cdv/pvr/services4/srvkm/hwdefs/sgx544defs.h    | 1367 ++++++
+ .../cdv/pvr/services4/srvkm/hwdefs/sgx545defs.h    | 1180 +++++
+ .../cdv/pvr/services4/srvkm/hwdefs/sgxdefs.h       |   90 +
+ .../cdv/pvr/services4/srvkm/hwdefs/sgxerrata.h     |  697 +++
+ .../pvr/services4/srvkm/hwdefs/sgxfeaturedefs.h    |  239 +
+ .../cdv/pvr/services4/srvkm/hwdefs/sgxmmu.h        |   72 +
+ .../cdv/pvr/services4/srvkm/hwdefs/sgxmpdefs.h     |  332 ++
+ .../pvr/services4/srvkm/include/buffer_manager.h   |  219 +
+ .../cdv/pvr/services4/srvkm/include/device.h       |  323 ++
+ .../cdv/pvr/services4/srvkm/include/handle.h       |  404 ++
+ .../staging/cdv/pvr/services4/srvkm/include/hash.h |   80 +
+ .../cdv/pvr/services4/srvkm/include/lists.h        |  244 +
+ .../cdv/pvr/services4/srvkm/include/metrics.h      |  130 +
+ .../cdv/pvr/services4/srvkm/include/osfunc.h       |  606 +++
+ .../cdv/pvr/services4/srvkm/include/osperproc.h    |   76 +
+ .../cdv/pvr/services4/srvkm/include/pdump_int.h    |   67 +
+ .../cdv/pvr/services4/srvkm/include/pdump_km.h     |  412 ++
+ .../cdv/pvr/services4/srvkm/include/pdump_osfunc.h |  142 +
+ .../cdv/pvr/services4/srvkm/include/perproc.h      |  126 +
+ .../cdv/pvr/services4/srvkm/include/power.h        |  120 +
+ .../cdv/pvr/services4/srvkm/include/queue.h        |  110 +
+ .../staging/cdv/pvr/services4/srvkm/include/ra.h   |  159 +
+ .../cdv/pvr/services4/srvkm/include/resman.h       |  118 +
+ .../pvr/services4/srvkm/include/services_headers.h |   49 +
+ .../cdv/pvr/services4/srvkm/include/srvkm.h        |   78 +
+ .../cdv/pvr/services4/srvkm/include/ttrace.h       |  184 +
+ .../pvr/services4/srvkm/include/ttrace_common.h    |   81 +
+ .../pvr/services4/srvkm/include/ttrace_tokens.h    |   84 +
+ .../cdv/pvr/services4/system/include/syscommon.h   |  262 ++
+ .../cdv/pvr/services4/system/unified/extsyscache.h |   44 +
+ .../cdv/pvr/services4/system/unified/oemfuncs.h    |   72 +
+ .../services4/system/unified/sys_pvr_drm_export.c  |  202 +
+ .../services4/system/unified/sys_pvr_drm_export.h  |   97 +
+ .../services4/system/unified/sys_pvr_drm_import.h  |   46 +
+ .../cdv/pvr/services4/system/unified/sysconfig.c   | 1021 +++++
+ .../cdv/pvr/services4/system/unified/sysconfig.h   |  131 +
+ .../cdv/pvr/services4/system/unified/sysinfo.h     |   43 +
+ .../cdv/pvr/services4/system/unified/sysirq.h      |   49 +
+ .../cdv/pvr/services4/system/unified/syslocal.h    |   75 +
+ .../cdv/pvr/services4/system/unified/sysutils.c    |   30 +
+ .../cdv/pvr/tools/intern/debug/client/linuxsrv.h   |   48 +
+ .../tools/intern/debug/dbgdriv/common/dbgdriv.c    | 2357 ++++++++++
+ .../tools/intern/debug/dbgdriv/common/dbgdriv.h    |  122 +
+ .../intern/debug/dbgdriv/common/dbgdriv_ioctl.h    |   35 +
+ .../pvr/tools/intern/debug/dbgdriv/common/handle.c |  121 +
+ .../tools/intern/debug/dbgdriv/common/hostfunc.h   |   58 +
+ .../pvr/tools/intern/debug/dbgdriv/common/hotkey.c |  135 +
+ .../pvr/tools/intern/debug/dbgdriv/common/hotkey.h |   60 +
+ .../pvr/tools/intern/debug/dbgdriv/common/ioctl.c  |  586 +++
+ .../tools/intern/debug/dbgdriv/linux/hostfunc.c    |  324 ++
+ .../intern/debug/dbgdriv/linux/kbuild/Makefile     |   35 +
+ .../pvr/tools/intern/debug/dbgdriv/linux/main.c    |  315 ++
+ .../debug/dbgdriv/linux/makefile.linux.common      |   39 +
+ 225 files changed, 110599 insertions(+), 0 deletions(-)
+_______________________________________________
+yocto mailing list
+<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="41382e22352e01382e22352e31332e2b2422356f2e3326">[email&#160;protected]</a>
+<a  rel="nofollow" href="https://lists.yoctoproject.org/listinfo/yocto">https://lists.yoctoproject.org/listinfo/yocto</a>
+</pre>
+
+</div>
+<div class="msgButtons margintopdouble">
+<ul class="overflow">
+<li class="msgButtonItems"><a class="button buttonleft " accesskey="p" href="msg05860.html">Previous message</a></li>
+<li class="msgButtonItems textaligncenter"><a class="button" accesskey="c" href="thrd2.html#05861">View by thread</a></li>
+<li class="msgButtonItems textaligncenter"><a class="button" accesskey="i" href="mail2.html#05861">View by date</a></li>
+<li class="msgButtonItems textalignright"><a class="button buttonright " accesskey="n" href="msg05868.html">Next message</a></li>
+</ul>
+</div>
+<a name="tslice"></a>
+<div class="tSliceList margintopdouble">
+<ul class="icons monospace">
+<li class="icons-email"><span class="subject"><a href="msg05853.html">[yocto] [kernel][PATCH 0/3] Cover letter to update pvr patc...</a></span> <span class="sender italic">rahul . saxena</span></li>
+<li><ul>
+<li class="icons-email"><span class="subject"><a href="msg05854.html">[yocto] [PATCH 3/3] add patch linux-3.0.0-ttm-clear-hi...</a></span> <span class="sender italic">rahul . saxena</span></li>
+<li class="icons-email"><span class="subject"><a href="msg05860.html">[yocto] [PATCH 1/3] Revert &quot;yocto/pvr: integrate ...</a></span> <span class="sender italic">rahul . saxena</span></li>
+<li class="icons-email tSliceCur"><span class="subject">[yocto] [PATCH 2/3] add updated version of linux-3.0.0...</span> <span class="sender italic">rahul . saxena</span></li>
+<li class="icons-email"><span class="subject"><a href="msg05868.html">Re: [yocto] [kernel][PATCH 0/3] Cover letter to update...</a></span> <span class="sender italic">Bruce Ashfield</span></li>
+<li class="icons-email"><span class="subject"><a href="msg05869.html">Re: [yocto] [kernel][PATCH 0/3] Cover letter to update...</a></span> <span class="sender italic">Bruce Ashfield</span></li>
+<li><ul>
+<li class="icons-email"><span class="subject"><a href="msg05871.html">Re: [yocto] [kernel][PATCH 0/3] Cover letter to up...</a></span> <span class="sender italic">Saxena, Rahul</span></li>
+<li><ul>
+<li class="icons-email"><span class="subject"><a href="msg05872.html">Re: [yocto] [kernel][PATCH 0/3] Cover letter t...</a></span> <span class="sender italic">Bruce Ashfield</span></li>
+</ul>
+</ul>
+</ul>
+</ul>
+</div>
+<div class="overflow msgActions margintopdouble">
+<div class="msgReply" >
+<h2>
+					Reply via email to
+</h2>
+<form method="POST" action="/mailto.php">
+<input type="hidden" name="subject" value="[yocto] [PATCH 2/3] add updated version of linux-3.0.0-cdv.patch">
+<input type="hidden" name="msgid" value="1080936ad25d08391d3f34180d107b280dbf167e.1335393643.git.rahul.saxena@intel.com">
+<input type="hidden" name="relpath" value="yocto@yoctoproject.org/msg05861.html">
+<input type="submit" value=" rahul . saxena ">
+</form>
+</div>
+</div>
+</div>
+<div class="aside" role="complementary">
+<div class="logo">
+<a href="/"><img src="/logo.png" width=247 height=88 alt="The Mail Archive"></a>
+</div>
+<form class="overflow" action="/search" method="get">
+<input type="hidden" name="l" value="yocto@yoctoproject.org">
+<label class="hidden" for="q">Search the site</label>
+<input class="submittext" type="text" id="q" name="q" placeholder="Search yocto">
+<input class="submitbutton" name="submit" type="image" src="/submit.png" alt="Submit">
+</form>
+<div class="nav margintop" id="nav" role="navigation">
+<ul class="icons font16">
+<li class="icons-home"><a href="/">The Mail Archive home</a></li>
+<li class="icons-list"><a href="/yocto@yoctoproject.org/">yocto - all messages</a></li>
+<li class="icons-about"><a href="/yocto@yoctoproject.org/info.html">yocto - about the list</a></li>
+<li class="icons-expand"><a href="/search?l=yocto@yoctoproject.org&amp;q=subject:%22%5C%5Byocto%5C%5D+%5C%5BPATCH+2%5C%2F3%5C%5D+add+updated+version+of+linux%5C-3.0.0%5C-cdv.patch%22&amp;o=newest&amp;f=1" title="e" id="e">Expand</a></li>
+<li class="icons-prev"><a href="msg05860.html" title="p">Previous message</a></li>
+<li class="icons-next"><a href="msg05868.html" title="n">Next message</a></li>
+</ul>
+</div>
+<div class="listlogo margintopdouble">
+
+</div>
+<div class="margintopdouble">
+
+</div>
+</div>
+</div>
+<div class="footer" role="contentinfo">
+<ul>
+<li><a href="/">The Mail Archive home</a></li>
+<li><a href="/faq.html#newlist">Add your mailing list</a></li>
+<li><a href="/faq.html">FAQ</a></li>
+<li><a href="/faq.html#support">Support</a></li>
+<li><a href="/faq.html#privacy">Privacy</a></li>
+<li class="darkgray">1080936ad25d08391d3f34180d107b280dbf167e.1335393643.git.rahul.saxena@intel.com</li>
+</ul>
+</div>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f9bb257aa44ecba',t:'MTc3ODQ0NDk3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

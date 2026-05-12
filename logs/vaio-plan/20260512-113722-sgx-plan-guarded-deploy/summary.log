@@ -1,0 +1,6 @@
+deploy_rc=0
+deploy_session_dir=/root/Poulsbo/logs/vaio-plan/20260512-113722-sgx-plan-guarded-deploy/children/20260512-113722-guarded-deploy
+deploy_result_file=/root/Poulsbo/logs/vaio-plan/20260512-113722-sgx-plan-guarded-deploy/children/20260512-113722-guarded-deploy/session-result.env
+deploy_outcome=completed
+deploy_last_state=remote_usable
+deploy_final_driver_srcversion=0EEEE302E3FDA9F59B7CFB9

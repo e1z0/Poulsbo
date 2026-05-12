@@ -1,0 +1,7 @@
+phase=sync
+phase_sync_rc=1
+phase_sync_health=remote_usable
+phase_sync_failed_step=submit_op_kick_focus
+phase_sync_failed_rc=1
+phase_sync_failed_log=/tmp/tmp.LvFSnqEn8y/submit_op_kick_focus.txt
+phase_sync_remote_tmpdir=

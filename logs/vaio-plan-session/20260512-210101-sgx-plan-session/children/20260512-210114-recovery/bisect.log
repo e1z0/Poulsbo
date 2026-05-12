@@ -1,0 +1,5 @@
+session_dir=/root/Poulsbo/logs/vaio-plan-session/20260512-210101-sgx-plan-session/children/20260512-210114-recovery/children/20260512-210114-bisect
+summary_log=/root/Poulsbo/logs/vaio-plan-session/20260512-210101-sgx-plan-session/children/20260512-210114-recovery/children/20260512-210114-bisect/summary.log
+result_file=/root/Poulsbo/logs/vaio-plan-session/20260512-210101-sgx-plan-session/children/20260512-210114-recovery/children/20260512-210114-bisect/session-result.env
+Invalid phase in PHASES: plan_query_offset
+/root/Poulsbo/scripts/run-vaio-sgx-submit-op-phase-bisect.sh: line 207: probe_count: unbound variable

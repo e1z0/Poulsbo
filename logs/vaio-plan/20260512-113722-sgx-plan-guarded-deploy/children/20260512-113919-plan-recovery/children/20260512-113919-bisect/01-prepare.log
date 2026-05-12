@@ -1,0 +1,6 @@
+STAGE_OK=sync
+STAGE_OK=owner
+STAGE_OK=report
+STAGE_OK=manifest
+STAGE_OK=descriptor
+client_loop: send disconnect: Broken pipe

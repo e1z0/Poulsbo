@@ -1,0 +1,7 @@
+reason=poulsbo_sgx_state sequence=204 captured_jiffies=4294921957 capture_failed=0 irq_count=203 fault_count=0 vdc_irq_mask=0x40001
+gatt_start=0x80000000 mmu_gatt_start=0xe0000000 gatt_free_offset=0xe0800000 mmu_bif_ctrl=0x01ff00 mmu_needs_tlbflush=0 mmu_default_pd_context=0
+core_id=0x1130000 core_revision=0x010201 clkgate=0x1111111 soft_reset=0x000000
+event_status=0x000000 event_status2=0x000000 event_enable=0x8000000 event_enable2=0x000010 event_kicker=0x000000 event_kick=0x000000
+pds_exec_base=0x20000000 use_code_base0=0x3ffd3fe use_code_base1=0x6a53914
+bif_ctrl=0x000000 bif_int_stat=0x000000 bif_fault=0x000000 dir0=0x336b0000 dir1=0x000000 bank0=0x000000 bank1=0x000000 2d_base=0x80000000 3d_base=0x30000000
+2d_socif=0x000080 2d_blit_status=0x000198

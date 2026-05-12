@@ -1,0 +1,12 @@
+probe=1 phase=issue
+probe_1_phase=issue
+probe_1_status=good
+probe_1_reason=ok
+probe_1_phase_rc=0
+probe_1_health_rc=0
+probe_1_health=remote_usable
+probe_1_failed_step=
+probe_1_failed_rc=
+probe_1_failed_log=
+probe_1_remote_tmpdir=
+probe_1_authoritative_terminal=0

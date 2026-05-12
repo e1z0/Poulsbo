@@ -1,0 +1,665 @@
+REMOTE_BIN=/root/poulsbo-workloads/drm_probe
+QUEUE_MODE=wrap
+OBJECT_NODE=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_object
+OBJECTS_NODE=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_objects
+SUBMIT_NODE=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_submit
+SUBMITS_NODE=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_submits
+HOLD_SECONDS=20
+ISSUE_ENABLE=1
+ISSUE_STATE=queued
+ISSUE_ISSUED_PACKETS=1
+TRANSITION_ENABLE=1
+TRANSITION_RUNNING_STATE=running
+TRANSITION_RUNNING_COMPLETED_PACKETS=1
+TRANSITION_COMPLETE_STATE=complete
+TRANSITION_COMPLETE_COMPLETED_PACKETS=1
+REFILL_ENABLE=1
+REFILL_ISSUE_STATE=queued
+REFILL_ISSUED_PACKETS=1
+REFILL_RUNNING_STATE=running
+REFILL_RUNNING_COMPLETED_PACKETS=0
+REFILL_COMPLETE_STATE=complete
+REFILL_COMPLETE_COMPLETED_PACKETS=1
+REFILL_CYCLES=1
+RANGE_IDS=159 160 161 162 163
+OBJECT_IDS=147 148 149 150 151
+SUBMIT_ID=37
+GTT_STATE_BEFORE
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1230468
+mmu_counts flush=584 set_pd_context=2 insert_pfn_sequence=1 insert_pages=293 remove_pfn_sequence=0 remove_pages=291 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+ranges_shown=7 ranges_total=7 truncated=0
+OBJECTS_BEFORE
+objects_shown=0 objects_total=0 truncated=0 attr=poulsbo_sgx_objects
+SUBMITS_BEFORE
+submits_shown=0 submits_total=0 truncated=0 attr=poulsbo_sgx_submits
+GTT_STATE_DURING
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1230658
+mmu_counts flush=589 set_pd_context=2 insert_pfn_sequence=1 insert_pages=298 remove_pfn_sequence=0 remove_pages=291 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=159 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 roll=0 pin_total=1 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=1230607 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=160 name=gem start=0x8112b000 end=0x8112efff len=0x004000 offset=0x112b000 gpu_va=0x8112b000 stolen=0 in_gart=1 mmapping=1 npage=4 roll=0 pin_total=1 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=1230624 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+ranges_shown=9 ranges_total_at_least=10 truncated=1
+OBJECTS_AFTER_ADOPT
+object id=147 range_id=159 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 created_jiffies=1230756 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+object id=148 range_id=160 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x8112b000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 created_jiffies=1230756 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+object id=149 range_id=161 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x8112f000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+object id=150 range_id=162 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81133000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+object id=151 range_id=163 name=gem role=generic class=generic gpu_use=generic expected_context=auto size=0x4000 gpu_va=0x81137000 stolen=0 in_gart=1 mmapping=1 npage=4 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_role_jiffies=0 last_class_jiffies=0 last_gpu_use_jiffies=0 last_context_jiffies=0
+objects_shown=5 objects_total=5 truncated=0 attr=poulsbo_sgx_objects
+OBJECTS_AFTER_ROLE_BIND
+object id=147 range_id=159 name=gem role=control class=packet gpu_use=control_ccb expected_context=pf size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230756 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230792 last_gpu_use_jiffies=1230793 last_context_jiffies=1230795
+object id=148 range_id=160 name=gem role=pds class=code gpu_use=pds_code expected_context=pf size=0x4000 gpu_va=0x8112b000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230756 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230792 last_gpu_use_jiffies=1230793 last_context_jiffies=1230795
+object id=149 range_id=161 name=gem role=use class=code gpu_use=use_code expected_context=pf size=0x4000 gpu_va=0x8112f000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230793 last_gpu_use_jiffies=1230794 last_context_jiffies=1230795
+object id=150 range_id=162 name=gem role=target class=surface gpu_use=render_target expected_context=pf size=0x4000 gpu_va=0x81133000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230793 last_gpu_use_jiffies=1230794 last_context_jiffies=1230795
+object id=151 range_id=163 name=gem role=status class=state gpu_use=status_block expected_context=pf size=0x4000 gpu_va=0x81137000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230793 last_gpu_use_jiffies=1230794 last_context_jiffies=1230795
+objects_shown=5 objects_total=5 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_ROLE_BIND
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1230795
+mmu_counts flush=594 set_pd_context=2 insert_pfn_sequence=1 insert_pages=303 remove_pfn_sequence=0 remove_pages=291 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=159 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=0 sgx_object_id=147 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 last_pin_jiffies=1230795 last_unpin_jiffies=0 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=1230756 last_lab_drop_jiffies=0
+range id=160 name=gem start=0x8112b000 end=0x8112efff len=0x004000 offset=0x112b000 gpu_va=0x8112b000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=0 sgx_object_id=148 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 last_pin_jiffies=1230795 last_unpin_jiffies=0 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=1230756 last_lab_drop_jiffies=0
+ranges_shown=9 ranges_total_at_least=10 truncated=1
+SUBMITS_AFTER_CREATE
+submit id=37 context=pf cmd_type=invalid ccb_offset=0x0 ctrl_flags=0x0 ta_status=0 3d_status=0 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x0 ccb_service=0x0 ccb_cache=0x0 ccb_data0=0x0 ccb_data1=0x0 queue_base_offset=0x0 queue_size=0x0 queue_packet_size=0x0 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x0 sync_complete_seq=0x0 sync_pending_seq=0x0 sync_flags=0x0 owner_offset=0x0 owner_state=none owner_issue_cookie=0x0 owner_complete_cookie=0x0 status_ta_offset=0x0 status_3d_offset=0x0 status_stride=0x0 status_seed=0x0 control_object_id=0 control_gpu_va=0x000000 pds_object_id=0 pds_gpu_va=0x000000 use_object_id=0 use_gpu_va=0x000000 target_object_id=0 target_gpu_va=0x000000 status_object_id=0 status_gpu_va=0x000000 validate_count=0 last_validate_status=-22 packet_config_count=0 ccb_config_count=0 queue_config_count=0 status_config_count=0 sync_config_count=0 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=0 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=0 last_ccb_jiffies=0 last_queue_jiffies=0 last_status_jiffies=0 last_sync_jiffies=0 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=0 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_KICK
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x0 ccb_service=0x0 ccb_cache=0x0 ccb_data0=0x0 ccb_data1=0x0 queue_base_offset=0x0 queue_size=0x0 queue_packet_size=0x0 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x0 sync_complete_seq=0x0 sync_pending_seq=0x0 sync_flags=0x0 owner_offset=0x0 owner_state=none owner_issue_cookie=0x0 owner_complete_cookie=0x0 status_ta_offset=0x0 status_3d_offset=0x0 status_stride=0x0 status_seed=0x0 control_object_id=0 control_gpu_va=0x000000 pds_object_id=0 pds_gpu_va=0x000000 use_object_id=0 use_gpu_va=0x000000 target_object_id=0 target_gpu_va=0x000000 status_object_id=0 status_gpu_va=0x000000 validate_count=0 last_validate_status=-22 packet_config_count=1 ccb_config_count=0 queue_config_count=0 status_config_count=0 sync_config_count=0 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=0 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=1230806 last_ccb_jiffies=0 last_queue_jiffies=0 last_status_jiffies=0 last_sync_jiffies=0 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=0 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_CCB
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x0 queue_size=0x0 queue_packet_size=0x0 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x0 sync_complete_seq=0x0 sync_pending_seq=0x0 sync_flags=0x0 owner_offset=0x0 owner_state=none owner_issue_cookie=0x0 owner_complete_cookie=0x0 status_ta_offset=0x0 status_3d_offset=0x0 status_stride=0x0 status_seed=0x0 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=0 last_validate_status=-22 packet_config_count=1 ccb_config_count=1 queue_config_count=0 status_config_count=0 sync_config_count=0 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=0 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=0 last_status_jiffies=0 last_sync_jiffies=0 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=0 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_QUEUE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x0 sync_complete_seq=0x0 sync_pending_seq=0x0 sync_flags=0x0 owner_offset=0x0 owner_state=none owner_issue_cookie=0x0 owner_complete_cookie=0x0 status_ta_offset=0x0 status_3d_offset=0x0 status_stride=0x0 status_seed=0x0 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=0 last_validate_status=-22 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=0 sync_config_count=0 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=0 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=0 last_sync_jiffies=0 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=0 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_STATUS
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x0 sync_complete_seq=0x0 sync_pending_seq=0x0 sync_flags=0x0 owner_offset=0x0 owner_state=none owner_issue_cookie=0x0 owner_complete_cookie=0x0 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=0 last_validate_status=-22 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=0 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=0 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=0 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=0 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_SYNC
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x41 sync_flags=0x1 owner_offset=0x0 owner_state=none owner_issue_cookie=0x0 owner_complete_cookie=0x0 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=0 last_validate_status=-22 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=0 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=0 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_OWNER
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x41 sync_flags=0x1 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x101 owner_complete_cookie=0x100 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=0 last_validate_status=-22 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=0 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x0 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x41 sync_flags=0x1 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x101 owner_complete_cookie=0x100 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=1 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=0 global_running_ticket=0 global_complete_ticket=0 issue_count=0 transition_count=0 created_jiffies=1230799 last_validate_jiffies=1230821 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=0 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_ISSUE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=2 queue_tail_packet_count=1 queue_head_packet_count=1 queue_wrap=1 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x42 sync_flags=0x3 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x102 owner_complete_cookie=0x100 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=1 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=28 global_running_ticket=0 global_complete_ticket=0 issue_count=1 transition_count=0 created_jiffies=1230799 last_validate_jiffies=1230821 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=1230823 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_ISSUE_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x60 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=2 queue_tail_packet_count=1 queue_head_packet_count=1 queue_wrap=1 sync_offset=0x20 sync_complete_seq=0x40 sync_pending_seq=0x42 sync_flags=0x3 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x102 owner_complete_cookie=0x100 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=2 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=28 global_running_ticket=0 global_complete_ticket=0 issue_count=1 transition_count=0 created_jiffies=1230799 last_validate_jiffies=1230825 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=1230823 last_transition_jiffies=0
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_TRANSITION_RUNNING
+submit id=37 context=pf cmd_type=ta ccb_offset=0x20 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x0 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x41 sync_pending_seq=0x42 sync_flags=0x1 owner_offset=0x40 owner_state=running owner_issue_cookie=0x102 owner_complete_cookie=0x101 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=2 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=28 global_running_ticket=23 global_complete_ticket=0 issue_count=1 transition_count=1 created_jiffies=1230799 last_validate_jiffies=1230825 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=1230823 last_transition_jiffies=1230828
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_TRANSITION_RUNNING_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x20 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x0 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x41 sync_pending_seq=0x42 sync_flags=0x1 owner_offset=0x40 owner_state=running owner_issue_cookie=0x102 owner_complete_cookie=0x101 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=3 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=28 global_running_ticket=23 global_complete_ticket=0 issue_count=1 transition_count=1 created_jiffies=1230799 last_validate_jiffies=1230830 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=1230823 last_transition_jiffies=1230828
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_TRANSITION_COMPLETE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x40 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x20 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x42 sync_pending_seq=0x42 sync_flags=0x1 owner_offset=0x40 owner_state=complete owner_issue_cookie=0x102 owner_complete_cookie=0x102 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=3 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=28 global_running_ticket=23 global_complete_ticket=23 issue_count=1 transition_count=2 created_jiffies=1230799 last_validate_jiffies=1230830 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=1230823 last_transition_jiffies=1230832
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_TRANSITION_COMPLETE_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x40 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x20 ccb_read_offset=0x20 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x42 sync_pending_seq=0x42 sync_flags=0x1 owner_offset=0x40 owner_state=complete owner_issue_cookie=0x102 owner_complete_cookie=0x102 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=4 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=0 global_issue_ticket=28 global_running_ticket=23 global_complete_ticket=23 issue_count=1 transition_count=2 created_jiffies=1230799 last_validate_jiffies=1230834 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=0 last_issue_jiffies=1230823 last_transition_jiffies=1230832
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_REFILL_ISSUE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x40 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x20 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x42 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x103 owner_complete_cookie=0x102 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=4 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=23 global_complete_ticket=23 issue_count=2 transition_count=2 created_jiffies=1230799 last_validate_jiffies=1230834 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230832
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_REFILL_ISSUE_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x40 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x20 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x42 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=queued owner_issue_cookie=0x103 owner_complete_cookie=0x102 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=5 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=23 global_complete_ticket=23 issue_count=2 transition_count=2 created_jiffies=1230799 last_validate_jiffies=1230839 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230832
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_REFILL_RUNNING
+submit id=37 context=pf cmd_type=ta ccb_offset=0x40 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x20 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x42 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=running owner_issue_cookie=0x103 owner_complete_cookie=0x102 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=5 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=24 global_complete_ticket=23 issue_count=2 transition_count=3 created_jiffies=1230799 last_validate_jiffies=1230839 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230841
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_REFILL_RUNNING_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x40 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x20 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=1 queue_tail_packet_count=1 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x42 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=running owner_issue_cookie=0x103 owner_complete_cookie=0x102 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=6 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=24 global_complete_ticket=23 issue_count=2 transition_count=3 created_jiffies=1230799 last_validate_jiffies=1230843 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230841
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_REFILL_COMPLETE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x60 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x40 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x43 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=complete owner_issue_cookie=0x103 owner_complete_cookie=0x103 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=6 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=24 global_complete_ticket=24 issue_count=2 transition_count=4 created_jiffies=1230799 last_validate_jiffies=1230843 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230845
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_REFILL_COMPLETE_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x60 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x40 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x43 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=complete owner_issue_cookie=0x103 owner_complete_cookie=0x103 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=7 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=24 global_complete_ticket=24 issue_count=2 transition_count=4 created_jiffies=1230799 last_validate_jiffies=1230847 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230845
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+OBJECTS_AFTER_PROBE_EXIT
+object id=147 range_id=159 name=gem role=control class=packet gpu_use=control_ccb expected_context=pf size=0x4000 gpu_va=0x81127000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230756 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230792 last_gpu_use_jiffies=1230793 last_context_jiffies=1230795
+object id=148 range_id=160 name=gem role=pds class=code gpu_use=pds_code expected_context=pf size=0x4000 gpu_va=0x8112b000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230756 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230792 last_gpu_use_jiffies=1230793 last_context_jiffies=1230795
+object id=149 range_id=161 name=gem role=use class=code gpu_use=use_code expected_context=pf size=0x4000 gpu_va=0x8112f000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230793 last_gpu_use_jiffies=1230794 last_context_jiffies=1230795
+object id=150 range_id=162 name=gem role=target class=surface gpu_use=render_target expected_context=pf size=0x4000 gpu_va=0x81133000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230793 last_gpu_use_jiffies=1230794 last_context_jiffies=1230795
+object id=151 range_id=163 name=gem role=status class=state gpu_use=status_block expected_context=pf size=0x4000 gpu_va=0x81137000 stolen=0 in_gart=2 mmapping=1 npage=4 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 created_jiffies=1230782 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_role_jiffies=1230792 last_class_jiffies=1230793 last_gpu_use_jiffies=1230794 last_context_jiffies=1230795
+objects_shown=5 objects_total=5 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_PROBE_EXIT
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1230795
+mmu_counts flush=594 set_pd_context=2 insert_pfn_sequence=1 insert_pages=303 remove_pfn_sequence=0 remove_pages=291 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+range id=159 name=gem start=0x81127000 end=0x8112afff len=0x004000 offset=0x1127000 gpu_va=0x81127000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=0 sgx_object_id=147 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 last_pin_jiffies=1230795 last_unpin_jiffies=0 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=1230756 last_lab_drop_jiffies=0
+range id=160 name=gem start=0x8112b000 end=0x8112efff len=0x004000 offset=0x112b000 gpu_va=0x8112b000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=2 unpin_total=0 sgx_object_id=148 pf_bind_count=1 pf_bind_total=1 pf_unbind_total=0 last_pin_jiffies=1230795 last_unpin_jiffies=0 last_pf_bind_jiffies=1230795 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=1230756 last_lab_drop_jiffies=0
+ranges_shown=9 ranges_total_at_least=10 truncated=1
+SUBMITS_AFTER_PROBE_EXIT_VALIDATE
+submit id=37 context=pf cmd_type=ta ccb_offset=0x60 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0 dependency_submit_id=0 dependency_offset=0x0 dependency_snapshot_source_submit_id=0 dependency_required_ticket=0 dependency_observed_complete_ticket=0 dependency_flags=0x0 dependency2_submit_id=0 dependency2_offset=0x0 dependency2_snapshot_source_submit_id=0 dependency2_required_ticket=0 dependency2_observed_complete_ticket=0 dependency2_flags=0x0 dependency3_submit_id=0 dependency3_offset=0x0 dependency3_snapshot_source_submit_id=0 dependency3_required_ticket=0 dependency3_observed_complete_ticket=0 dependency3_flags=0x0 dependency4_submit_id=0 dependency4_offset=0x0 dependency4_snapshot_source_submit_id=0 dependency4_required_ticket=0 dependency4_observed_complete_ticket=0 dependency4_flags=0x0 ccb_write_offset=0x40 ccb_read_offset=0x40 ccb_service=0x1000 ccb_cache=0x0 ccb_data0=0xc0de0001 ccb_data1=0xc0de0002 queue_base_offset=0x20 queue_size=0x80 queue_packet_size=0x20 queue_packet_count=0 queue_tail_packet_count=0 queue_head_packet_count=0 queue_wrap=0 sync_offset=0x20 sync_complete_seq=0x43 sync_pending_seq=0x43 sync_flags=0x1 owner_offset=0x40 owner_state=complete owner_issue_cookie=0x103 owner_complete_cookie=0x103 status_ta_offset=0x80 status_3d_offset=0xc0 status_stride=0x4 status_seed=0x5a500000 control_object_id=147 control_gpu_va=0x81127000 pds_object_id=148 pds_gpu_va=0x8112b000 use_object_id=149 use_gpu_va=0x8112f000 target_object_id=150 target_gpu_va=0x81133000 status_object_id=151 status_gpu_va=0x81137000 validate_count=8 last_validate_status=0 packet_config_count=1 ccb_config_count=1 queue_config_count=1 status_config_count=1 sync_config_count=1 dependency_config_count=0 dependency2_config_count=0 dependency3_config_count=0 dependency4_config_count=0 owner_config_count=1 queue_epoch=1 global_issue_ticket=29 global_running_ticket=24 global_complete_ticket=24 issue_count=2 transition_count=4 created_jiffies=1230799 last_validate_jiffies=1235662 last_packet_jiffies=1230806 last_ccb_jiffies=1230810 last_queue_jiffies=1230812 last_status_jiffies=1230814 last_sync_jiffies=1230816 last_dependency_jiffies=0 last_dependency2_jiffies=0 last_dependency3_jiffies=0 last_dependency4_jiffies=0 last_dependency_block_jiffies=0 last_dependency2_block_jiffies=0 last_dependency3_block_jiffies=0 last_dependency4_block_jiffies=0 last_owner_jiffies=1230819 last_epoch_jiffies=1230838 last_issue_jiffies=1230838 last_transition_jiffies=1230845
+submits_shown=1 submits_total=1 truncated=0 attr=poulsbo_sgx_submits
+SUBMITS_AFTER_DROP
+submits_shown=0 submits_total=0 truncated=0 attr=poulsbo_sgx_submits
+OBJECTS_AFTER_DROP
+objects_shown=0 objects_total=0 truncated=0 attr=poulsbo_sgx_objects
+GTT_STATE_AFTER_DROP
+attr=poulsbo_gtt_state gtt_start=0x94280000 gatt_start=0x80000000 mmu_gatt_start=0xe0000000 stolen_size=0x7bf000 vram_stolen_size=0x7bf000 gatt_free_offset=0xe0800000
+mmu_last_op=flush mmu_last_address=0x000000 mmu_last_num_pages=0 mmu_last_type=0 mmu_last_hw_context=-1 mmu_last_jiffies=1235666
+mmu_counts flush=604 set_pd_context=2 insert_pfn_sequence=1 insert_pages=303 remove_pfn_sequence=0 remove_pages=301 default_pd_context=0 pf_pd_context=1
+range id=1 name=cursor start=0x80000000 end=0x80003fff len=0x004000 offset=0x000000 gpu_va=0x80000000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=2 name=cursor start=0x80004000 end=0x80007fff len=0x004000 offset=0x004000 gpu_va=0x80004000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=3 name=fb start=0x80008000 end=0x80607fff len=0x600000 offset=0x008000 gpu_va=0x80008000 stolen=1 in_gart=1 mmapping=0 npage=0 roll=0 pin_total=1 unpin_total=1 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=4294898670 last_unpin_jiffies=4294899308 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=6 name=gem start=0x807bf000 end=0x80c6efff len=0x4b0000 offset=0x7bf000 gpu_va=0x807bf000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=7 name=gem start=0x80c6f000 end=0x8111efff len=0x4b0000 offset=0xc6f000 gpu_va=0x80c6f000 stolen=0 in_gart=2 mmapping=1 npage=1200 roll=0 pin_total=16 unpin_total=14 sgx_object_id=0 pf_bind_count=0 pf_bind_total=14 pf_unbind_total=14 last_pin_jiffies=1073966 last_unpin_jiffies=1073980 last_pf_bind_jiffies=1073966 last_pf_unbind_jiffies=1073980 last_lab_adopt_jiffies=1073927 last_lab_drop_jiffies=1077421
+range id=8 name=gem start=0x8111f000 end=0x81122fff len=0x004000 offset=0x111f000 gpu_va=0x8111f000 stolen=0 in_gart=0 mmapping=0 npage=0 roll=0 pin_total=0 unpin_total=0 sgx_object_id=0 pf_bind_count=0 pf_bind_total=0 pf_unbind_total=0 last_pin_jiffies=0 last_unpin_jiffies=0 last_pf_bind_jiffies=0 last_pf_unbind_jiffies=0 last_lab_adopt_jiffies=0 last_lab_drop_jiffies=0
+range id=9 name=gem start=0x81123000 end=0x81126fff len=0x004000 offset=0x1123000 gpu_va=0x81123000 stolen=0 in_gart=2 mmapping=1 npage=4 roll=0 pin_total=11 unpin_total=9 sgx_object_id=0 pf_bind_count=0 pf_bind_total=8 pf_unbind_total=8 last_pin_jiffies=1050080 last_unpin_jiffies=1050284 last_pf_bind_jiffies=1050080 last_pf_unbind_jiffies=1050284 last_lab_adopt_jiffies=1050033 last_lab_drop_jiffies=1050284
+ranges_shown=7 ranges_total=7 truncated=0
+DRM_PROBE_LOG_1
+drm_path=/dev/dri/card0
+drm_path_mode=660 drm_rdev=57856
+drm_open_result=3
+drm_kernel_name=gma500
+drm_kernel_desc=DRM driver for the Intel GMA500, GMA600, GMA3600, GMA3650
+drm_kernel_date=20140314
+drm_kernel_version=1.0.0
+drm_busid=pci:0000:00:02.0
+drm_cap_dumb_buffer=1
+drm_cap_vblank_high_crtc=1
+drm_cap_dumb_preferred_depth=0
+drm_cap_dumb_prefer_shadow=0
+drm_cap_prime=0
+drm_cap_timestamp_monotonic=1
+drm_cap_addfb2_modifiers=0
+drm_cap_syncobj=0
+drm_magic=3
+drm_set_client_cap_universal_planes=0 errno=0
+drm_set_client_cap_atomic=-1 errno=0
+drm_min_size=0x0
+drm_max_size=4096x4096
+drm_counts crtcs=2 encoders=2 connectors=4 fbs=0
+connector[0]_id=37
+connector[0]_type=LVDS
+connector[0]_type_id=1
+connector[0]_connection=connected
+connector[0]_mm=0x0
+connector[0]_modes=1
+connector[0]_encoders=1
+connector[0]_props=7
+connector[0]_encoder_id=38
+connector[0]_mode0=1600x768 1600x768@60
+connector[1]_id=40
+connector[1]_type=SVIDEO
+connector[1]_type_id=1
+connector[1]_connection=disconnected
+connector[1]_mm=0x0
+connector[1]_modes=0
+connector[1]_encoders=1
+connector[1]_props=21
+connector[1]_encoder_id=0
+connector[2]_id=57
+connector[2]_type=SVIDEO
+connector[2]_type_id=2
+connector[2]_connection=disconnected
+connector[2]_mm=0x0
+connector[2]_modes=0
+connector[2]_encoders=1
+connector[2]_props=21
+connector[2]_encoder_id=0
+connector[3]_id=74
+connector[3]_type=VGA
+connector[3]_type_id=1
+connector[3]_connection=disconnected
+connector[3]_mm=0x0
+connector[3]_modes=0
+connector[3]_encoders=1
+connector[3]_props=5
+connector[3]_encoder_id=0
+drm_plane_count=2
+drm_create_dumb=0 errno=0
+drm_create_dumb_handle=1
+drm_create_dumb_pitch=256
+drm_create_dumb_size=16384
+drm_map_dumb=0 errno=0
+drm_map_dumb_offset=278331392
+drm_mmap_write=ok
+drm_prime_handle_to_fd=-1 errno=0
+drm_hold_seconds=20
+drm_hold_complete=1
+drm_destroy_dumb=0 errno=0
+DRM_PROBE_LOG_2
+drm_path=/dev/dri/card0
+drm_path_mode=660 drm_rdev=57856
+drm_open_result=3
+drm_kernel_name=gma500
+drm_kernel_desc=DRM driver for the Intel GMA500, GMA600, GMA3600, GMA3650
+drm_kernel_date=20140314
+drm_kernel_version=1.0.0
+drm_busid=pci:0000:00:02.0
+drm_cap_dumb_buffer=1
+drm_cap_vblank_high_crtc=1
+drm_cap_dumb_preferred_depth=0
+drm_cap_dumb_prefer_shadow=0
+drm_cap_prime=0
+drm_cap_timestamp_monotonic=1
+drm_cap_addfb2_modifiers=0
+drm_cap_syncobj=0
+drm_magic=1
+drm_set_client_cap_universal_planes=0 errno=0
+drm_set_client_cap_atomic=-1 errno=0
+drm_min_size=0x0
+drm_max_size=4096x4096
+drm_counts crtcs=2 encoders=2 connectors=4 fbs=0
+connector[0]_id=37
+connector[0]_type=LVDS
+connector[0]_type_id=1
+connector[0]_connection=connected
+connector[0]_mm=0x0
+connector[0]_modes=1
+connector[0]_encoders=1
+connector[0]_props=7
+connector[0]_encoder_id=38
+connector[0]_mode0=1600x768 1600x768@60
+connector[1]_id=40
+connector[1]_type=SVIDEO
+connector[1]_type_id=1
+connector[1]_connection=disconnected
+connector[1]_mm=0x0
+connector[1]_modes=0
+connector[1]_encoders=1
+connector[1]_props=21
+connector[1]_encoder_id=0
+connector[2]_id=57
+connector[2]_type=SVIDEO
+connector[2]_type_id=2
+connector[2]_connection=disconnected
+connector[2]_mm=0x0
+connector[2]_modes=0
+connector[2]_encoders=1
+connector[2]_props=21
+connector[2]_encoder_id=0
+connector[3]_id=74
+connector[3]_type=VGA
+connector[3]_type_id=1
+connector[3]_connection=disconnected
+connector[3]_mm=0x0
+connector[3]_modes=0
+connector[3]_encoders=1
+connector[3]_props=5
+connector[3]_encoder_id=0
+drm_plane_count=2
+drm_create_dumb=0 errno=0
+drm_create_dumb_handle=1
+drm_create_dumb_pitch=256
+drm_create_dumb_size=16384
+drm_map_dumb=0 errno=0
+drm_map_dumb_offset=278298624
+drm_mmap_write=ok
+drm_prime_handle_to_fd=-1 errno=0
+drm_hold_seconds=20
+drm_hold_complete=1
+drm_destroy_dumb=0 errno=0
+DRM_PROBE_LOG_3
+drm_path=/dev/dri/card0
+drm_path_mode=660 drm_rdev=57856
+drm_open_result=3
+drm_kernel_name=gma500
+drm_kernel_desc=DRM driver for the Intel GMA500, GMA600, GMA3600, GMA3650
+drm_kernel_date=20140314
+drm_kernel_version=1.0.0
+drm_busid=pci:0000:00:02.0
+drm_cap_dumb_buffer=1
+drm_cap_vblank_high_crtc=1
+drm_cap_dumb_preferred_depth=0
+drm_cap_dumb_prefer_shadow=0
+drm_cap_prime=0
+drm_cap_timestamp_monotonic=1
+drm_cap_addfb2_modifiers=0
+drm_cap_syncobj=0
+drm_magic=2
+drm_set_client_cap_universal_planes=0 errno=0
+drm_set_client_cap_atomic=-1 errno=0
+drm_min_size=0x0
+drm_max_size=4096x4096
+drm_counts crtcs=2 encoders=2 connectors=4 fbs=0
+connector[0]_id=37
+connector[0]_type=LVDS
+connector[0]_type_id=1
+connector[0]_connection=connected
+connector[0]_mm=0x0
+connector[0]_modes=1
+connector[0]_encoders=1
+connector[0]_props=7
+connector[0]_encoder_id=38
+connector[0]_mode0=1600x768 1600x768@60
+connector[1]_id=40
+connector[1]_type=SVIDEO
+connector[1]_type_id=1
+connector[1]_connection=disconnected
+connector[1]_mm=0x0
+connector[1]_modes=0
+connector[1]_encoders=1
+connector[1]_props=21
+connector[1]_encoder_id=0
+connector[2]_id=57
+connector[2]_type=SVIDEO
+connector[2]_type_id=2
+connector[2]_connection=disconnected
+connector[2]_mm=0x0
+connector[2]_modes=0
+connector[2]_encoders=1
+connector[2]_props=21
+connector[2]_encoder_id=0
+connector[3]_id=74
+connector[3]_type=VGA
+connector[3]_type_id=1
+connector[3]_connection=disconnected
+connector[3]_mm=0x0
+connector[3]_modes=0
+connector[3]_encoders=1
+connector[3]_props=5
+connector[3]_encoder_id=0
+drm_plane_count=2
+drm_create_dumb=0 errno=0
+drm_create_dumb_handle=1
+drm_create_dumb_pitch=256
+drm_create_dumb_size=16384
+drm_map_dumb=0 errno=0
+drm_map_dumb_offset=278315008
+drm_mmap_write=ok
+drm_prime_handle_to_fd=-1 errno=0
+drm_hold_seconds=20
+drm_hold_complete=1
+drm_destroy_dumb=0 errno=0
+DRM_PROBE_LOG_4
+drm_path=/dev/dri/card0
+drm_path_mode=660 drm_rdev=57856
+drm_open_result=3
+drm_kernel_name=gma500
+drm_kernel_desc=DRM driver for the Intel GMA500, GMA600, GMA3600, GMA3650
+drm_kernel_date=20140314
+drm_kernel_version=1.0.0
+drm_busid=pci:0000:00:02.0
+drm_cap_dumb_buffer=1
+drm_cap_vblank_high_crtc=1
+drm_cap_dumb_preferred_depth=0
+drm_cap_dumb_prefer_shadow=0
+drm_cap_prime=0
+drm_cap_timestamp_monotonic=1
+drm_cap_addfb2_modifiers=0
+drm_cap_syncobj=0
+drm_magic=4
+drm_set_client_cap_universal_planes=0 errno=0
+drm_set_client_cap_atomic=-1 errno=0
+drm_min_size=0x0
+drm_max_size=4096x4096
+drm_counts crtcs=2 encoders=2 connectors=4 fbs=0
+connector[0]_id=37
+connector[0]_type=LVDS
+connector[0]_type_id=1
+connector[0]_connection=connected
+connector[0]_mm=0x0
+connector[0]_modes=1
+connector[0]_encoders=1
+connector[0]_props=7
+connector[0]_encoder_id=38
+connector[0]_mode0=1600x768 1600x768@60
+connector[1]_id=40
+connector[1]_type=SVIDEO
+connector[1]_type_id=1
+connector[1]_connection=disconnected
+connector[1]_mm=0x0
+connector[1]_modes=0
+connector[1]_encoders=1
+connector[1]_props=21
+connector[1]_encoder_id=0
+connector[2]_id=57
+connector[2]_type=SVIDEO
+connector[2]_type_id=2
+connector[2]_connection=disconnected
+connector[2]_mm=0x0
+connector[2]_modes=0
+connector[2]_encoders=1
+connector[2]_props=21
+connector[2]_encoder_id=0
+connector[3]_id=74
+connector[3]_type=VGA
+connector[3]_type_id=1
+connector[3]_connection=disconnected
+connector[3]_mm=0x0
+connector[3]_modes=0
+connector[3]_encoders=1
+connector[3]_props=5
+connector[3]_encoder_id=0
+drm_plane_count=2
+drm_create_dumb=0 errno=0
+drm_create_dumb_handle=1
+drm_create_dumb_pitch=256
+drm_create_dumb_size=16384
+drm_map_dumb=0 errno=0
+drm_map_dumb_offset=278364160
+drm_mmap_write=ok
+drm_prime_handle_to_fd=-1 errno=0
+drm_hold_seconds=20
+drm_hold_complete=1
+drm_destroy_dumb=0 errno=0
+DRM_PROBE_LOG_5
+drm_path=/dev/dri/card0
+drm_path_mode=660 drm_rdev=57856
+drm_open_result=3
+drm_kernel_name=gma500
+drm_kernel_desc=DRM driver for the Intel GMA500, GMA600, GMA3600, GMA3650
+drm_kernel_date=20140314
+drm_kernel_version=1.0.0
+drm_busid=pci:0000:00:02.0
+drm_cap_dumb_buffer=1
+drm_cap_vblank_high_crtc=1
+drm_cap_dumb_preferred_depth=0
+drm_cap_dumb_prefer_shadow=0
+drm_cap_prime=0
+drm_cap_timestamp_monotonic=1
+drm_cap_addfb2_modifiers=0
+drm_cap_syncobj=0
+drm_magic=5
+drm_set_client_cap_universal_planes=0 errno=0
+drm_set_client_cap_atomic=-1 errno=0
+drm_min_size=0x0
+drm_max_size=4096x4096
+drm_counts crtcs=2 encoders=2 connectors=4 fbs=0
+connector[0]_id=37
+connector[0]_type=LVDS
+connector[0]_type_id=1
+connector[0]_connection=connected
+connector[0]_mm=0x0
+connector[0]_modes=1
+connector[0]_encoders=1
+connector[0]_props=7
+connector[0]_encoder_id=38
+connector[0]_mode0=1600x768 1600x768@60
+connector[1]_id=40
+connector[1]_type=SVIDEO
+connector[1]_type_id=1
+connector[1]_connection=disconnected
+connector[1]_mm=0x0
+connector[1]_modes=0
+connector[1]_encoders=1
+connector[1]_props=21
+connector[1]_encoder_id=0
+connector[2]_id=57
+connector[2]_type=SVIDEO
+connector[2]_type_id=2
+connector[2]_connection=disconnected
+connector[2]_mm=0x0
+connector[2]_modes=0
+connector[2]_encoders=1
+connector[2]_props=21
+connector[2]_encoder_id=0
+connector[3]_id=74
+connector[3]_type=VGA
+connector[3]_type_id=1
+connector[3]_connection=disconnected
+connector[3]_mm=0x0
+connector[3]_modes=0
+connector[3]_encoders=1
+connector[3]_props=5
+connector[3]_encoder_id=0
+drm_plane_count=2
+drm_create_dumb=0 errno=0
+drm_create_dumb_handle=1
+drm_create_dumb_pitch=256
+drm_create_dumb_size=16384
+drm_map_dumb=0 errno=0
+drm_map_dumb_offset=278347776
+drm_mmap_write=ok
+drm_prime_handle_to_fd=-1 errno=0
+drm_hold_seconds=20
+drm_hold_complete=1
+drm_destroy_dumb=0 errno=0
+DMESG_TAIL
+[ 4960.998402] gma500 0000:00:02.0: lab pf_unbind id=135 name=gem gpu_va=0x8112f000 active=0 total=1
+[ 4960.998415] gma500 0000:00:02.0: lab object drop object_id=126 range_id=135 name=gem gpu_va=0x8112f000
+[ 4961.008950] gma500 0000:00:02.0: lab pf_unbind id=136 name=gem gpu_va=0x81133000 active=0 total=1
+[ 4961.008964] gma500 0000:00:02.0: lab object drop object_id=127 range_id=136 name=gem gpu_va=0x81133000
+[ 4961.016255] gma500 0000:00:02.0: lab pf_unbind id=137 name=gem gpu_va=0x81137000 active=0 total=1
+[ 4961.016267] gma500 0000:00:02.0: lab object drop object_id=128 range_id=137 name=gem gpu_va=0x81137000
+[ 4961.025709] gma500 0000:00:02.0: lab pf_unbind id=138 name=gem gpu_va=0x8113b000 active=0 total=1
+[ 4961.025726] gma500 0000:00:02.0: lab object drop object_id=129 range_id=138 name=gem gpu_va=0x8113b000
+[ 4961.032837] gma500 0000:00:02.0: lab pf_unbind id=139 name=gem gpu_va=0x8113f000 active=0 total=1
+[ 4961.032851] gma500 0000:00:02.0: lab object drop object_id=130 range_id=139 name=gem gpu_va=0x8113f000
+[ 4961.039985] gma500 0000:00:02.0: lab pf_unbind id=140 name=gem gpu_va=0x81143000 active=0 total=1
+[ 4961.039997] gma500 0000:00:02.0: lab object drop object_id=131 range_id=140 name=gem gpu_va=0x81143000
+[ 4961.046758] gma500 0000:00:02.0: lab pf_unbind id=141 name=gem gpu_va=0x81147000 active=0 total=1
+[ 4961.046775] gma500 0000:00:02.0: lab object drop object_id=132 range_id=141 name=gem gpu_va=0x81147000
+[ 4961.054043] gma500 0000:00:02.0: lab pf_unbind id=142 name=gem gpu_va=0x8114b000 active=0 total=1
+[ 4961.054061] gma500 0000:00:02.0: lab object drop object_id=133 range_id=142 name=gem gpu_va=0x8114b000
+[ 4961.061615] gma500 0000:00:02.0: lab pf_unbind id=143 name=gem gpu_va=0x8114f000 active=0 total=1
+[ 4961.061631] gma500 0000:00:02.0: lab object drop object_id=134 range_id=143 name=gem gpu_va=0x8114f000
+[ 4961.068554] gma500 0000:00:02.0: lab pf_unbind id=145 name=gem gpu_va=0x81153000 active=0 total=1
+[ 4961.068570] gma500 0000:00:02.0: lab object drop object_id=135 range_id=145 name=gem gpu_va=0x81153000
+[ 4961.075781] gma500 0000:00:02.0: lab pf_unbind id=144 name=gem gpu_va=0x81157000 active=0 total=1
+[ 4961.075793] gma500 0000:00:02.0: lab object drop object_id=136 range_id=144 name=gem gpu_va=0x81157000
+[ 4961.081504] gma500 0000:00:02.0: lab pf_unbind id=146 name=gem gpu_va=0x8115b000 active=0 total=1
+[ 4961.081520] gma500 0000:00:02.0: lab object drop object_id=137 range_id=146 name=gem gpu_va=0x8115b000
+[ 4961.092089] gma500 0000:00:02.0: lab pf_unbind id=147 name=gem gpu_va=0x8115f000 active=0 total=1
+[ 4961.092102] gma500 0000:00:02.0: lab object drop object_id=138 range_id=147 name=gem gpu_va=0x8115f000
+[ 4961.097735] gma500 0000:00:02.0: lab pf_unbind id=148 name=gem gpu_va=0x81163000 active=0 total=1
+[ 4961.097751] gma500 0000:00:02.0: lab object drop object_id=139 range_id=148 name=gem gpu_va=0x81163000
+[ 4961.108406] gma500 0000:00:02.0: lab pf_unbind id=149 name=gem gpu_va=0x81167000 active=0 total=1
+[ 4961.108420] gma500 0000:00:02.0: lab object drop object_id=140 range_id=149 name=gem gpu_va=0x81167000
+[ 4961.115281] gma500 0000:00:02.0: lab pf_unbind id=150 name=gem gpu_va=0x8116b000 active=0 total=1
+[ 4961.115293] gma500 0000:00:02.0: lab object drop object_id=141 range_id=150 name=gem gpu_va=0x8116b000
+[ 4961.122043] gma500 0000:00:02.0: lab pf_unbind id=151 name=gem gpu_va=0x8116f000 active=0 total=1
+[ 4961.122059] gma500 0000:00:02.0: lab object drop object_id=142 range_id=151 name=gem gpu_va=0x8116f000
+[ 4961.128807] gma500 0000:00:02.0: lab pf_unbind id=152 name=gem gpu_va=0x81173000 active=0 total=1
+[ 4961.128825] gma500 0000:00:02.0: lab object drop object_id=143 range_id=152 name=gem gpu_va=0x81173000
+[ 5109.227406] gma500 0000:00:02.0: lab object adopt object_id=144 range_id=153 name=gem gpu_va=0x81127000 size=0x4000
+[ 5109.227417] gma500 0000:00:02.0: lab object adopt command completed object_id=144 range_id=153 attr=poulsbo_sgx_object
+[ 5109.251142] gma500 0000:00:02.0: lab pf_bind id=153 name=gem gpu_va=0x81127000 npage=4 active=1 total=1
+[ 5109.265188] gma500 0000:00:02.0: lab pf_unbind id=153 name=gem gpu_va=0x81127000 active=0 total=1
+[ 5123.332993] gma500 0000:00:02.0: lab object drop object_id=144 range_id=153 name=gem gpu_va=0x81127000
+[ 5139.899114] gma500 0000:00:02.0: lab object adopt object_id=145 range_id=154 name=gem gpu_va=0x81127000 size=0x4000
+[ 5139.899125] gma500 0000:00:02.0: lab object adopt command completed object_id=145 range_id=154 attr=poulsbo_sgx_object
+[ 5139.899562] gma500 0000:00:02.0: lab object adopt object_id=146 range_id=155 name=gem gpu_va=0x8112b000 size=0x4000
+[ 5139.899571] gma500 0000:00:02.0: lab object adopt command completed object_id=146 range_id=155 attr=poulsbo_sgx_object
+[ 5222.235223] gma500 0000:00:02.0: lab object drop object_id=145 range_id=154 name=gem gpu_va=0x81127000
+[ 5222.237309] gma500 0000:00:02.0: lab object drop object_id=146 range_id=155 name=gem gpu_va=0x8112b000
+[ 5223.390302] gma500 0000:00:02.0: lab object adopt object_id=147 range_id=159 name=gem gpu_va=0x81127000 size=0x4000
+[ 5223.390313] gma500 0000:00:02.0: lab object adopt command completed object_id=147 range_id=159 attr=poulsbo_sgx_object
+[ 5223.390719] gma500 0000:00:02.0: lab object adopt object_id=148 range_id=160 name=gem gpu_va=0x8112b000 size=0x4000
+[ 5223.390727] gma500 0000:00:02.0: lab object adopt command completed object_id=148 range_id=160 attr=poulsbo_sgx_object
+[ 5223.493218] gma500 0000:00:02.0: lab object adopt object_id=149 range_id=161 name=gem gpu_va=0x8112f000 size=0x4000
+[ 5223.493230] gma500 0000:00:02.0: lab object adopt command completed object_id=149 range_id=161 attr=poulsbo_sgx_object
+[ 5223.493929] gma500 0000:00:02.0: lab object adopt object_id=150 range_id=162 name=gem gpu_va=0x81133000 size=0x4000
+[ 5223.493938] gma500 0000:00:02.0: lab object adopt command completed object_id=150 range_id=162 attr=poulsbo_sgx_object
+[ 5223.494684] gma500 0000:00:02.0: lab object adopt object_id=151 range_id=163 name=gem gpu_va=0x81137000 size=0x4000
+[ 5223.494693] gma500 0000:00:02.0: lab object adopt command completed object_id=151 range_id=163 attr=poulsbo_sgx_object
+[ 5223.532244] gma500 0000:00:02.0: lab object role object_id=147 role=control
+[ 5223.532632] gma500 0000:00:02.0: lab object role object_id=148 role=pds
+[ 5223.533003] gma500 0000:00:02.0: lab object role object_id=149 role=use
+[ 5223.533392] gma500 0000:00:02.0: lab object role object_id=150 role=target
+[ 5223.533779] gma500 0000:00:02.0: lab object role object_id=151 role=status
+[ 5223.534175] gma500 0000:00:02.0: lab object class object_id=147 class=packet
+[ 5223.534546] gma500 0000:00:02.0: lab object class object_id=148 class=code
+[ 5223.535850] gma500 0000:00:02.0: lab object class object_id=149 class=code
+[ 5223.536534] gma500 0000:00:02.0: lab object class object_id=150 class=surface
+[ 5223.537205] gma500 0000:00:02.0: lab object class object_id=151 class=state
+[ 5223.537903] gma500 0000:00:02.0: lab object gpu_use object_id=147 gpu_use=control_ccb
+[ 5223.538529] gma500 0000:00:02.0: lab object gpu_use object_id=148 gpu_use=pds_code
+[ 5223.539943] gma500 0000:00:02.0: lab object gpu_use object_id=149 gpu_use=use_code
+[ 5223.540654] gma500 0000:00:02.0: lab object gpu_use object_id=150 gpu_use=render_target
+[ 5223.541376] gma500 0000:00:02.0: lab object gpu_use object_id=151 gpu_use=status_block
+[ 5223.543383] gma500 0000:00:02.0: lab object context object_id=147 context=pf
+[ 5223.543756] gma500 0000:00:02.0: lab pf_bind id=159 name=gem gpu_va=0x81127000 npage=4 active=1 total=1
+[ 5223.544049] gma500 0000:00:02.0: lab object context object_id=148 context=pf
+[ 5223.544287] gma500 0000:00:02.0: lab pf_bind id=160 name=gem gpu_va=0x8112b000 npage=4 active=1 total=1
+[ 5223.544522] gma500 0000:00:02.0: lab object context object_id=149 context=pf
+[ 5223.544739] gma500 0000:00:02.0: lab pf_bind id=161 name=gem gpu_va=0x8112f000 npage=4 active=1 total=1
+[ 5223.544960] gma500 0000:00:02.0: lab object context object_id=150 context=pf
+[ 5223.545169] gma500 0000:00:02.0: lab pf_bind id=162 name=gem gpu_va=0x81133000 npage=4 active=1 total=1
+[ 5223.545388] gma500 0000:00:02.0: lab object context object_id=151 context=pf
+[ 5223.545598] gma500 0000:00:02.0: lab pf_bind id=163 name=gem gpu_va=0x81137000 npage=4 active=1 total=1
+[ 5223.562523] gma500 0000:00:02.0: lab submit create submit_id=37 context=pf
+[ 5223.562536] gma500 0000:00:02.0: lab submit create command completed submit_id=37 attr=poulsbo_sgx_submit
+[ 5223.589403] gma500 0000:00:02.0: lab submit kick submit_id=37 cmd=ta ccb_offset=0x80 ctrl_flags=0x1 ta_status=1 3d_status=1 ta_dependency=0
+[ 5223.598672] gma500 0000:00:02.0: lab submit attach submit_id=37 slot=control object_id=147
+[ 5223.600156] gma500 0000:00:02.0: lab submit attach submit_id=37 slot=pds object_id=148
+[ 5223.600886] gma500 0000:00:02.0: lab submit attach submit_id=37 slot=use object_id=149
+[ 5223.601607] gma500 0000:00:02.0: lab submit attach submit_id=37 slot=target object_id=150
+[ 5223.602215] gma500 0000:00:02.0: lab submit attach submit_id=37 slot=status object_id=151
+[ 5223.603466] gma500 0000:00:02.0: lab submit ccb submit_id=37 write_offset=0x0 read_offset=0x60 service=0x1000 cache=0x0 data0=0xc0de0001 data1=0xc0de0002
+[ 5223.612400] gma500 0000:00:02.0: lab submit queue submit_id=37 base_offset=0x20 size=0x80 packet_size=0x20 packet_count=1 read_offset=0x60 write_offset=0x0 tail_packets=1 head_packets=0 wrapped=0
+[ 5223.621437] gma500 0000:00:02.0: lab submit status submit_id=37 ta_offset=0x80 3d_offset=0xc0 stride=0x4 seed=0x5a500000 ta_count=1 3d_count=1
+[ 5223.630092] gma500 0000:00:02.0: lab submit sync submit_id=37 offset=0x20 read_offset=0x60 write_offset=0x0 complete_seq=0x40 pending_seq=0x41 flags=0x1 wrapped=0 epoch=0 global_issue_ticket=0
+[ 5223.639418] gma500 0000:00:02.0: lab submit owner submit_id=37 offset=0x40 state=queued issue_cookie=0x101 complete_cookie=0x100 outstanding=0x1 epoch=0 global_complete_ticket=0 global_running_ticket=0
+[ 5223.648006] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=1
+[ 5223.658627] gma500 0000:00:02.0: lab submit issue submit_id=37 state=queued issued_packets=1 read_offset=0x60 new_write_offset=0x20 outstanding=2 wrapped=1 pending_seq=0x42 issue_cookie=0x102 epoch=0 refill=0 global_issue_ticket=28 global_running_ticket=0
+[ 5223.666612] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=2
+[ 5223.676685] gma500 0000:00:02.0: lab submit transition submit_id=37 state=running completed_packets=1 new_read_offset=0x0 new_write_offset=0x20 new_ccb_offset=0x20 outstanding=1 wrapped=0 complete_seq=0x41 complete_cookie=0x101 epoch=0 global_running_ticket=23 global_complete_ticket=0
+[ 5223.684116] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=3
+[ 5223.693403] gma500 0000:00:02.0: lab submit transition submit_id=37 state=complete completed_packets=1 new_read_offset=0x20 new_write_offset=0x20 new_ccb_offset=0x40 outstanding=0 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=0 global_running_ticket=23 global_complete_ticket=23
+[ 5223.700135] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=4
+[ 5223.715962] gma500 0000:00:02.0: lab submit issue submit_id=37 state=queued issued_packets=1 read_offset=0x20 new_write_offset=0x40 outstanding=1 wrapped=0 pending_seq=0x43 issue_cookie=0x103 epoch=1 refill=1 global_issue_ticket=29 global_running_ticket=23
+[ 5223.722768] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=5
+[ 5223.730449] gma500 0000:00:02.0: lab submit transition submit_id=37 state=running completed_packets=0 new_read_offset=0x20 new_write_offset=0x40 new_ccb_offset=0x40 outstanding=1 wrapped=0 complete_seq=0x42 complete_cookie=0x102 epoch=1 global_running_ticket=24 global_complete_ticket=23
+[ 5223.737249] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=6
+[ 5223.744402] gma500 0000:00:02.0: lab submit transition submit_id=37 state=complete completed_packets=1 new_read_offset=0x40 new_write_offset=0x40 new_ccb_offset=0x60 outstanding=0 wrapped=0 complete_seq=0x43 complete_cookie=0x103 epoch=1 global_running_ticket=24 global_complete_ticket=24
+[ 5223.751992] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=7
+[ 5243.014023] gma500 0000:00:02.0: lab submit validate submit_id=37 context=pf status=0 count=8
+[ 5243.021703] gma500 0000:00:02.0: lab submit drop submit_id=37 context=pf
+[ 5243.022686] gma500 0000:00:02.0: lab pf_unbind id=159 name=gem gpu_va=0x81127000 active=0 total=1
+[ 5243.022696] gma500 0000:00:02.0: lab object drop object_id=147 range_id=159 name=gem gpu_va=0x81127000
+[ 5243.028530] gma500 0000:00:02.0: lab pf_unbind id=160 name=gem gpu_va=0x8112b000 active=0 total=1
+[ 5243.028544] gma500 0000:00:02.0: lab object drop object_id=148 range_id=160 name=gem gpu_va=0x8112b000
+[ 5243.028932] gma500 0000:00:02.0: lab pf_unbind id=161 name=gem gpu_va=0x8112f000 active=0 total=1
+[ 5243.028942] gma500 0000:00:02.0: lab object drop object_id=149 range_id=161 name=gem gpu_va=0x8112f000
+[ 5243.029272] gma500 0000:00:02.0: lab pf_unbind id=162 name=gem gpu_va=0x81133000 active=0 total=1
+[ 5243.029283] gma500 0000:00:02.0: lab object drop object_id=150 range_id=162 name=gem gpu_va=0x81133000
+[ 5243.029675] gma500 0000:00:02.0: lab pf_unbind id=163 name=gem gpu_va=0x81137000 active=0 total=1
+[ 5243.029688] gma500 0000:00:02.0: lab object drop object_id=151 range_id=163 name=gem gpu_va=0x81137000

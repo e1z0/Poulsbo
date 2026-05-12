@@ -1,0 +1,12 @@
+probe=1 phase=plan_query_basic
+probe_1_phase=plan_query_basic
+probe_1_status=bad
+probe_1_reason=phase_timeout
+probe_1_phase_rc=124
+probe_1_health_rc=0
+probe_1_health=ssh_port_down
+probe_1_failed_step=
+probe_1_failed_rc=
+probe_1_failed_log=
+probe_1_remote_tmpdir=
+probe_1_authoritative_terminal=1

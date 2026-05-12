@@ -1,0 +1,15 @@
+dest_dir=/root/Poulsbo/logs/vaio-panic/20260512-221904-panic-capture-setup/panic-artifacts
+remote_state_dir=/var/lib/poulsbo-panic
+remote_dump_dir=/var/crash
+remote_latest_vmcore_dir=
+collected_at=2026-05-12T22:23:44+03:00
+current_boot_id=fdcf7784-7b94-4beb-b7e0-ff4b3a1c3188
+prevboot_log_present=1
+journal_panic_matches=0
+latest_vmcore_present=0
+latest_vmcore_path=
+latest_vmcore_dir=
+latest_vmcore_size=0
+latest_vmcore_dmesg_present=0
+latest_vmcore_dmesg_path=
+latest_pstore_entries=none

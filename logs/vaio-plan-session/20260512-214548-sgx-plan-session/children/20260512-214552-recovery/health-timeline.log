@@ -1,0 +1,12 @@
+timestamp=2026-05-12T21:45:52+03:00 poll=1 overall=remote_usable ping_status=ok tcp_22_status=open ssh_pubkey_status=ok
+  target_host=10.1.11.218
+  target_user=root
+  timeout_secs=15
+  ping_status=ok
+  tcp_22_status=open
+  ssh_none_status=auth_rejected
+  ssh_none_kex=1
+  ssh_pubkey_status=ok
+  ssh_pubkey_kex=1
+  scp_status=ok
+  overall=remote_usable

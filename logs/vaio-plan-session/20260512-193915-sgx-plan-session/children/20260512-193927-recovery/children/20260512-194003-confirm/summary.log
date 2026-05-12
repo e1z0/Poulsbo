@@ -1,0 +1,8 @@
+phase=plan_query
+phase_plan_query_rc=1
+phase_plan_query_health=remote_usable
+phase_plan_query_reason=phase_failed
+phase_plan_query_failed_step=gtt_before
+phase_plan_query_failed_rc=1
+phase_plan_query_failed_log=/tmp/tmp.kNJVCvstKL/gtt_before.txt
+phase_plan_query_remote_tmpdir=
