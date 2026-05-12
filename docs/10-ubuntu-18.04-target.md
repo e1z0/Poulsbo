@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current guarded deploy session is now:
-  [logs/vaio-deploy/20260512-234450-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260512-234450-guarded-deploy)
+  [logs/vaio-deploy/20260513-002930-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-002930-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=EAD330CBA159A4483448EBF`
-  - `override_module_size=434112`
+  - `driver_srcversion=59347D903B1ABC5E00105D3`
+  - `override_module_size=434080`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,14 +26,14 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260512-235844-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260512-235844-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-003119-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-003119-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=EAD330CBA159A4483448EBF`
-- the new memory-backed submit `result` block is now hardware-validated too:
+  - `final_driver_srcversion=59347D903B1ABC5E00105D3`
+- the new execution-record refactor is also hardware-validated:
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-000332-sgx-submit-result-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-000332-sgx-submit-result-live/summary.log)
+    [logs/vaio-ioctl/20260513-003228-sgx-submit-exec-record-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-003228-sgx-submit-exec-record-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-000411-sgx-multi-submit-result-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-000411-sgx-multi-submit-result-live/summary.log)
+    [logs/vaio-ioctl/20260513-003228-sgx-multi-submit-exec-record-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-003228-sgx-multi-submit-exec-record-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `report`
   - `result`
@@ -64,8 +64,8 @@ Current live note on May 13, 2026:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260512-235844`
-  - `source_row_module_srcversion=EAD330CBA159A4483448EBF`
+  - `source_timestamp=20260513-003119`
+  - `source_row_module_srcversion=59347D903B1ABC5E00105D3`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -83,8 +83,9 @@ Current live note on May 13, 2026:
   regression proof without a redeploy:
   `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the next engineering step is no longer more exact ladder narrowing; it is
-  the first more execution-oriented SGX kernel structure built on top of the
-  validated `result + report + manifest + descriptor + plan + CCB` model
+  the next SGX execution-side change on top of the new shared kernel-internal
+  execution record and the validated
+  `result + report + manifest + descriptor + plan + CCB` model
 
 ## Why This Target
 

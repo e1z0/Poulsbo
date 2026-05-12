@@ -3,6 +3,97 @@
 This file is the dated execution log for the repo. It records what was changed,
 what was validated, and what conclusion was established at each step.
 
+## 2026-05-13
+
+### Shared SGX submit exec-record refactor and live validation
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added the first shared kernel-internal execution-shaped submit record:
+  - `enum psb_sgx_lab_exec_source`
+  - `struct psb_sgx_lab_submit_exec_record`
+  - `poulsbo_sgx_build_submit_exec_record_locked()`
+- Rewired the typed memory-backed submit-view builders to consume that shared
+  record:
+  - `manifest`
+  - `descriptor`
+  - `plan`
+  - `result`
+- Local validation passed:
+  - `git -C third_party/linux-ubuntu-5.4 diff --check -- drivers/gpu/drm/gma500`
+  - `./scripts/docker-build-vaio-gma500.sh`
+- Guarded deploy bundle:
+  - [logs/vaio-deploy/20260513-002930-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-002930-guarded-deploy)
+- That deploy rebooted the VAIO onto:
+  - `driver_srcversion=59347D903B1ABC5E00105D3`
+  - `override_module_size=434080`
+  - `lightdm_active=inactive`
+  - `kdump_service_active=active`
+- Exact `complete` regression bundle:
+  - [logs/vaio-plan-session/20260513-003119-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-003119-sgx-plan-session)
+- That exact rerun stayed clean:
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=59347D903B1ABC5E00105D3`
+- Focused typed submit-op bundle:
+  - [logs/vaio-ioctl/20260513-003228-sgx-submit-exec-record-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-003228-sgx-submit-exec-record-live/summary.log)
+- Final focused typed state:
+  - `submit_prepare_count=1`
+  - `submit_arm_count=1`
+  - `submit_emit_count=1`
+  - `submit_launch_count=1`
+  - `submit_dispatch_count=1`
+  - `submit_retired_count=1`
+  - `submit_issue_count=1`
+  - `submit_transition_count=2`
+  - `submit_result_stage_name=retired`
+  - `submit_result_source_name=retired`
+  - `submit_result_owner_state_name=complete`
+- Typed multi-submit bundle:
+  - [logs/vaio-ioctl/20260513-003228-sgx-multi-submit-exec-record-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-003228-sgx-multi-submit-exec-record-live/summary.log)
+- Final typed multi-submit state:
+  - `SUBMIT_A_ID=3`
+  - `SUBMIT_B_ID=4`
+  - submit A:
+    - `submit_arm_count=3`
+    - `submit_emit_count=3`
+    - `submit_launch_count=3`
+    - `submit_dispatch_count=3`
+    - `submit_retired_count=3`
+    - `submit_issue_count=3`
+    - `submit_transition_count=6`
+    - `submit_result_stage_name=retired`
+    - `submit_result_source_name=retired`
+    - `submit_result_owner_state_name=complete`
+  - submit B:
+    - `submit_arm_count=2`
+    - `submit_emit_count=2`
+    - `submit_launch_count=2`
+    - `submit_dispatch_count=2`
+    - `submit_retired_count=2`
+    - `submit_issue_count=2`
+    - `submit_transition_count=4`
+    - `submit_result_stage_name=retired`
+    - `submit_result_source_name=retired`
+    - `submit_result_owner_state_name=complete`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver now also advances the terminal proof to
+  the new module:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-003119`
+  - `source_row_module_srcversion=59347D903B1ABC5E00105D3`
+
+Conclusion:
+
+- the SGX lab path now has a real kernel-internal execution record shared by
+  the typed submit-view builders
+- the new structure is live-validated on the VAIO
+- the next useful work is above this layer: move that execution record toward a
+  more real SGX execution model instead of adding more parallel per-view state
+
 ## 2026-05-12
 
 ### Fixed-module exact `plan` reruns through terminal `complete`
