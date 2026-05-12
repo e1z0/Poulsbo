@@ -10086,3 +10086,100 @@ Conclusion:
 - Documented in:
   - `docs/160-sgx-plan-fixed-module-through-complete.md`
   - `docs/161-sgx-lab-submit-result-op-ioctl.md`
+
+### SGX submit view-record collection
+
+- Added one shared collected-record layer for the typed submit live views in:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- New shared pieces:
+  - `struct psb_sgx_lab_submit_view_records`
+  - `poulsbo_sgx_collect_submit_view_records_locked()`
+- The typed submit image now collects:
+  - `live`
+  - `plan`
+  - `result`
+  once per pass, then reuses those records across refresh and validation
+- Rewired the fixed and memory-backed submit builders to consume the collected
+  records:
+  - `queue header`
+  - `ccb record`
+  - `sync`
+  - `owner`
+  - `report`
+  - `manifest`
+  - `descriptor`
+  - `plan`
+  - `result`
+- `poulsbo_sgx_preflight_submit_views_locked()` now collects the typed
+  view-record set once whenever any typed memory-backed submit view is present
+- Split the image validation back into smaller per-image helpers so the
+  shared wrappers stay used and the validator path remains warning-clean
+- Local verification passed:
+  - `git -C third_party/linux-ubuntu-5.4 diff --check -- drivers/gpu/drm/gma500/psb_drv.c`
+  - `./scripts/docker-build-vaio-gma500.sh`
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-012143-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=7E90BF7EA4740AF68A6B588`
+    - `override_module_size=438196`
+    - `last_overall=remote_usable`
+- Exact no-redeploy `plan` proof still passed on that same module:
+  - `logs/vaio-plan-session/20260513-012335-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=7E90BF7EA4740AF68A6B588`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-012435-sgx-submit-view-records-live/summary.log`
+  - final focused state:
+    - `SUBMIT_ID=4`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_result_stage_name=retired`
+    - `submit_result_source_name=retired`
+    - `submit_result_owner_state_name=complete`
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-012435-sgx-multi-submit-view-records-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=2`
+    - `SUBMIT_B_ID=3`
+    - submit A final:
+      - `submit_prepare_count=1`
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_result_stage_name=retired`
+      - `submit_result_source_name=retired`
+      - `submit_result_owner_state_name=complete`
+    - submit B final:
+      - `submit_prepare_count=1`
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_result_stage_name=retired`
+      - `submit_result_source_name=retired`
+      - `submit_result_owner_state_name=complete`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-012335`
+- Documented in:
+  - `docs/164-sgx-submit-view-record-collection.md`

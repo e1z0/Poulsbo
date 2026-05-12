@@ -786,8 +786,12 @@ implementation if it materially changes scope.
 - [ ] Use the now-clean exact single-submit `plan` ladder as the baseline for
   the next kernel-side SGX change
   - the fixed module now clears terminal `complete`
-  - the next useful work is beyond exact single-submit phase isolation, not
-    another no-code rerun of the same ladder
+  - the shared typed submit image now also collects `live + plan + result`
+    execution records once per pass on override
+    `7E90BF7EA4740AF68A6B588`
+  - the next useful work is the first more execution-oriented SGX kernel
+    structure above that collected view model, not another no-code rerun of
+    the same ladder
 
 - [ ] If a no-code regression retest of the fixed module is needed, keep the
   terminal exact rerun as the canonical one:

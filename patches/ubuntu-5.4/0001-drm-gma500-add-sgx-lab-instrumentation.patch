@@ -2183,7 +2183,7 @@ index 000000000..2ece8af5f
 +
 +#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..bee98b28e 100644
+index d414525ec..4882bab78 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -2203,7 +2203,7 @@ index d414525ec..bee98b28e 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,13122 @@
+@@ -37,6 +40,13567 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -2770,6 +2770,17 @@ index d414525ec..bee98b28e 100644
 +	u32 use_gpu_va32;
 +	u32 target_gpu_va32;
 +	u32 ccb_status_gpu_va32;
++};
++
++struct psb_sgx_lab_submit_view_records {
++	bool have_live;
++	bool have_plan;
++	bool have_result;
++	enum psb_sgx_lab_exec_source plan_source;
++	enum psb_sgx_lab_exec_source result_source;
++	struct psb_sgx_lab_submit_exec_record live;
++	struct psb_sgx_lab_submit_exec_record plan;
++	struct psb_sgx_lab_submit_exec_record result;
 +};
 +
 +struct psb_sgx_lab_refresh_views {
@@ -4488,6 +4499,57 @@ index d414525ec..bee98b28e 100644
 +	}
 +}
 +
++static int poulsbo_sgx_collect_submit_view_records_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_submit_view_records *records)
++{
++	u32 stage;
++	int ret;
++
++	if (!records)
++		return -EINVAL;
++
++	memset(records, 0, sizeof(*records));
++	ret = poulsbo_sgx_build_submit_exec_record_locked(
++		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE,
++		&records->live);
++	if (ret)
++		return ret;
++	records->have_live = true;
++
++	stage = records->live.stage;
++	records->plan_source =
++		poulsbo_sgx_submit_plan_exec_source_locked(stage);
++	if (records->plan_source == PSB_SGX_LAB_EXEC_SOURCE_LIVE) {
++		memcpy(&records->plan, &records->live, sizeof(records->plan));
++	} else {
++		ret = poulsbo_sgx_build_submit_exec_record_locked(
++			dev_priv, submit, records->plan_source, &records->plan);
++		if (ret)
++			return ret;
++	}
++	records->have_plan = true;
++
++	records->result_source =
++		poulsbo_sgx_submit_result_exec_source_locked(stage);
++	if (records->result_source == records->plan_source) {
++		memcpy(&records->result, &records->plan,
++		       sizeof(records->result));
++	} else if (records->result_source == PSB_SGX_LAB_EXEC_SOURCE_LIVE) {
++		memcpy(&records->result, &records->live,
++		       sizeof(records->result));
++	} else {
++		ret = poulsbo_sgx_build_submit_exec_record_locked(
++			dev_priv, submit, records->result_source,
++			&records->result);
++		if (ret)
++			return ret;
++	}
++	records->have_result = true;
++	return 0;
++}
++
 +static int poulsbo_sgx_object_write_words_locked(
 +	struct psb_sgx_lab_object *obj, u32 base_offset, const u32 *words,
 +	unsigned int word_count)
@@ -4528,51 +4590,61 @@ index d414525ec..bee98b28e 100644
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_build_submit_queue_header_locked(
-+	struct psb_sgx_lab_submit *submit,
++static int poulsbo_sgx_fill_submit_queue_header_words_from_record(
++	const struct psb_sgx_lab_submit_exec_record *record,
 +	struct psb_sgx_lab_queue_header_words *queue_header)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
 +	u32 expected_tail_packets;
 +	u32 expected_head_packets;
 +	u32 expected_write_offset;
 +	int ret;
 +
-+	if (!queue_header)
++	if (!record || !queue_header)
 +		return -EINVAL;
-+
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
-+	if (ret)
-+		return ret;
 +	expected_tail_packets = 0;
 +	expected_head_packets = 0;
-+	expected_write_offset = record.ccb_write_offset;
-+	if (record.queue_size && record.queue_packet_size &&
-+	    record.queue_packet_count) {
-+		ret = poulsbo_sgx_queue_progression(record.ccb_read_offset,
-+						    record.queue_size,
-+						    record.queue_packet_size,
-+						    record.queue_packet_count,
++	expected_write_offset = record->ccb_write_offset;
++	if (record->queue_size && record->queue_packet_size &&
++	    record->queue_packet_count) {
++		ret = poulsbo_sgx_queue_progression(record->ccb_read_offset,
++						    record->queue_size,
++						    record->queue_packet_size,
++						    record->queue_packet_count,
 +						    &expected_tail_packets,
 +						    &expected_head_packets,
 +						    &expected_write_offset);
 +		if (ret)
 +			return ret;
-+		if (expected_write_offset != record.ccb_write_offset)
++		if (expected_write_offset != record->ccb_write_offset)
 +			return -EINVAL;
 +	}
 +
 +	memset(queue_header, 0, sizeof(*queue_header));
-+	queue_header->write_offset = record.ccb_write_offset;
-+	queue_header->read_offset = record.ccb_read_offset;
-+	queue_header->queue_base_offset = record.queue_base_offset;
-+	queue_header->queue_size = record.queue_size;
-+	queue_header->queue_packet_size = record.queue_packet_size;
-+	queue_header->queue_packet_count = record.queue_packet_count;
++	queue_header->write_offset = record->ccb_write_offset;
++	queue_header->read_offset = record->ccb_read_offset;
++	queue_header->queue_base_offset = record->queue_base_offset;
++	queue_header->queue_size = record->queue_size;
++	queue_header->queue_packet_size = record->queue_packet_size;
++	queue_header->queue_packet_count = record->queue_packet_count;
 +	queue_header->queue_tail_packet_count = expected_tail_packets;
 +	queue_header->queue_head_packet_count = expected_head_packets;
 +	return 0;
++}
++
++static int poulsbo_sgx_build_submit_queue_header_locked(
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_queue_header_words *queue_header)
++{
++	struct psb_sgx_lab_submit_view_records records;
++	int ret;
++
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		NULL, submit, &records);
++	if (ret)
++		return ret;
++
++	return poulsbo_sgx_fill_submit_queue_header_words_from_record(
++		&records.live, queue_header);
 +}
 +
 +static int poulsbo_sgx_write_queue_header_locked(
@@ -4599,32 +4671,40 @@ index d414525ec..bee98b28e 100644
 +		sizeof(*queue_header) / sizeof(u32));
 +}
 +
++static int poulsbo_sgx_fill_submit_ccb_record_words_from_record(
++	const struct psb_sgx_lab_submit_exec_record *record,
++	struct psb_sgx_lab_ccb_record_words *ccb_record)
++{
++	if (!record || !ccb_record)
++		return -EINVAL;
++
++	memset(ccb_record, 0, sizeof(*ccb_record));
++	ccb_record->service_address = record->ccb_service_address;
++	ccb_record->cache_control = record->ccb_cache_control;
++	ccb_record->data0 = record->ccb_data0;
++	ccb_record->data1 = record->ccb_data1;
++	ccb_record->pds_gpu_va32 = record->pds_gpu_va32;
++	ccb_record->use_gpu_va32 = record->use_gpu_va32;
++	ccb_record->target_gpu_va32 = record->target_gpu_va32;
++	ccb_record->status_gpu_va32 = record->ccb_status_gpu_va32;
++	return 0;
++}
++
 +static int poulsbo_sgx_build_submit_ccb_record_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_ccb_record_words *ccb_record)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
-+	if (!ccb_record)
-+		return -EINVAL;
-+
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		dev_priv, submit, &records);
 +	if (ret)
 +		return ret;
 +
-+	memset(ccb_record, 0, sizeof(*ccb_record));
-+	ccb_record->service_address = record.ccb_service_address;
-+	ccb_record->cache_control = record.ccb_cache_control;
-+	ccb_record->data0 = record.ccb_data0;
-+	ccb_record->data1 = record.ccb_data1;
-+	ccb_record->pds_gpu_va32 = record.pds_gpu_va32;
-+	ccb_record->use_gpu_va32 = record.use_gpu_va32;
-+	ccb_record->target_gpu_va32 = record.target_gpu_va32;
-+	ccb_record->status_gpu_va32 = record.ccb_status_gpu_va32;
-+	return 0;
++	return poulsbo_sgx_fill_submit_ccb_record_words_from_record(
++		&records.live, ccb_record);
 +}
 +
 +static int poulsbo_sgx_write_submit_ccb_record_locked(
@@ -4651,57 +4731,67 @@ index d414525ec..bee98b28e 100644
 +		sizeof(*ccb_record) / sizeof(u32));
 +}
 +
-+static int poulsbo_sgx_build_submit_sync_locked(
-+	struct psb_sgx_lab_submit *submit,
++static int poulsbo_sgx_fill_submit_sync_words_from_record(
++	const struct psb_sgx_lab_submit_exec_record *record,
 +	struct psb_sgx_lab_sync_words *sync)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
 +	u32 expected_head_packets;
 +	u32 expected_write_offset;
 +	u32 flags;
 +	int ret;
 +
-+	if (!sync)
++	if (!record || !sync)
 +		return -EINVAL;
-+
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
-+	if (ret)
-+		return ret;
 +	expected_head_packets = 0;
-+	expected_write_offset = record.ccb_write_offset;
-+	if (record.queue_size && record.queue_packet_size &&
-+	    record.queue_packet_count) {
++	expected_write_offset = record->ccb_write_offset;
++	if (record->queue_size && record->queue_packet_size &&
++	    record->queue_packet_count) {
 +		u32 expected_tail_packets;
 +
-+		ret = poulsbo_sgx_queue_progression(record.ccb_read_offset,
-+						    record.queue_size,
-+						    record.queue_packet_size,
-+						    record.queue_packet_count,
++		ret = poulsbo_sgx_queue_progression(record->ccb_read_offset,
++						    record->queue_size,
++						    record->queue_packet_size,
++						    record->queue_packet_count,
 +						    &expected_tail_packets,
 +						    &expected_head_packets,
 +						    &expected_write_offset);
 +		if (ret)
 +			return ret;
-+		if (expected_write_offset != record.ccb_write_offset)
++		if (expected_write_offset != record->ccb_write_offset)
 +			return -EINVAL;
 +	}
 +
 +	memset(sync, 0, sizeof(*sync));
-+	flags = record.sync_flags | PSB_SGX_LAB_SYNC_FLAG_READY;
++	flags = record->sync_flags | PSB_SGX_LAB_SYNC_FLAG_READY;
 +	if (expected_head_packets)
 +		flags |= PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
 +	else
 +		flags &= ~PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
 +
-+	sync->read_offset = record.ccb_read_offset;
-+	sync->write_offset = record.ccb_write_offset;
-+	sync->complete_seq = record.sync_complete_seq;
-+	sync->pending_seq = record.sync_pending_seq;
++	sync->read_offset = record->ccb_read_offset;
++	sync->write_offset = record->ccb_write_offset;
++	sync->complete_seq = record->sync_complete_seq;
++	sync->pending_seq = record->sync_pending_seq;
 +	sync->flags = flags;
-+	sync->epoch = record.queue_epoch;
-+	sync->global_issue_ticket = record.global_issue_ticket;
++	sync->epoch = record->queue_epoch;
++	sync->global_issue_ticket = record->global_issue_ticket;
 +	return 0;
++}
++
++static int poulsbo_sgx_build_submit_sync_locked(
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_sync_words *sync)
++{
++	struct psb_sgx_lab_submit_view_records records;
++	int ret;
++
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		NULL, submit, &records);
++	if (ret)
++		return ret;
++
++	return poulsbo_sgx_fill_submit_sync_words_from_record(
++		&records.live, sync);
 +}
 +
 +static int poulsbo_sgx_write_submit_sync_locked(
@@ -4728,29 +4818,37 @@ index d414525ec..bee98b28e 100644
 +		sizeof(*sync) / sizeof(u32));
 +}
 +
++static int poulsbo_sgx_fill_submit_owner_words_from_record(
++	const struct psb_sgx_lab_submit_exec_record *record,
++	struct psb_sgx_lab_owner_words *owner)
++{
++	if (!record || !owner)
++		return -EINVAL;
++
++	memset(owner, 0, sizeof(*owner));
++	owner->owner_state = record->owner_state;
++	owner->owner_issue_cookie = record->owner_issue_cookie;
++	owner->owner_complete_cookie = record->owner_complete_cookie;
++	owner->epoch = record->queue_epoch;
++	owner->global_complete_ticket = record->global_complete_ticket;
++	owner->global_running_ticket = record->global_running_ticket;
++	return 0;
++}
++
 +static int poulsbo_sgx_build_submit_owner_locked(
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_owner_words *owner)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
-+	if (!owner)
-+		return -EINVAL;
-+
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		NULL, submit, &records);
 +	if (ret)
 +		return ret;
 +
-+	memset(owner, 0, sizeof(*owner));
-+	owner->owner_state = record.owner_state;
-+	owner->owner_issue_cookie = record.owner_issue_cookie;
-+	owner->owner_complete_cookie = record.owner_complete_cookie;
-+	owner->epoch = record.queue_epoch;
-+	owner->global_complete_ticket = record.global_complete_ticket;
-+	owner->global_running_ticket = record.global_running_ticket;
-+	return 0;
++	return poulsbo_sgx_fill_submit_owner_words_from_record(
++		&records.live, owner);
 +}
 +
 +static int poulsbo_sgx_write_submit_owner_locked(
@@ -5095,36 +5193,36 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_report_words *report)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
 +	int ret;
++	struct psb_sgx_lab_submit_view_records records;
 +
 +	if (!report)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		NULL, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		NULL, submit, &records);
 +	if (ret)
 +		return ret;
 +
 +	memset(report, 0, sizeof(*report));
-+	report->stage = record.stage;
-+	report->stage_count = record.stage_count;
-+	report->prepare_count = record.prepare_count;
-+	report->arm_count = record.arm_count;
-+	report->emit_count = record.emit_count;
-+	report->launch_count = record.launch_count;
-+	report->dispatch_count = record.dispatch_count;
-+	report->retired_count = record.retired_count;
-+	report->owner_state = record.owner_state;
-+	report->queue_packet_count = record.queue_packet_count;
-+	report->completed_packets = record.completed_packets;
-+	report->dependency_active_count = record.dependency_active_count;
-+	report->queue_epoch = record.queue_epoch;
-+	report->global_issue_ticket = record.global_issue_ticket;
-+	report->global_running_ticket = record.global_running_ticket;
-+	report->global_complete_ticket = record.global_complete_ticket;
-+	report->flags = record.report_flags;
-+	report->context = record.context;
++	report->stage = records.live.stage;
++	report->stage_count = records.live.stage_count;
++	report->prepare_count = records.live.prepare_count;
++	report->arm_count = records.live.arm_count;
++	report->emit_count = records.live.emit_count;
++	report->launch_count = records.live.launch_count;
++	report->dispatch_count = records.live.dispatch_count;
++	report->retired_count = records.live.retired_count;
++	report->owner_state = records.live.owner_state;
++	report->queue_packet_count = records.live.queue_packet_count;
++	report->completed_packets = records.live.completed_packets;
++	report->dependency_active_count = records.live.dependency_active_count;
++	report->queue_epoch = records.live.queue_epoch;
++	report->global_issue_ticket = records.live.global_issue_ticket;
++	report->global_running_ticket = records.live.global_running_ticket;
++	report->global_complete_ticket = records.live.global_complete_ticket;
++	report->flags = records.live.report_flags;
++	report->context = records.live.context;
 +
 +	return 0;
 +}
@@ -5265,45 +5363,45 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_manifest_words *manifest)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
 +	if (!manifest)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		dev_priv, submit, &records);
 +	if (ret)
 +		return ret;
 +
 +	memset(manifest, 0, sizeof(*manifest));
-+	manifest->stage = record.stage;
-+	manifest->stage_count = record.stage_count;
-+	manifest->context = record.context;
-+	manifest->cmd_type = record.cmd_type;
-+	manifest->owner_state = record.owner_state;
-+	manifest->ctrl_flags = record.ctrl_flags;
-+	manifest->queue_base_offset = record.queue_base_offset;
-+	manifest->queue_size = record.queue_size;
-+	manifest->queue_packet_size = record.queue_packet_size;
-+	manifest->queue_packet_count = record.queue_packet_count;
-+	manifest->queue_epoch = record.queue_epoch;
-+	manifest->ccb_offset = record.ccb_offset;
-+	manifest->ccb_write_offset = record.ccb_write_offset;
-+	manifest->ccb_read_offset = record.ccb_read_offset;
-+	manifest->dependency_active_count = record.dependency_active_count;
-+	manifest->global_issue_ticket = record.global_issue_ticket;
-+	manifest->global_running_ticket = record.global_running_ticket;
-+	manifest->global_complete_ticket = record.global_complete_ticket;
-+	manifest->pds_gpu_va32 = record.pds_gpu_va32;
-+	manifest->use_gpu_va32 = record.use_gpu_va32;
-+	manifest->target_gpu_va32 = record.target_gpu_va32;
-+	manifest->status_gpu_va32 = record.ccb_status_gpu_va32;
-+	manifest->sync_complete_seq = record.sync_complete_seq;
-+	manifest->sync_pending_seq = record.sync_pending_seq;
-+	manifest->sync_flags = record.sync_flags;
-+	manifest->owner_issue_cookie = record.owner_issue_cookie;
-+	manifest->owner_complete_cookie = record.owner_complete_cookie;
++	manifest->stage = records.live.stage;
++	manifest->stage_count = records.live.stage_count;
++	manifest->context = records.live.context;
++	manifest->cmd_type = records.live.cmd_type;
++	manifest->owner_state = records.live.owner_state;
++	manifest->ctrl_flags = records.live.ctrl_flags;
++	manifest->queue_base_offset = records.live.queue_base_offset;
++	manifest->queue_size = records.live.queue_size;
++	manifest->queue_packet_size = records.live.queue_packet_size;
++	manifest->queue_packet_count = records.live.queue_packet_count;
++	manifest->queue_epoch = records.live.queue_epoch;
++	manifest->ccb_offset = records.live.ccb_offset;
++	manifest->ccb_write_offset = records.live.ccb_write_offset;
++	manifest->ccb_read_offset = records.live.ccb_read_offset;
++	manifest->dependency_active_count = records.live.dependency_active_count;
++	manifest->global_issue_ticket = records.live.global_issue_ticket;
++	manifest->global_running_ticket = records.live.global_running_ticket;
++	manifest->global_complete_ticket = records.live.global_complete_ticket;
++	manifest->pds_gpu_va32 = records.live.pds_gpu_va32;
++	manifest->use_gpu_va32 = records.live.use_gpu_va32;
++	manifest->target_gpu_va32 = records.live.target_gpu_va32;
++	manifest->status_gpu_va32 = records.live.ccb_status_gpu_va32;
++	manifest->sync_complete_seq = records.live.sync_complete_seq;
++	manifest->sync_pending_seq = records.live.sync_pending_seq;
++	manifest->sync_flags = records.live.sync_flags;
++	manifest->owner_issue_cookie = records.live.owner_issue_cookie;
++	manifest->owner_complete_cookie = records.live.owner_complete_cookie;
 +	return 0;
 +}
 +
@@ -5687,50 +5785,50 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_descriptor_words *descriptor)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
 +	if (!descriptor)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(
-+		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		dev_priv, submit, &records);
 +	if (ret)
 +		return ret;
 +
 +	memset(descriptor, 0, sizeof(*descriptor));
-+	descriptor->stage = record.stage;
-+	descriptor->stage_count = record.stage_count;
-+	descriptor->context = record.context;
-+	descriptor->cmd_type = record.cmd_type;
-+	descriptor->owner_state = record.owner_state;
-+	descriptor->issued_packets = record.issued_packets;
-+	descriptor->completed_packets = record.completed_packets;
-+	descriptor->dependency_active_count = record.dependency_active_count;
-+	descriptor->queue_packet_count = record.queue_packet_count;
-+	descriptor->queue_epoch = record.queue_epoch;
-+	descriptor->ctrl_flags = record.ctrl_flags;
-+	descriptor->queue_base_offset = record.queue_base_offset;
-+	descriptor->queue_size = record.queue_size;
-+	descriptor->queue_packet_size = record.queue_packet_size;
-+	descriptor->ccb_offset = record.ccb_offset;
-+	descriptor->sync_offset = record.sync_offset;
-+	descriptor->owner_offset = record.owner_offset;
++	descriptor->stage = records.live.stage;
++	descriptor->stage_count = records.live.stage_count;
++	descriptor->context = records.live.context;
++	descriptor->cmd_type = records.live.cmd_type;
++	descriptor->owner_state = records.live.owner_state;
++	descriptor->issued_packets = records.live.issued_packets;
++	descriptor->completed_packets = records.live.completed_packets;
++	descriptor->dependency_active_count = records.live.dependency_active_count;
++	descriptor->queue_packet_count = records.live.queue_packet_count;
++	descriptor->queue_epoch = records.live.queue_epoch;
++	descriptor->ctrl_flags = records.live.ctrl_flags;
++	descriptor->queue_base_offset = records.live.queue_base_offset;
++	descriptor->queue_size = records.live.queue_size;
++	descriptor->queue_packet_size = records.live.queue_packet_size;
++	descriptor->ccb_offset = records.live.ccb_offset;
++	descriptor->sync_offset = records.live.sync_offset;
++	descriptor->owner_offset = records.live.owner_offset;
 +	descriptor->report_offset = submit->report_offset;
 +	descriptor->manifest_offset = submit->manifest_offset;
-+	descriptor->global_issue_ticket = record.global_issue_ticket;
-+	descriptor->global_running_ticket = record.global_running_ticket;
-+	descriptor->global_complete_ticket = record.global_complete_ticket;
-+	descriptor->report_flags = record.report_flags;
-+	descriptor->status_ta_offset = record.status_ta_offset;
-+	descriptor->status_3d_offset = record.status_3d_offset;
-+	descriptor->status_stride = record.status_stride;
-+	descriptor->status_value_seed = record.status_value_seed;
-+	descriptor->control_gpu_va32 = record.control_gpu_va32;
-+	descriptor->pds_gpu_va32 = record.pds_gpu_va32;
-+	descriptor->use_gpu_va32 = record.use_gpu_va32;
-+	descriptor->target_gpu_va32 = record.target_gpu_va32;
-+	descriptor->status_gpu_va32 = record.ccb_status_gpu_va32;
++	descriptor->global_issue_ticket = records.live.global_issue_ticket;
++	descriptor->global_running_ticket = records.live.global_running_ticket;
++	descriptor->global_complete_ticket = records.live.global_complete_ticket;
++	descriptor->report_flags = records.live.report_flags;
++	descriptor->status_ta_offset = records.live.status_ta_offset;
++	descriptor->status_3d_offset = records.live.status_3d_offset;
++	descriptor->status_stride = records.live.status_stride;
++	descriptor->status_value_seed = records.live.status_value_seed;
++	descriptor->control_gpu_va32 = records.live.control_gpu_va32;
++	descriptor->pds_gpu_va32 = records.live.pds_gpu_va32;
++	descriptor->use_gpu_va32 = records.live.use_gpu_va32;
++	descriptor->target_gpu_va32 = records.live.target_gpu_va32;
++	descriptor->status_gpu_va32 = records.live.ccb_status_gpu_va32;
 +	return 0;
 +}
 +
@@ -5784,63 +5882,61 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_plan_words *plan)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
-+	enum psb_sgx_lab_exec_source source;
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
 +	if (!plan)
 +		return -EINVAL;
 +
 +	memset(plan, 0, sizeof(*plan));
-+	source = poulsbo_sgx_submit_plan_exec_source_locked(
-+		poulsbo_sgx_submit_report_stage_locked(submit));
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(dev_priv, submit,
-+							source, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		dev_priv, submit, &records);
 +	if (ret)
 +		return ret;
 +
-+	plan->stage = record.stage;
-+	plan->stage_count = record.stage_count;
-+	plan->source = poulsbo_sgx_submit_plan_source_locked(source);
++	plan->stage = records.plan.stage;
++	plan->stage_count = records.plan.stage_count;
++	plan->source = poulsbo_sgx_submit_plan_source_locked(
++		records.plan_source);
 +	plan->report_offset = submit->report_offset;
 +	plan->manifest_offset = submit->manifest_offset;
 +	plan->descriptor_offset = submit->descriptor_offset;
 +
-+	plan->context = record.context;
-+	plan->cmd_type = record.cmd_type;
-+	plan->owner_state = record.owner_state;
-+	plan->issued_packets = record.issued_packets;
-+	plan->completed_packets = record.completed_packets;
-+	plan->dependency_active_count = record.dependency_active_count;
-+	plan->refilled_from_complete = record.refilled_from_complete;
-+	plan->queue_packet_count = record.queue_packet_count;
-+	plan->queue_epoch = record.queue_epoch;
-+	plan->queue_base_offset = record.queue_base_offset;
-+	plan->queue_size = record.queue_size;
-+	plan->queue_packet_size = record.queue_packet_size;
-+	plan->ccb_offset = record.ccb_offset;
-+	plan->ccb_write_offset = record.ccb_write_offset;
-+	plan->ccb_read_offset = record.ccb_read_offset;
-+	plan->sync_offset = record.sync_offset;
-+	plan->sync_complete_seq = record.sync_complete_seq;
-+	plan->sync_pending_seq = record.sync_pending_seq;
-+	plan->sync_flags = record.sync_flags;
-+	plan->owner_offset = record.owner_offset;
-+	plan->owner_issue_cookie = record.owner_issue_cookie;
-+	plan->owner_complete_cookie = record.owner_complete_cookie;
-+	plan->global_issue_ticket = record.global_issue_ticket;
-+	plan->global_running_ticket = record.global_running_ticket;
-+	plan->global_complete_ticket = record.global_complete_ticket;
-+	plan->ctrl_flags = record.ctrl_flags;
-+	plan->ccb_service_address = record.ccb_service_address;
-+	plan->ccb_cache_control = record.ccb_cache_control;
-+	plan->ccb_data0 = record.ccb_data0;
-+	plan->ccb_data1 = record.ccb_data1;
-+	plan->control_gpu_va32 = record.control_gpu_va32;
-+	plan->pds_gpu_va32 = record.pds_gpu_va32;
-+	plan->use_gpu_va32 = record.use_gpu_va32;
-+	plan->target_gpu_va32 = record.target_gpu_va32;
-+	plan->status_gpu_va32 = record.ccb_status_gpu_va32;
++	plan->context = records.plan.context;
++	plan->cmd_type = records.plan.cmd_type;
++	plan->owner_state = records.plan.owner_state;
++	plan->issued_packets = records.plan.issued_packets;
++	plan->completed_packets = records.plan.completed_packets;
++	plan->dependency_active_count = records.plan.dependency_active_count;
++	plan->refilled_from_complete = records.plan.refilled_from_complete;
++	plan->queue_packet_count = records.plan.queue_packet_count;
++	plan->queue_epoch = records.plan.queue_epoch;
++	plan->queue_base_offset = records.plan.queue_base_offset;
++	plan->queue_size = records.plan.queue_size;
++	plan->queue_packet_size = records.plan.queue_packet_size;
++	plan->ccb_offset = records.plan.ccb_offset;
++	plan->ccb_write_offset = records.plan.ccb_write_offset;
++	plan->ccb_read_offset = records.plan.ccb_read_offset;
++	plan->sync_offset = records.plan.sync_offset;
++	plan->sync_complete_seq = records.plan.sync_complete_seq;
++	plan->sync_pending_seq = records.plan.sync_pending_seq;
++	plan->sync_flags = records.plan.sync_flags;
++	plan->owner_offset = records.plan.owner_offset;
++	plan->owner_issue_cookie = records.plan.owner_issue_cookie;
++	plan->owner_complete_cookie = records.plan.owner_complete_cookie;
++	plan->global_issue_ticket = records.plan.global_issue_ticket;
++	plan->global_running_ticket = records.plan.global_running_ticket;
++	plan->global_complete_ticket = records.plan.global_complete_ticket;
++	plan->ctrl_flags = records.plan.ctrl_flags;
++	plan->ccb_service_address = records.plan.ccb_service_address;
++	plan->ccb_cache_control = records.plan.ccb_cache_control;
++	plan->ccb_data0 = records.plan.ccb_data0;
++	plan->ccb_data1 = records.plan.ccb_data1;
++	plan->control_gpu_va32 = records.plan.control_gpu_va32;
++	plan->pds_gpu_va32 = records.plan.pds_gpu_va32;
++	plan->use_gpu_va32 = records.plan.use_gpu_va32;
++	plan->target_gpu_va32 = records.plan.target_gpu_va32;
++	plan->status_gpu_va32 = records.plan.ccb_status_gpu_va32;
 +	return 0;
 +}
 +
@@ -5849,52 +5945,50 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_result_words *result)
 +{
-+	struct psb_sgx_lab_submit_exec_record record;
-+	enum psb_sgx_lab_exec_source source;
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
 +	if (!result)
 +		return -EINVAL;
 +
 +	memset(result, 0, sizeof(*result));
-+	source = poulsbo_sgx_submit_result_exec_source_locked(
-+		poulsbo_sgx_submit_report_stage_locked(submit));
-+	ret = poulsbo_sgx_build_submit_exec_record_locked(dev_priv, submit,
-+							source, &record);
++	ret = poulsbo_sgx_collect_submit_view_records_locked(
++		dev_priv, submit, &records);
 +	if (ret)
 +		return ret;
 +
-+	result->stage = record.stage;
-+	result->stage_count = record.stage_count;
-+	result->source = poulsbo_sgx_submit_result_source_locked(source);
-+	result->context = record.context;
-+	result->cmd_type = record.cmd_type;
-+	result->owner_state = record.owner_state;
-+	result->issued_packets = record.issued_packets;
-+	result->completed_packets = record.completed_packets;
-+	result->dependency_active_count = record.dependency_active_count;
-+	result->queue_packet_count = record.queue_packet_count;
-+	result->queue_epoch = record.queue_epoch;
-+	result->sync_complete_seq = record.sync_complete_seq;
-+	result->sync_pending_seq = record.sync_pending_seq;
-+	result->sync_flags = record.sync_flags;
-+	result->owner_issue_cookie = record.owner_issue_cookie;
-+	result->owner_complete_cookie = record.owner_complete_cookie;
-+	result->global_issue_ticket = record.global_issue_ticket;
-+	result->global_running_ticket = record.global_running_ticket;
-+	result->global_complete_ticket = record.global_complete_ticket;
-+	result->ctrl_flags = record.ctrl_flags;
-+	result->num_ta_status_vals = record.num_ta_status_vals;
-+	result->num_3d_status_vals = record.num_3d_status_vals;
-+	result->ta_dependency = record.ta_dependency;
-+	result->status_ta_offset = record.status_ta_offset;
-+	result->status_3d_offset = record.status_3d_offset;
-+	result->status_stride = record.status_stride;
-+	result->status_value_seed = record.status_value_seed;
-+	result->control_object_id = record.control_object_id;
-+	result->status_object_id = record.status_object_id;
-+	result->control_gpu_va32 = record.control_gpu_va32;
-+	result->status_gpu_va32 = record.status_gpu_va32;
++	result->stage = records.result.stage;
++	result->stage_count = records.result.stage_count;
++	result->source = poulsbo_sgx_submit_result_source_locked(
++		records.result_source);
++	result->context = records.result.context;
++	result->cmd_type = records.result.cmd_type;
++	result->owner_state = records.result.owner_state;
++	result->issued_packets = records.result.issued_packets;
++	result->completed_packets = records.result.completed_packets;
++	result->dependency_active_count = records.result.dependency_active_count;
++	result->queue_packet_count = records.result.queue_packet_count;
++	result->queue_epoch = records.result.queue_epoch;
++	result->sync_complete_seq = records.result.sync_complete_seq;
++	result->sync_pending_seq = records.result.sync_pending_seq;
++	result->sync_flags = records.result.sync_flags;
++	result->owner_issue_cookie = records.result.owner_issue_cookie;
++	result->owner_complete_cookie = records.result.owner_complete_cookie;
++	result->global_issue_ticket = records.result.global_issue_ticket;
++	result->global_running_ticket = records.result.global_running_ticket;
++	result->global_complete_ticket = records.result.global_complete_ticket;
++	result->ctrl_flags = records.result.ctrl_flags;
++	result->num_ta_status_vals = records.result.num_ta_status_vals;
++	result->num_3d_status_vals = records.result.num_3d_status_vals;
++	result->ta_dependency = records.result.ta_dependency;
++	result->status_ta_offset = records.result.status_ta_offset;
++	result->status_3d_offset = records.result.status_3d_offset;
++	result->status_stride = records.result.status_stride;
++	result->status_value_seed = records.result.status_value_seed;
++	result->control_object_id = records.result.control_object_id;
++	result->status_object_id = records.result.status_object_id;
++	result->control_gpu_va32 = records.result.control_gpu_va32;
++	result->status_gpu_va32 = records.result.status_gpu_va32;
 +	result->report_offset = submit->report_offset;
 +	result->manifest_offset = submit->manifest_offset;
 +	result->descriptor_offset = submit->descriptor_offset;
@@ -5976,6 +6070,7 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_refresh_views *views)
 +{
++	struct psb_sgx_lab_submit_view_records records;
 +	int ret;
 +
 +	if (!views)
@@ -6009,44 +6104,273 @@ index d414525ec..bee98b28e 100644
 +			return ret;
 +	}
 +
-+	if (submit->report_config_count) {
-+		ret = poulsbo_sgx_build_submit_report_locked(submit,
-+							     &views->report);
++	if (submit->report_config_count || submit->manifest_config_count ||
++	    submit->descriptor_config_count || submit->plan_config_count ||
++	    submit->result_config_count) {
++		ret = poulsbo_sgx_collect_submit_view_records_locked(
++			dev_priv, submit, &records);
 +		if (ret)
 +			return ret;
-+		views->have_report = true;
-+	}
++		if (submit->report_config_count) {
++			memset(&views->report, 0, sizeof(views->report));
++			views->report.stage = records.live.stage;
++			views->report.stage_count = records.live.stage_count;
++			views->report.prepare_count = records.live.prepare_count;
++			views->report.arm_count = records.live.arm_count;
++			views->report.emit_count = records.live.emit_count;
++			views->report.launch_count = records.live.launch_count;
++			views->report.dispatch_count = records.live.dispatch_count;
++			views->report.retired_count = records.live.retired_count;
++			views->report.owner_state = records.live.owner_state;
++			views->report.queue_packet_count =
++				records.live.queue_packet_count;
++			views->report.completed_packets =
++				records.live.completed_packets;
++			views->report.dependency_active_count =
++				records.live.dependency_active_count;
++			views->report.queue_epoch = records.live.queue_epoch;
++			views->report.global_issue_ticket =
++				records.live.global_issue_ticket;
++			views->report.global_running_ticket =
++				records.live.global_running_ticket;
++			views->report.global_complete_ticket =
++				records.live.global_complete_ticket;
++			views->report.flags = records.live.report_flags;
++			views->report.context = records.live.context;
++			views->have_report = true;
++		}
 +
-+	if (submit->manifest_config_count) {
-+		ret = poulsbo_sgx_build_submit_manifest_locked(dev_priv, submit,
-+							       &views->manifest);
-+		if (ret)
-+			return ret;
-+		views->have_manifest = true;
-+	}
++		if (submit->manifest_config_count) {
++			memset(&views->manifest, 0, sizeof(views->manifest));
++			views->manifest.stage = records.live.stage;
++			views->manifest.stage_count = records.live.stage_count;
++			views->manifest.context = records.live.context;
++			views->manifest.cmd_type = records.live.cmd_type;
++			views->manifest.owner_state = records.live.owner_state;
++			views->manifest.ctrl_flags = records.live.ctrl_flags;
++			views->manifest.queue_base_offset =
++				records.live.queue_base_offset;
++			views->manifest.queue_size = records.live.queue_size;
++			views->manifest.queue_packet_size =
++				records.live.queue_packet_size;
++			views->manifest.queue_packet_count =
++				records.live.queue_packet_count;
++			views->manifest.queue_epoch = records.live.queue_epoch;
++			views->manifest.ccb_offset = records.live.ccb_offset;
++			views->manifest.ccb_write_offset =
++				records.live.ccb_write_offset;
++			views->manifest.ccb_read_offset =
++				records.live.ccb_read_offset;
++			views->manifest.dependency_active_count =
++				records.live.dependency_active_count;
++			views->manifest.global_issue_ticket =
++				records.live.global_issue_ticket;
++			views->manifest.global_running_ticket =
++				records.live.global_running_ticket;
++			views->manifest.global_complete_ticket =
++				records.live.global_complete_ticket;
++			views->manifest.pds_gpu_va32 = records.live.pds_gpu_va32;
++			views->manifest.use_gpu_va32 = records.live.use_gpu_va32;
++			views->manifest.target_gpu_va32 =
++				records.live.target_gpu_va32;
++			views->manifest.status_gpu_va32 =
++				records.live.ccb_status_gpu_va32;
++			views->manifest.sync_complete_seq =
++				records.live.sync_complete_seq;
++			views->manifest.sync_pending_seq =
++				records.live.sync_pending_seq;
++			views->manifest.sync_flags = records.live.sync_flags;
++			views->manifest.owner_issue_cookie =
++				records.live.owner_issue_cookie;
++			views->manifest.owner_complete_cookie =
++				records.live.owner_complete_cookie;
++			views->have_manifest = true;
++		}
 +
-+	if (submit->descriptor_config_count) {
-+		ret = poulsbo_sgx_build_submit_descriptor_locked(
-+			dev_priv, submit, &views->descriptor);
-+		if (ret)
-+			return ret;
-+		views->have_descriptor = true;
-+	}
++		if (submit->descriptor_config_count) {
++			memset(&views->descriptor, 0, sizeof(views->descriptor));
++			views->descriptor.stage = records.live.stage;
++			views->descriptor.stage_count = records.live.stage_count;
++			views->descriptor.context = records.live.context;
++			views->descriptor.cmd_type = records.live.cmd_type;
++			views->descriptor.owner_state = records.live.owner_state;
++			views->descriptor.issued_packets =
++				records.live.issued_packets;
++			views->descriptor.completed_packets =
++				records.live.completed_packets;
++			views->descriptor.dependency_active_count =
++				records.live.dependency_active_count;
++			views->descriptor.queue_packet_count =
++				records.live.queue_packet_count;
++			views->descriptor.queue_epoch =
++				records.live.queue_epoch;
++			views->descriptor.ctrl_flags = records.live.ctrl_flags;
++			views->descriptor.queue_base_offset =
++				records.live.queue_base_offset;
++			views->descriptor.queue_size = records.live.queue_size;
++			views->descriptor.queue_packet_size =
++				records.live.queue_packet_size;
++			views->descriptor.ccb_offset = records.live.ccb_offset;
++			views->descriptor.sync_offset = records.live.sync_offset;
++			views->descriptor.owner_offset = records.live.owner_offset;
++			views->descriptor.report_offset = submit->report_offset;
++			views->descriptor.manifest_offset =
++				submit->manifest_offset;
++			views->descriptor.global_issue_ticket =
++				records.live.global_issue_ticket;
++			views->descriptor.global_running_ticket =
++				records.live.global_running_ticket;
++			views->descriptor.global_complete_ticket =
++				records.live.global_complete_ticket;
++			views->descriptor.report_flags =
++				records.live.report_flags;
++			views->descriptor.status_ta_offset =
++				records.live.status_ta_offset;
++			views->descriptor.status_3d_offset =
++				records.live.status_3d_offset;
++			views->descriptor.status_stride =
++				records.live.status_stride;
++			views->descriptor.status_value_seed =
++				records.live.status_value_seed;
++			views->descriptor.control_gpu_va32 =
++				records.live.control_gpu_va32;
++			views->descriptor.pds_gpu_va32 = records.live.pds_gpu_va32;
++			views->descriptor.use_gpu_va32 = records.live.use_gpu_va32;
++			views->descriptor.target_gpu_va32 =
++				records.live.target_gpu_va32;
++			views->descriptor.status_gpu_va32 =
++				records.live.ccb_status_gpu_va32;
++			views->have_descriptor = true;
++		}
 +
-+	if (submit->plan_config_count) {
-+		ret = poulsbo_sgx_build_submit_plan_locked(dev_priv, submit,
-+							   &views->plan);
-+		if (ret)
-+			return ret;
-+		views->have_plan = true;
-+	}
++		if (submit->plan_config_count) {
++			memset(&views->plan, 0, sizeof(views->plan));
++			views->plan.stage = records.plan.stage;
++			views->plan.stage_count = records.plan.stage_count;
++			views->plan.source = poulsbo_sgx_submit_plan_source_locked(
++				records.plan_source);
++			views->plan.report_offset = submit->report_offset;
++			views->plan.manifest_offset = submit->manifest_offset;
++			views->plan.descriptor_offset = submit->descriptor_offset;
++			views->plan.context = records.plan.context;
++			views->plan.cmd_type = records.plan.cmd_type;
++			views->plan.owner_state = records.plan.owner_state;
++			views->plan.issued_packets = records.plan.issued_packets;
++			views->plan.completed_packets =
++				records.plan.completed_packets;
++			views->plan.dependency_active_count =
++				records.plan.dependency_active_count;
++			views->plan.refilled_from_complete =
++				records.plan.refilled_from_complete;
++			views->plan.queue_packet_count =
++				records.plan.queue_packet_count;
++			views->plan.queue_epoch = records.plan.queue_epoch;
++			views->plan.queue_base_offset =
++				records.plan.queue_base_offset;
++			views->plan.queue_size = records.plan.queue_size;
++			views->plan.queue_packet_size =
++				records.plan.queue_packet_size;
++			views->plan.ccb_offset = records.plan.ccb_offset;
++			views->plan.ccb_write_offset =
++				records.plan.ccb_write_offset;
++			views->plan.ccb_read_offset =
++				records.plan.ccb_read_offset;
++			views->plan.sync_offset = records.plan.sync_offset;
++			views->plan.sync_complete_seq =
++				records.plan.sync_complete_seq;
++			views->plan.sync_pending_seq =
++				records.plan.sync_pending_seq;
++			views->plan.sync_flags = records.plan.sync_flags;
++			views->plan.owner_offset = records.plan.owner_offset;
++			views->plan.owner_issue_cookie =
++				records.plan.owner_issue_cookie;
++			views->plan.owner_complete_cookie =
++				records.plan.owner_complete_cookie;
++			views->plan.global_issue_ticket =
++				records.plan.global_issue_ticket;
++			views->plan.global_running_ticket =
++				records.plan.global_running_ticket;
++			views->plan.global_complete_ticket =
++				records.plan.global_complete_ticket;
++			views->plan.ctrl_flags = records.plan.ctrl_flags;
++			views->plan.ccb_service_address =
++				records.plan.ccb_service_address;
++			views->plan.ccb_cache_control =
++				records.plan.ccb_cache_control;
++			views->plan.ccb_data0 = records.plan.ccb_data0;
++			views->plan.ccb_data1 = records.plan.ccb_data1;
++			views->plan.control_gpu_va32 =
++				records.plan.control_gpu_va32;
++			views->plan.pds_gpu_va32 = records.plan.pds_gpu_va32;
++			views->plan.use_gpu_va32 = records.plan.use_gpu_va32;
++			views->plan.target_gpu_va32 = records.plan.target_gpu_va32;
++			views->plan.status_gpu_va32 =
++				records.plan.ccb_status_gpu_va32;
++			views->have_plan = true;
++		}
 +
-+	if (submit->result_config_count) {
-+		ret = poulsbo_sgx_build_submit_result_locked(dev_priv, submit,
-+							     &views->result);
-+		if (ret)
-+			return ret;
-+		views->have_result = true;
++		if (submit->result_config_count) {
++			memset(&views->result, 0, sizeof(views->result));
++			views->result.stage = records.result.stage;
++			views->result.stage_count = records.result.stage_count;
++			views->result.source =
++				poulsbo_sgx_submit_result_source_locked(
++					records.result_source);
++			views->result.context = records.result.context;
++			views->result.cmd_type = records.result.cmd_type;
++			views->result.owner_state = records.result.owner_state;
++			views->result.issued_packets = records.result.issued_packets;
++			views->result.completed_packets =
++				records.result.completed_packets;
++			views->result.dependency_active_count =
++				records.result.dependency_active_count;
++			views->result.queue_packet_count =
++				records.result.queue_packet_count;
++			views->result.queue_epoch = records.result.queue_epoch;
++			views->result.sync_complete_seq =
++				records.result.sync_complete_seq;
++			views->result.sync_pending_seq =
++				records.result.sync_pending_seq;
++			views->result.sync_flags = records.result.sync_flags;
++			views->result.owner_issue_cookie =
++				records.result.owner_issue_cookie;
++			views->result.owner_complete_cookie =
++				records.result.owner_complete_cookie;
++			views->result.global_issue_ticket =
++				records.result.global_issue_ticket;
++			views->result.global_running_ticket =
++				records.result.global_running_ticket;
++			views->result.global_complete_ticket =
++				records.result.global_complete_ticket;
++			views->result.ctrl_flags = records.result.ctrl_flags;
++			views->result.num_ta_status_vals =
++				records.result.num_ta_status_vals;
++			views->result.num_3d_status_vals =
++				records.result.num_3d_status_vals;
++			views->result.ta_dependency = records.result.ta_dependency;
++			views->result.status_ta_offset =
++				records.result.status_ta_offset;
++			views->result.status_3d_offset =
++				records.result.status_3d_offset;
++			views->result.status_stride =
++				records.result.status_stride;
++			views->result.status_value_seed =
++				records.result.status_value_seed;
++			views->result.control_object_id =
++				records.result.control_object_id;
++			views->result.status_object_id =
++				records.result.status_object_id;
++			views->result.control_gpu_va32 =
++				records.result.control_gpu_va32;
++			views->result.status_gpu_va32 =
++				records.result.status_gpu_va32;
++			views->result.report_offset = submit->report_offset;
++			views->result.manifest_offset = submit->manifest_offset;
++			views->result.descriptor_offset =
++				submit->descriptor_offset;
++			views->result.plan_offset = submit->plan_offset;
++			views->have_result = true;
++		}
 +	}
 +
 +	return 0;
@@ -7667,28 +7991,12 @@ index d414525ec..bee98b28e 100644
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_validate_submit_control_side_images_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
++static int poulsbo_sgx_validate_submit_queue_header_image_locked(
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_object *pds_obj,
-+	struct psb_sgx_lab_object *use_obj,
-+	struct psb_sgx_lab_object *target_obj,
-+	struct psb_sgx_lab_object *status_obj)
++	struct psb_sgx_lab_submit *submit)
 +{
 +	struct psb_sgx_lab_queue_header_words expected_queue_header;
 +	struct psb_sgx_lab_queue_header_words ctl_queue_header;
-+	struct psb_sgx_lab_ccb_record_words expected_ccb_record;
-+	struct psb_sgx_lab_ccb_record_words ctl_ccb_record;
-+	struct psb_sgx_lab_manifest_words expected_manifest;
-+	struct psb_sgx_lab_manifest_words ctl_manifest;
-+	struct psb_sgx_lab_descriptor_words expected_descriptor;
-+	struct psb_sgx_lab_descriptor_words ctl_descriptor;
-+	struct psb_sgx_lab_plan_words expected_plan;
-+	struct psb_sgx_lab_plan_words ctl_plan;
-+	u32 expected_write_offset;
-+	u32 expected_tail_packets;
-+	u32 expected_head_packets;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_queue_header_locked(control_obj, 0,
@@ -7703,6 +8011,18 @@ index d414525ec..bee98b28e 100644
 +		   sizeof(expected_queue_header)) != 0)
 +		return -EINVAL;
 +
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_ccb_record_image_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_object *control_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_ccb_record_words expected_ccb_record;
++	struct psb_sgx_lab_ccb_record_words ctl_ccb_record;
++	int ret;
++
 +	ret = poulsbo_sgx_read_submit_ccb_record_locked(control_obj,
 +							submit->ccb_offset,
 +							&ctl_ccb_record);
@@ -7715,6 +8035,195 @@ index d414525ec..bee98b28e 100644
 +	if (memcmp(&ctl_ccb_record, &expected_ccb_record,
 +		   sizeof(expected_ccb_record)) != 0)
 +		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_manifest_image_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_object *control_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_manifest_words expected_manifest;
++	struct psb_sgx_lab_manifest_words ctl_manifest;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_manifest_locked(control_obj,
++						      submit->manifest_offset,
++						      &ctl_manifest);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_manifest_locked(dev_priv, submit,
++						       &expected_manifest);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_manifest, &expected_manifest,
++		   sizeof(expected_manifest)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_descriptor_image_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_object *control_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_descriptor_words expected_descriptor;
++	struct psb_sgx_lab_descriptor_words ctl_descriptor;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_descriptor_locked(control_obj,
++							submit->descriptor_offset,
++							&ctl_descriptor);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_descriptor_locked(
++		dev_priv, submit, &expected_descriptor);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_descriptor, &expected_descriptor,
++		   sizeof(expected_descriptor)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_plan_image_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_object *control_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_plan_words expected_plan;
++	struct psb_sgx_lab_plan_words ctl_plan;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_plan_locked(control_obj,
++						  submit->plan_offset,
++						  &ctl_plan);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_plan_locked(dev_priv, submit,
++						   &expected_plan);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_plan, &expected_plan,
++		   sizeof(expected_plan)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_sync_image_locked(
++	struct psb_sgx_lab_object *status_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_sync_words expected_sync;
++	struct psb_sgx_lab_sync_words ctl_sync;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_sync_locked(status_obj, submit->sync_offset,
++						  &ctl_sync);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_sync_locked(submit, &expected_sync);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_sync, &expected_sync, sizeof(expected_sync)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_owner_image_locked(
++	struct psb_sgx_lab_object *status_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_owner_words expected_owner;
++	struct psb_sgx_lab_owner_words ctl_owner;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_owner_locked(status_obj, submit->owner_offset,
++						   &ctl_owner);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_owner_locked(submit, &expected_owner);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_owner, &expected_owner, sizeof(expected_owner)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_report_image_locked(
++	struct psb_sgx_lab_object *status_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_report_words expected_report;
++	struct psb_sgx_lab_report_words ctl_report;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_report_locked(status_obj,
++						    submit->report_offset,
++						    &ctl_report);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_report_locked(submit, &expected_report);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_report, &expected_report, sizeof(expected_report)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_result_image_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_object *status_obj,
++	struct psb_sgx_lab_submit *submit)
++{
++	struct psb_sgx_lab_result_words expected_result;
++	struct psb_sgx_lab_result_words ctl_result;
++	int ret;
++
++	ret = poulsbo_sgx_read_submit_result_locked(status_obj,
++						    submit->result_offset,
++						    &ctl_result);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_build_submit_result_locked(dev_priv, submit,
++						     &expected_result);
++	if (ret)
++		return ret;
++	if (memcmp(&ctl_result, &expected_result, sizeof(expected_result)) != 0)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int poulsbo_sgx_validate_submit_control_side_images_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_object *control_obj,
++	struct psb_sgx_lab_object *pds_obj,
++	struct psb_sgx_lab_object *use_obj,
++	struct psb_sgx_lab_object *target_obj,
++	struct psb_sgx_lab_object *status_obj)
++{
++	u32 expected_write_offset;
++	u32 expected_tail_packets;
++	u32 expected_head_packets;
++	int ret;
++
++	ret = poulsbo_sgx_validate_submit_queue_header_image_locked(control_obj,
++								     submit);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_validate_submit_ccb_record_image_locked(
++		dev_priv, control_obj, submit);
++	if (ret)
++		return ret;
 +
 +	ret = poulsbo_sgx_queue_progression(submit->ccb_read_offset,
 +					    submit->queue_size,
@@ -7756,48 +8265,24 @@ index d414525ec..bee98b28e 100644
 +	}
 +
 +	if (submit->manifest_config_count) {
-+		ret = poulsbo_sgx_read_submit_manifest_locked(control_obj,
-+							      submit->manifest_offset,
-+							      &ctl_manifest);
++		ret = poulsbo_sgx_validate_submit_manifest_image_locked(
++			dev_priv, control_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_manifest_locked(dev_priv, submit,
-+							       &expected_manifest);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_manifest, &expected_manifest,
-+			   sizeof(expected_manifest)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	if (submit->descriptor_config_count) {
-+		ret = poulsbo_sgx_read_submit_descriptor_locked(
-+			control_obj, submit->descriptor_offset,
-+			&ctl_descriptor);
++		ret = poulsbo_sgx_validate_submit_descriptor_image_locked(
++			dev_priv, control_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_descriptor_locked(
-+			dev_priv, submit, &expected_descriptor);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_descriptor, &expected_descriptor,
-+			   sizeof(expected_descriptor)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	if (submit->plan_config_count) {
-+		ret = poulsbo_sgx_read_submit_plan_locked(control_obj,
-+							  submit->plan_offset,
-+							  &ctl_plan);
++		ret = poulsbo_sgx_validate_submit_plan_image_locked(
++			dev_priv, control_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_plan_locked(dev_priv, submit,
-+							   &expected_plan);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_plan, &expected_plan,
-+			   sizeof(expected_plan)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	return 0;
@@ -7808,14 +8293,6 @@ index d414525ec..bee98b28e 100644
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *status_obj)
 +{
-+	struct psb_sgx_lab_sync_words expected_sync;
-+	struct psb_sgx_lab_sync_words ctl_sync;
-+	struct psb_sgx_lab_owner_words expected_owner;
-+	struct psb_sgx_lab_owner_words ctl_owner;
-+	struct psb_sgx_lab_report_words expected_report;
-+	struct psb_sgx_lab_report_words ctl_report;
-+	struct psb_sgx_lab_result_words expected_result;
-+	struct psb_sgx_lab_result_words ctl_result;
 +	struct psb_sgx_lab_dependency_words expected_dependency;
 +	struct psb_sgx_lab_dependency_words ctl_dependency;
 +	unsigned int slot;
@@ -7825,63 +8302,31 @@ index d414525ec..bee98b28e 100644
 +		return 0;
 +
 +	if (submit->sync_config_count) {
-+		ret = poulsbo_sgx_read_submit_sync_locked(status_obj,
-+							  submit->sync_offset,
-+							  &ctl_sync);
++		ret = poulsbo_sgx_validate_submit_sync_image_locked(
++			status_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_sync_locked(submit,
-+							   &expected_sync);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_sync, &expected_sync,
-+			   sizeof(expected_sync)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	if (submit->owner_config_count) {
-+		ret = poulsbo_sgx_read_submit_owner_locked(status_obj,
-+							   submit->owner_offset,
-+							   &ctl_owner);
++		ret = poulsbo_sgx_validate_submit_owner_image_locked(
++			status_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_owner_locked(submit,
-+							    &expected_owner);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_owner, &expected_owner,
-+			   sizeof(expected_owner)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	if (submit->report_config_count) {
-+		ret = poulsbo_sgx_read_submit_report_locked(status_obj,
-+							    submit->report_offset,
-+							    &ctl_report);
++		ret = poulsbo_sgx_validate_submit_report_image_locked(
++			status_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_report_locked(submit,
-+							     &expected_report);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_report, &expected_report,
-+			   sizeof(expected_report)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	if (submit->result_config_count) {
-+		ret = poulsbo_sgx_read_submit_result_locked(status_obj,
-+							    submit->result_offset,
-+							    &ctl_result);
++		ret = poulsbo_sgx_validate_submit_result_image_locked(
++			dev_priv, status_obj, submit);
 +		if (ret)
 +			return ret;
-+		ret = poulsbo_sgx_build_submit_result_locked(dev_priv, submit,
-+							     &expected_result);
-+		if (ret)
-+			return ret;
-+		if (memcmp(&ctl_result, &expected_result,
-+			   sizeof(expected_result)) != 0)
-+			return -EINVAL;
 +	}
 +
 +	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
@@ -15326,7 +15771,7 @@ index d414525ec..bee98b28e 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +13221,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +13666,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -15349,7 +15794,7 @@ index d414525ec..bee98b28e 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +13259,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +13704,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -15357,7 +15802,7 @@ index d414525ec..bee98b28e 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +13287,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +13732,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -15377,7 +15822,7 @@ index d414525ec..bee98b28e 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +13374,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +13819,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -15390,7 +15835,7 @@ index d414525ec..bee98b28e 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +13524,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +13969,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);

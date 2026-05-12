@@ -6857,3 +6857,94 @@ terminal `complete`, the saved current-boundary view used to fall back to
 
 That means the next useful target-side work is beyond exact single-submit
 phase narrowing, not another no-code repeat of the same ladder.
+
+## 2026-05-13 Shared Submit View-Record Collection
+
+The next kernel batch on top of that fixed-module line now shares one
+collection pass for the typed submit `live`, `plan`, and `result` execution
+records.
+
+Validated guarded deploy:
+
+- [logs/vaio-deploy/20260513-012143-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-012143-guarded-deploy)
+
+That deploy booted the VAIO back to:
+
+- `driver_srcversion=7E90BF7EA4740AF68A6B588`
+- `override_module_size=438196`
+- `overall=remote_usable`
+- `lightdm_active=inactive`
+- `kdump_service_active=active`
+
+The exact no-redeploy `plan` regression proof on that same module is:
+
+- [logs/vaio-plan-session/20260513-012335-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-012335-sgx-plan-session)
+
+That proof still cleared terminal `complete`:
+
+- `session_outcome=completed`
+- `selected_phase_profile=complete`
+- `final_driver_srcversion=7E90BF7EA4740AF68A6B588`
+
+Focused typed submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-012435-sgx-submit-view-records-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-012435-sgx-submit-view-records-live/summary.log)
+
+Final focused state:
+
+- `SUBMIT_ID=4`
+- `submit_prepare_count=1`
+- `submit_arm_count=1`
+- `submit_emit_count=1`
+- `submit_launch_count=1`
+- `submit_dispatch_count=1`
+- `submit_retired_count=1`
+- `submit_issue_count=1`
+- `submit_transition_count=2`
+- `submit_result_stage_name=retired`
+- `submit_result_source_name=retired`
+- `submit_result_owner_state_name=complete`
+- `coord_live_submit_count=0`
+- `gtt_state_range_sgx_object_count=0`
+
+Typed multi-submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-012435-sgx-multi-submit-view-records-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-012435-sgx-multi-submit-view-records-live/summary.log)
+
+Final typed multi-submit state:
+
+- `SUBMIT_A_ID=2`
+- `SUBMIT_B_ID=3`
+- submit A final:
+  - `submit_prepare_count=1`
+  - `submit_arm_count=3`
+  - `submit_emit_count=3`
+  - `submit_launch_count=3`
+  - `submit_dispatch_count=3`
+  - `submit_retired_count=3`
+  - `submit_issue_count=3`
+  - `submit_transition_count=6`
+  - `submit_result_stage_name=retired`
+  - `submit_result_source_name=retired`
+  - `submit_result_owner_state_name=complete`
+- submit B final:
+  - `submit_prepare_count=1`
+  - `submit_arm_count=2`
+  - `submit_emit_count=2`
+  - `submit_launch_count=2`
+  - `submit_dispatch_count=2`
+  - `submit_retired_count=2`
+  - `submit_issue_count=2`
+  - `submit_transition_count=4`
+  - `submit_result_stage_name=retired`
+  - `submit_result_source_name=retired`
+  - `submit_result_owner_state_name=complete`
+- final cleanup:
+  - `coord_live_submit_count=0`
+  - `gtt_state_range_sgx_object_count=0`
+
+The saved current-boundary view therefore stays terminal on the new module:
+
+- `resolved_profile=complete`
+- `resolved_reason=latest_phase_evidence_terminal`
+- `source_timestamp=20260513-012335`
