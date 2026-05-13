@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-030640-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-030640-guarded-deploy)
+  [logs/vaio-deploy/20260513-034651-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-034651-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=A154282637C389A3032C8D9`
-  - `override_module_size=447160`
+  - `driver_srcversion=8B053004C83E74C5824A815`
+  - `override_module_size=448296`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,17 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-030828-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-030828-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-034951-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-034951-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=A154282637C389A3032C8D9`
-- the new internal `psb_sgx_lab_submit_exec_packet` batch is also
+  - `final_driver_srcversion=8B053004C83E74C5824A815`
+- the new internal `psb_sgx_lab_submit_ccb_kick` batch is also
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-030828-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-030828-sgx-plan-session)
+    [logs/vaio-plan-session/20260513-034951-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-034951-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-030828-sgx-submit-exec-packet-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-030828-sgx-submit-exec-packet-live/summary.log)
+    [logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-031429-sgx-multi-submit-exec-packet-live-typed-rerun2/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-031429-sgx-multi-submit-exec-packet-live-typed-rerun2/summary.log)
+    [logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -68,16 +68,18 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
-- the shared kernel execution model now has two explicit internal layers:
+- the shared kernel execution model now has four explicit internal layers:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
+  - `psb_sgx_lab_submit_cmdta_kick`
+  - `psb_sgx_lab_submit_ccb_kick`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-030828`
-  - `source_row_module_srcversion=A154282637C389A3032C8D9`
+  - `source_timestamp=20260513-034951`
+  - `source_row_module_srcversion=8B053004C83E74C5824A815`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -7044,3 +7046,83 @@ The saved current-boundary view therefore stays terminal on the new module:
 - `resolved_profile=complete`
 - `resolved_reason=latest_phase_evidence_terminal`
 - `source_timestamp=20260513-033102`
+
+## 2026-05-13 SGX Submit CCB Kick Object
+
+The next kernel batch on top of the shared `cmdta-kick` line now adds one
+internal kick-shaped object:
+
+- `psb_sgx_lab_submit_ccb_kick`
+
+Validated guarded deploy:
+
+- [logs/vaio-deploy/20260513-034651-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-034651-guarded-deploy)
+
+That deploy booted the VAIO back to:
+
+- `driver_srcversion=8B053004C83E74C5824A815`
+- `override_module_size=448296`
+- `overall=remote_usable`
+- `lightdm_active=inactive`
+- `kdump_service_active=active`
+
+The exact no-redeploy `plan` regression proof on that same module is:
+
+- [logs/vaio-plan-session/20260513-034951-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-034951-sgx-plan-session)
+
+That proof still cleared terminal `complete`:
+
+- `session_outcome=completed`
+- `selected_phase_profile=complete`
+- `final_driver_srcversion=8B053004C83E74C5824A815`
+
+Focused typed submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log)
+
+Final focused state:
+
+- `submit_prepare_count=1`
+- `submit_arm_count=1`
+- `submit_emit_count=1`
+- `submit_launch_count=1`
+- `submit_dispatch_count=1`
+- `submit_retired_count=1`
+- `submit_issue_count=1`
+- `submit_transition_count=2`
+- `submit_live_stage=6`
+- `submit_result_stage=6`
+- `submit_manifest_stage=6`
+- `submit_descriptor_stage=6`
+- `submit_plan_stage=6`
+- `submit_issue_plan_stage_name=retired`
+- `submit_issue_plan_stage_count=1`
+- `coord_live_submit_count=0`
+- `gtt_state_range_sgx_object_count=0`
+
+Typed multi-submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log)
+
+Final typed multi-submit state:
+
+- submit B final retained explicit dependency state through the normalized
+  views:
+  - `submit_result_dependency_active_count=1`
+  - `submit_manifest_dependency_active_count=1`
+  - `submit_descriptor_dependency_active_count=1`
+  - `submit_plan_dependency_active_count=1`
+  - `submit_dependency_active_count=1`
+  - `dependency[1]_submit_id=3`
+  - `dependency[1]_required_ticket=3`
+  - `dependency[1]_observed_complete_ticket=5`
+  - `dependency[1]_flags=0xf`
+- final cleanup:
+  - `coord_live_submit_count=0`
+  - `gtt_state_range_sgx_object_count=0`
+
+The saved current-boundary view therefore stays terminal on the new module:
+
+- `resolved_profile=complete`
+- `resolved_reason=latest_phase_evidence_terminal`
+- `source_timestamp=20260513-034951`

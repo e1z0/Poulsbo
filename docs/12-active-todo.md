@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion C1CC8033D0035B46726BAB0`
-  - `override_module_size=447532`
+  - `srcversion 8B053004C83E74C5824A815`
+  - `override_module_size=448296`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260513-032841-guarded-deploy`
+  - `logs/vaio-deploy/20260513-034651-guarded-deploy`
 - exact live reruns on the fixed module now all complete cleanly:
   - `plan_query_offset`
   - `plan_query_config`
@@ -60,22 +60,22 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260513-030828-sgx-plan-session`
-- the newest internal TA-specific `cmdta-kick` batch is now hardware-validated:
+  - `logs/vaio-plan-session/20260513-034951-sgx-plan-session`
+- the newest internal `ccb-kick` batch is now hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260513-033102-sgx-plan-session`
+    - `logs/vaio-plan-session/20260513-034951-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260513-033202-sgx-submit-cmdta-kick-live/summary.log`
+    - `logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260513-033241-sgx-multi-submit-cmdta-kick-live/summary.log`
+    - `logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-033102`
-  - `source_row_module_srcversion=C1CC8033D0035B46726BAB0`
+  - `source_timestamp=20260513-034951`
+  - `source_row_module_srcversion=8B053004C83E74C5824A815`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -181,30 +181,31 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion C1CC8033D0035B46726BAB0`
+  `srcversion 8B053004C83E74C5824A815`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
   - `psb_sgx_lab_submit_cmdta_kick`
+  - `psb_sgx_lab_submit_ccb_kick`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `C1CC8033D0035B46726BAB0` as the
+- keep the current guarded-deploy override `8B053004C83E74C5824A815` as the
   active headless, panic-safe validation base
 - treat the exact single-submit ladder as closed for the current module:
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `cmdta-kick` validation bundles as the active typed-submit
+- use the new `ccb-kick` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260513-033202-sgx-submit-cmdta-kick-live/summary.log`
+    `logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260513-033241-sgx-multi-submit-cmdta-kick-live/summary.log`
+    `logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -793,13 +794,14 @@ implementation if it materially changes scope.
 - [ ] Use the now-clean exact single-submit `plan` ladder as the baseline for
   the next kernel-side SGX change
   - the fixed module now clears terminal `complete`
-  - the shared typed submit image now already has three validated internal
-    layers on override `C1CC8033D0035B46726BAB0`:
+  - the shared typed submit image now already has four validated internal
+    layers on override `8B053004C83E74C5824A815`:
     - `exec_record`
     - `exec_packet`
     - `cmdta_kick`
+    - `ccb_kick`
   - the next useful work is the first real SGX execution object above that
-    `cmdta_kick` layer, not another no-code rerun of the same ladder
+    `ccb_kick` layer, not another no-code rerun of the same ladder
 
 - [ ] If a no-code regression retest of the fixed module is needed, keep the
   terminal exact rerun as the canonical one:

@@ -10614,3 +10614,76 @@ Conclusion:
   - `source_timestamp=20260513-033102`
 - Documented in:
   - `docs/168-sgx-submit-cmdta-kick-object.md`
+
+### SGX submit CCB kick object
+
+- Added one new kernel-internal kick-shaped execution object:
+  - `psb_sgx_lab_submit_ccb_kick`
+- Added one shared status-update helper structure:
+  - `psb_sgx_lab_submit_status_update`
+- Kernel-side changes in:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- The new `ccb_kick` object now wraps one `cmdta_kick` and derives:
+  - the CCB packet offset
+  - the TA dependency bit
+  - the TA status update set
+  - the 3D status update set
+  - the exact expected status values and GPU VA32 addresses per update slot
+- The status-side validator now uses one live-source `ccb_kick` instead of
+  rebuilding TA and 3D status checks from raw submit offsets inline, and the
+  central validator also prebuilds the launch-source `ccb_kick` when a
+  predicted post-issue plan exists
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-034651-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=8B053004C83E74C5824A815`
+    - `override_module_size=448296`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-034951-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=8B053004C83E74C5824A815`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_live_stage=6`
+    - `submit_result_stage=6`
+    - `submit_manifest_stage=6`
+    - `submit_descriptor_stage=6`
+    - `submit_plan_stage=6`
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_stage_count=1`
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log`
+  - the dependent submit still proved the intended normalized dependency path:
+    - `submit_result_dependency_active_count=1`
+    - `submit_manifest_dependency_active_count=1`
+    - `submit_descriptor_dependency_active_count=1`
+    - `submit_plan_dependency_active_count=1`
+    - `submit_dependency_active_count=1`
+    - `dependency[1]_submit_id=3`
+    - `dependency[1]_required_ticket=3`
+    - `dependency[1]_observed_complete_ticket=5`
+    - `dependency[1]_flags=0xf`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-034951`
+- Documented in:
+  - `docs/169-sgx-submit-ccb-kick-object.md`
