@@ -800,8 +800,8 @@ implementation if it materially changes scope.
 - [ ] Use the now-clean exact single-submit `plan` ladder as the baseline for
   the next kernel-side SGX change
   - the fixed module now clears terminal `complete`
-  - the shared typed submit image now already has nine validated internal
-    layers on override `61850CF09DE3C6531E06127`:
+  - the shared typed submit image now already has ten validated internal
+    layers on override `2C7400755C1D450933F7344`:
     - `exec_record`
     - `exec_packet`
     - `cmdta_kick`
@@ -811,12 +811,13 @@ implementation if it materially changes scope.
     - `sgx_cmdta`
     - `sgx_ta_kick`
     - `sgx_ta_command`
+    - `sgx_queued_ta_command`
   - the top SGX layers now also have explicit sync helpers for:
     - `sgx_device_sync_object`
     - `sgx_hwdevice_sync_list`
   - the next useful work is the next real microkernel-facing SGX control
-    object above that `sgx_ta_command` layer, not another no-code rerun of
-    the same ladder
+    object above that `sgx_queued_ta_command` layer, not another no-code
+    rerun of the same ladder
 
 - [ ] If a no-code regression retest of the fixed module is needed, keep the
   terminal exact rerun as the canonical one:

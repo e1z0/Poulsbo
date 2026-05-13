@@ -7334,3 +7334,107 @@ The saved current-boundary view therefore stays terminal on the new module:
 - `resolved_profile=complete`
 - `resolved_reason=latest_phase_evidence_terminal`
 - `source_timestamp=20260513-053956`
+
+## SGX submit queued TA command object
+
+The next validated internal SGX-shaped execution layer is now:
+
+- `psb_sgx_lab_submit_sgx_queued_ta_command`
+
+This layer sits above `psb_sgx_lab_submit_sgx_ta_command` and keeps one queued
+TA command image coherent as:
+
+- validated TA command words
+- typed CCB payload
+- queue-header placement
+- optional launch-time typed `issue-plan` state
+
+The first guarded deploy for this batch at
+[logs/vaio-deploy/20260513-062738-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-062738-guarded-deploy)
+missed the default rollback-confirmation window, but the candidate later proved
+remotely reachable on the pending-rollback boot. The successful rerun with a
+longer rollback grace is:
+
+- [logs/vaio-deploy/20260513-070613-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-070613-guarded-deploy)
+
+Validated live module state on that rerun:
+
+- `driver_srcversion=2C7400755C1D450933F7344`
+- `override_module_size=451936`
+- `overall=remote_usable`
+- `lightdm_active=inactive`
+- `kdump_service_active=active`
+
+The exact no-redeploy `plan` proof on the same module is:
+
+- [logs/vaio-plan-session/20260513-070759-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-070759-sgx-plan-session)
+
+That proof still cleared terminal `complete`:
+
+- `session_outcome=completed`
+- `selected_phase_profile=complete`
+- `final_driver_srcversion=2C7400755C1D450933F7344`
+
+Focused typed submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-070912-sgx-submit-queued-ta-command-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-070912-sgx-submit-queued-ta-command-live/summary.log)
+
+Final focused state:
+
+- `submit_prepare_count=1`
+- `submit_arm_count=1`
+- `submit_emit_count=1`
+- `submit_launch_count=1`
+- `submit_dispatch_count=1`
+- `submit_retired_count=1`
+- `submit_issue_count=1`
+- `submit_transition_count=2`
+- `submit_live_stage_name=retired`
+- `submit_result_stage_name=retired`
+- `submit_manifest_stage_name=retired`
+- `submit_descriptor_stage_name=retired`
+- `submit_plan_stage_name=retired`
+- `submit_issue_plan_stage_name=retired`
+- `submit_issue_plan_dependency_active_count=0`
+- `coord_live_submit_count=0`
+- `gtt_state_range_sgx_object_count=0`
+
+Typed multi-submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-070951-sgx-multi-submit-queued-ta-command-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-070951-sgx-multi-submit-queued-ta-command-live/summary.log)
+
+Final typed multi-submit state:
+
+- `SUBMIT_A_ID=3`
+- `SUBMIT_B_ID=4`
+- submit A final:
+  - `submit_arm_count=3`
+  - `submit_emit_count=3`
+  - `submit_launch_count=3`
+  - `submit_dispatch_count=3`
+  - `submit_retired_count=3`
+  - `submit_issue_count=3`
+  - `submit_transition_count=6`
+  - `submit_dependency_active_count=0`
+- submit B final:
+  - `submit_arm_count=2`
+  - `submit_emit_count=2`
+  - `submit_launch_count=2`
+  - `submit_dispatch_count=2`
+  - `submit_retired_count=2`
+  - `submit_issue_count=2`
+  - `submit_transition_count=4`
+  - `submit_result_dependency_active_count=1`
+  - `submit_manifest_dependency_active_count=1`
+  - `submit_descriptor_dependency_active_count=1`
+  - `submit_plan_dependency_active_count=1`
+  - `submit_dependency_active_count=1`
+- final cleanup:
+  - `coord_live_submit_count=0`
+  - `gtt_state_range_sgx_object_count=0`
+
+The saved current-boundary view therefore stays terminal on the new module:
+
+- `resolved_profile=complete`
+- `resolved_reason=latest_phase_evidence_terminal`
+- `source_timestamp=20260513-070759`
