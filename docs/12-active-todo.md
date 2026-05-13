@@ -182,7 +182,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 42F7BCB76CD9DEFD437A03A`
+  `srcversion 2077F2C05141C6DFD29769B`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -207,23 +207,24 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_path`
   - `psb_sgx_lab_submit_sgx_ta_commit`
   - `psb_sgx_lab_submit_sgx_ta_event`
+  - `psb_sgx_lab_submit_sgx_ta_work_item`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `42F7BCB76CD9DEFD437A03A` as the
+- keep the current guarded-deploy override `2077F2C05141C6DFD29769B` as the
   active headless, panic-safe validation base
 - treat the exact single-submit ladder as closed for the current module:
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-event` validation bundles as the active typed-submit
+- use the new `ta-work-item` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260513-182251-sgx-submit-ta-event-live/summary.log`
+    `logs/vaio-ioctl/20260513-184011-sgx-submit-ta-work-item-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260513-182331-sgx-multi-submit-ta-event-live/summary.log`
+    `logs/vaio-ioctl/20260513-184054-sgx-multi-submit-ta-work-item-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -238,10 +239,10 @@ implementation if it materially changes scope.
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
   - build the first explicit SGX sequence, scheduler, or microkernel-facing
-    work-item object above the now-shared `psb_sgx_lab_submit_sgx_ta_event`,
-    so the typed top layer starts modeling real SGX execution-side sequencing
-    instead of stopping at one live event's object-write, state-apply, and
-    accounting plan
+    work queue object above the now-shared
+    `psb_sgx_lab_submit_sgx_ta_work_item`, so the typed top layer starts
+    modeling real SGX execution-side sequencing instead of stopping at one
+    live work item's request validation, event accounting, and apply plan
     open-coded in `issue_submit()` and `transition_submit()`
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
