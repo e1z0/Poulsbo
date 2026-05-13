@@ -11016,3 +11016,87 @@ Conclusion:
   - `source_timestamp=20260513-052334`
 - Documented in:
   - `docs/172-sgx-submit-device-sync-objects.md`
+
+### SGX submit CMDTA object
+
+- Added one new kernel-internal SGX-shaped execution object:
+  - `psb_sgx_lab_submit_sgx_cmdta`
+- Kernel-side changes in:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- The new `sgx_cmdta` object embeds the current shared layer and materializes
+  the bounded sync-object arrays the current lab model really supports:
+  - `ta_dst_syncs`
+  - `threed_src_syncs`
+- The submit validator now consumes `sgx_cmdta` instead of validating only the
+  lower shared layer
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-053804-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=2DA0FEA89EBE73F96BE4053`
+    - `override_module_size=450568`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-053956-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=2DA0FEA89EBE73F96BE4053`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-054056-sgx-submit-cmdta-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_live_stage_name=retired`
+    - `submit_result_stage_name=retired`
+    - `submit_manifest_stage_name=retired`
+    - `submit_descriptor_stage_name=retired`
+    - `submit_plan_stage_name=retired`
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_dependency_active_count=0`
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-054133-sgx-multi-submit-cmdta-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=3`
+    - `SUBMIT_B_ID=4`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_issue_plan_stage_name=retired`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_result_dependency_active_count=1`
+      - `submit_manifest_dependency_active_count=1`
+      - `submit_descriptor_dependency_active_count=1`
+      - `submit_plan_dependency_active_count=1`
+      - `submit_dependency_active_count=1`
+      - `submit_issue_plan_stage_name=retired`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-053956`
+- Documented in:
+  - `docs/173-sgx-submit-cmdta-object.md`
