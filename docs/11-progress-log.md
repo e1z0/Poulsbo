@@ -5,6 +5,110 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### Shared SGX submit `cmdta_shared` object and validator-frame cleanup
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped execution layer above the
+  existing `sgx_ccb_kick` model:
+  - `struct psb_sgx_lab_submit_sgx_cmdta_shared`
+- The shared internal flow is now:
+  - `psb_sgx_lab_submit_exec_record`
+  - `-> psb_sgx_lab_submit_exec_packet`
+  - `-> psb_sgx_lab_submit_cmdta_kick`
+  - `-> psb_sgx_lab_submit_ccb_kick`
+  - `-> psb_sgx_lab_submit_sgx_ccb_kick`
+  - `-> psb_sgx_lab_submit_sgx_cmdta_shared`
+- The new `sgx_cmdta_shared` object now carries:
+  - kick pointer back to the normalized `ccb_kick`
+  - control flags
+  - dst sync-object count
+  - TA and 3D status-value counts
+  - first-kick-or-resume state
+  - CCB packet offset
+  - TA dependency presence
+  - TA and 3D TQ sync GPU-VA32 words
+  - TA source and destination sync counts
+  - 3D source-sync count
+  - dependency submit id and ticket snapshot
+  - shared pointers to the normalized TA and 3D status-update arrays
+- The status-side validator now consumes one explicit live
+  `sgx_cmdta_shared` object instead of carrying both a live `sgx_ccb_kick`
+  object and raw status-update loops.
+- The builder now rebuilds the SGX kick side internally, so the validator no
+  longer keeps both SGX layers live on one frame.
+- Local validation passed:
+  - `git -C third_party/linux-ubuntu-5.4 diff --check -- drivers/gpu/drm/gma500`
+  - `./scripts/docker-build-vaio-gma500.sh`
+  - the earlier `-Wframe-larger-than=1024` warning in
+    `poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked()` no longer
+    appeared in the local build
+- Guarded deploy bundle:
+  - [logs/vaio-deploy/20260513-045436-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-045436-guarded-deploy)
+- That deploy rebooted the VAIO onto:
+  - `driver_srcversion=040B3A07BC156A1AAEE99D6`
+  - `override_module_size=449672`
+  - `lightdm_active=inactive`
+  - `kdump_service_active=active`
+- Exact terminal rerun:
+  - [logs/vaio-plan-session/20260513-045622-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-045622-sgx-plan-session)
+  - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete`
+  - result:
+    - `session_outcome=completed`
+    - `selected_phase_profile=complete`
+    - `final_driver_srcversion=040B3A07BC156A1AAEE99D6`
+- Focused typed submit bundle:
+  - [logs/vaio-ioctl/20260513-045728-sgx-submit-cmdta-shared-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-045728-sgx-submit-cmdta-shared-live/summary.log)
+- Final focused typed state:
+  - `submit_prepare_count=1`
+  - `submit_arm_count=1`
+  - `submit_emit_count=1`
+  - `submit_launch_count=1`
+  - `submit_dispatch_count=1`
+  - `submit_retired_count=1`
+  - `submit_issue_count=1`
+  - `submit_transition_count=2`
+  - `submit_live_stage_name=retired`
+  - `submit_result_stage_name=retired`
+  - `submit_manifest_stage_name=retired`
+  - `submit_descriptor_stage_name=retired`
+  - `submit_plan_stage_name=retired`
+  - `submit_issue_plan_stage_name=retired`
+  - `submit_issue_plan_stage_count=1`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit bundle:
+  - [logs/vaio-ioctl/20260513-045811-sgx-multi-submit-cmdta-shared-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-045811-sgx-multi-submit-cmdta-shared-live/summary.log)
+- Final typed multi-submit state:
+  - submit B retained dependency state cleanly through the new shared layer:
+    - `submit_result_dependency_active_count=1`
+    - `submit_manifest_dependency_active_count=1`
+    - `submit_descriptor_dependency_active_count=1`
+    - `submit_plan_dependency_active_count=1`
+    - `submit_dependency_active_count=1`
+    - `dependency[1]_submit_id=3`
+    - `dependency[1]_required_ticket=3`
+    - `dependency[1]_observed_complete_ticket=5`
+    - `dependency[1]_flags=0xf`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver stays terminal on the new module:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-045622`
+  - `source_row_module_srcversion=040B3A07BC156A1AAEE99D6`
+
+Conclusion:
+
+- the shared SGX-shaped submit model now has one more explicit execution-side
+  layer above the `sgx_ccb_kick` image
+- the status-side validator now consumes that layer directly, and the local
+  stack-frame regression is gone again
+- the next useful work is the first real SGX execution object above
+  `sgx_cmdta_shared`, not another validation-only SGX wrapper
+
 ### Shared SGX submit `sgx_ccb_kick` object and dependency-source fix
 
 - Updated:
