@@ -238,12 +238,12 @@ implementation if it materially changes scope.
   question on the fixed module:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
-  - build the first explicit SGX sequence, scheduler, or microkernel-facing
-    work queue object above the now-shared
-    `psb_sgx_lab_submit_sgx_ta_work_item`, so the typed top layer starts
-    modeling real SGX execution-side sequencing instead of stopping at one
-    live work item's request validation, event accounting, and apply plan
-    open-coded in `issue_submit()` and `transition_submit()`
+  - build the first explicit SGX request, scheduler-facing work item, or
+    microkernel-facing queue object above the now-shared
+    `psb_sgx_lab_submit_sgx_ta_job`, so the typed top layer starts modeling
+    real SGX execution-side request ownership instead of stopping at one
+    job-shaped submit contract and dependency summary above the current
+    work-queue boundary
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
   - `selected_child_phase_selection=request_only` is the child recovery

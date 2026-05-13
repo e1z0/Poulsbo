@@ -1,173 +1,210 @@
-From 5ba8ee190301739bb6b7782670bafa4fcf6caf33 Mon Sep 17 00:00:00 2001
+From 72521690a3de1ee04d8e9c70475a7696a9e3cfad Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Wed, 13 May 2026 20:11:26 +0300
-Subject: [PATCH] drm/gma500: add SGX TA work queue object
+Date: Wed, 13 May 2026 20:32:43 +0300
+Subject: [PATCH] drm/gma500: add SGX TA job object
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 248 ++++++++++++++++++++++++++-----
- 1 file changed, 212 insertions(+), 36 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 286 +++++++++++++++++++++++++++----
+ 1 file changed, 249 insertions(+), 37 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 41b22bb11..f6cb28ce9 100644
+index f6cb28ce9..b6e852322 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1616,6 +1616,18 @@ struct psb_sgx_lab_submit_sgx_ta_sequence {
- 	u32 next_transition_count;
+@@ -1628,6 +1628,28 @@ struct psb_sgx_lab_submit_sgx_ta_work_queue {
+ 	u32 base_transition_count;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_work_queue {
-+	struct psb_sgx_lab_submit_sgx_ta_sequence sequence;
++struct psb_sgx_lab_submit_sgx_ta_job {
++	struct psb_sgx_lab_submit_sgx_ta_work_queue work_queue;
 +	bool active;
 +	u32 submit_id;
-+	u32 op_kind;
-+	u32 owner_state;
-+	u32 packet_count;
-+	struct psb_sgx_lab_submit_sgx_scheduler_state base_state;
-+	u32 base_issue_count;
-+	u32 base_transition_count;
++	u32 context;
++	u32 cmd_type;
++	u32 ctrl_flags;
++	u32 control_object_id;
++	u32 pds_object_id;
++	u32 use_object_id;
++	u32 target_object_id;
++	u32 status_object_id;
++	u32 num_ta_status_vals;
++	u32 num_3d_status_vals;
++	u32 ta_dependency;
++	u32 active_dependency_count;
++	bool running_slot_busy;
++	bool can_enter_running;
++	struct psb_sgx_lab_submit_sgx_dependency_state
++		dependencies[PSB_SGX_LAB_DEPENDENCY_SLOTS];
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -5323,6 +5335,61 @@ static int poulsbo_sgx_apply_submit_sgx_ta_sequence_locked(
- 	return poulsbo_sgx_refresh_submit_views_locked(dev_priv, submit);
+@@ -5390,6 +5412,74 @@ static int poulsbo_sgx_apply_submit_sgx_ta_work_queue_locked(
+ 		dev_priv, submit, &work_queue->sequence);
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_work_queue_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_job_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	u32 op_kind,
 +	u32 owner_state,
 +	u32 packet_count,
-+	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue)
++	struct psb_sgx_lab_submit_sgx_ta_job *job)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_commit *commit;
-+	const struct psb_sgx_lab_submit_sgx_coordination *coordination;
++	const struct psb_sgx_lab_submit_sgx_ta_control *control;
++	const struct psb_sgx_lab_submit_sgx_ta_runtime *runtime;
++	const struct psb_sgx_lab_submit_sgx_ta_gate *gate;
++	unsigned int slot;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !work_queue)
++	if (!dev_priv || !submit || !job)
 +		return -EINVAL;
 +
-+	memset(work_queue, 0, sizeof(*work_queue));
++	memset(job, 0, sizeof(*job));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_sequence_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_work_queue_locked(
 +		dev_priv, submit, op_kind, owner_state, packet_count,
-+		&work_queue->sequence);
++		&job->work_queue);
 +	if (ret)
 +		return ret;
 +	if (op_kind == PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE)
 +		return 0;
 +
-+	commit = &work_queue->sequence.scheduler.ta_op.work_item.event.commit;
-+	coordination =
-+		&commit->path.dispatch.schedule.control.runtime.coordination;
-+	work_queue->active = true;
-+	work_queue->submit_id = submit->submit_id;
-+	work_queue->op_kind = work_queue->sequence.scheduler.ta_op.op_kind;
-+	work_queue->owner_state = work_queue->sequence.scheduler.ta_op.owner_state;
-+	work_queue->packet_count = work_queue->sequence.scheduler.ta_op.packet_count;
-+	poulsbo_sgx_fill_submit_sgx_scheduler_state_from_coordination(
-+		coordination, &work_queue->base_state);
-+	work_queue->base_issue_count = submit->issue_count;
-+	work_queue->base_transition_count = submit->transition_count;
++	control =
++		&job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control;
++	runtime = &control->runtime;
++	gate = &control->gate;
++
++	job->active = true;
++	job->submit_id = submit->submit_id;
++	job->context = submit->context;
++	job->cmd_type = submit->cmd_type;
++	job->ctrl_flags = submit->ctrl_flags;
++	job->control_object_id = submit->control_object_id;
++	job->pds_object_id = submit->pds_object_id;
++	job->use_object_id = submit->use_object_id;
++	job->target_object_id = submit->target_object_id;
++	job->status_object_id = submit->status_object_id;
++	job->num_ta_status_vals = submit->num_ta_status_vals;
++	job->num_3d_status_vals = submit->num_3d_status_vals;
++	job->ta_dependency = submit->ta_dependency;
++	job->active_dependency_count = gate->active_dependency_count;
++	job->running_slot_busy = gate->running_slot_busy;
++	job->can_enter_running = gate->can_enter_running;
++	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++)
++		job->dependencies[slot] = runtime->dependencies[slot];
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_apply_submit_sgx_ta_work_queue_locked(
++static int poulsbo_sgx_apply_submit_sgx_ta_job_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue)
++	const struct psb_sgx_lab_submit_sgx_ta_job *job)
 +{
-+	if (!dev_priv || !submit || !work_queue)
++	if (!dev_priv || !submit || !job)
 +		return -EINVAL;
-+	if (work_queue->active && work_queue->submit_id != submit->submit_id)
++	if (job->active && job->submit_id != submit->submit_id)
 +		return -EINVAL;
 +
-+	return poulsbo_sgx_apply_submit_sgx_ta_sequence_locked(
-+		dev_priv, submit, &work_queue->sequence);
++	return poulsbo_sgx_apply_submit_sgx_ta_work_queue_locked(
++		dev_priv, submit, &job->work_queue);
 +}
 +
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -11230,6 +11297,83 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_sequence_locked(
+@@ -11374,6 +11464,97 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_work_queue_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_work_queue_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_job_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue)
++	const struct psb_sgx_lab_submit_sgx_ta_job *job)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_commit *commit;
-+	const struct psb_sgx_lab_submit_sgx_coordination *coordination;
-+	struct psb_sgx_lab_submit_sgx_scheduler_state base_state;
++	const struct psb_sgx_lab_submit_sgx_ta_control *control;
++	const struct psb_sgx_lab_submit_sgx_ta_runtime *runtime;
++	const struct psb_sgx_lab_submit_sgx_ta_gate *gate;
 +	bool active;
++	unsigned int slot;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !work_queue)
++	if (!dev_priv || !submit || !job)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_sequence_locked(
-+		dev_priv, submit, &work_queue->sequence);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_work_queue_locked(
++		dev_priv, submit, &job->work_queue);
 +	if (ret)
 +		return ret;
 +
-+	active = work_queue->sequence.scheduler.ta_op.op_kind !=
++	active = job->work_queue.sequence.scheduler.ta_op.op_kind !=
 +		 PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE;
-+	if (work_queue->active != active)
++	if (job->active != active)
 +		return -EINVAL;
 +	if (!active) {
-+		if (work_queue->submit_id || work_queue->op_kind ||
-+		    work_queue->owner_state || work_queue->packet_count ||
-+		    work_queue->base_state.issue_ticket ||
-+		    work_queue->base_state.running_ticket ||
-+		    work_queue->base_state.complete_ticket ||
-+		    work_queue->base_state.issue_submit_id ||
-+		    work_queue->base_state.running_submit_id ||
-+		    work_queue->base_state.complete_submit_id ||
-+		    work_queue->base_state.active_running_valid ||
-+		    work_queue->base_state.active_running_submit_id ||
-+		    work_queue->base_issue_count ||
-+		    work_queue->base_transition_count) {
++		if (job->submit_id || job->context || job->cmd_type ||
++		    job->ctrl_flags || job->control_object_id ||
++		    job->pds_object_id || job->use_object_id ||
++		    job->target_object_id || job->status_object_id ||
++		    job->num_ta_status_vals || job->num_3d_status_vals ||
++		    job->ta_dependency || job->active_dependency_count ||
++		    job->running_slot_busy || job->can_enter_running) {
 +			return -EINVAL;
++		}
++		for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
++			if (job->dependencies[slot].active ||
++			    job->dependencies[slot].source_missing ||
++			    job->dependencies[slot].submit_id ||
++			    job->dependencies[slot].required_ticket ||
++			    job->dependencies[slot].observed_complete_ticket ||
++			    job->dependencies[slot].flags) {
++				return -EINVAL;
++			}
 +		}
 +		return 0;
 +	}
 +
-+	commit = &work_queue->sequence.scheduler.ta_op.work_item.event.commit;
-+	coordination =
-+		&commit->path.dispatch.schedule.control.runtime.coordination;
-+	poulsbo_sgx_fill_submit_sgx_scheduler_state_from_coordination(
-+		coordination, &base_state);
++	control =
++		&job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control;
++	runtime = &control->runtime;
++	gate = &control->gate;
 +
-+	if (work_queue->submit_id != submit->submit_id ||
-+	    work_queue->op_kind != work_queue->sequence.scheduler.ta_op.op_kind ||
-+	    work_queue->owner_state !=
-+		    work_queue->sequence.scheduler.ta_op.owner_state ||
-+	    work_queue->packet_count !=
-+		    work_queue->sequence.scheduler.ta_op.packet_count ||
-+	    work_queue->base_issue_count != submit->issue_count ||
-+	    work_queue->base_transition_count != submit->transition_count)
++	if (job->submit_id != submit->submit_id ||
++	    job->context != submit->context ||
++	    job->cmd_type != submit->cmd_type ||
++	    job->ctrl_flags != submit->ctrl_flags ||
++	    job->control_object_id != submit->control_object_id ||
++	    job->pds_object_id != submit->pds_object_id ||
++	    job->use_object_id != submit->use_object_id ||
++	    job->target_object_id != submit->target_object_id ||
++	    job->status_object_id != submit->status_object_id ||
++	    job->num_ta_status_vals != submit->num_ta_status_vals ||
++	    job->num_3d_status_vals != submit->num_3d_status_vals ||
++	    job->ta_dependency != submit->ta_dependency ||
++	    job->active_dependency_count != gate->active_dependency_count ||
++	    job->running_slot_busy != gate->running_slot_busy ||
++	    job->can_enter_running != gate->can_enter_running) {
 +		return -EINVAL;
++	}
 +
-+	if (work_queue->base_state.issue_ticket != base_state.issue_ticket ||
-+	    work_queue->base_state.running_ticket != base_state.running_ticket ||
-+	    work_queue->base_state.complete_ticket !=
-+		    base_state.complete_ticket ||
-+	    work_queue->base_state.issue_submit_id !=
-+		    base_state.issue_submit_id ||
-+	    work_queue->base_state.running_submit_id !=
-+		    base_state.running_submit_id ||
-+	    work_queue->base_state.complete_submit_id !=
-+		    base_state.complete_submit_id ||
-+	    work_queue->base_state.active_running_valid !=
-+		    base_state.active_running_valid ||
-+	    work_queue->base_state.active_running_submit_id !=
-+		    base_state.active_running_submit_id) {
-+		return -EINVAL;
++	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
++		if (job->dependencies[slot].active !=
++			    runtime->dependencies[slot].active ||
++		    job->dependencies[slot].source_missing !=
++			    runtime->dependencies[slot].source_missing ||
++		    job->dependencies[slot].submit_id !=
++			    runtime->dependencies[slot].submit_id ||
++		    job->dependencies[slot].required_ticket !=
++			    runtime->dependencies[slot].required_ticket ||
++		    job->dependencies[slot].observed_complete_ticket !=
++			    runtime->dependencies[slot]
++				    .observed_complete_ticket ||
++		    job->dependencies[slot].flags !=
++			    runtime->dependencies[slot].flags) {
++			return -EINVAL;
++		}
 +	}
 +
 +	return 0;
@@ -176,201 +213,201 @@ index 41b22bb11..f6cb28ce9 100644
  static int poulsbo_sgx_validate_submit_sgx_ta_work_item_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -11357,6 +11501,38 @@ out:
+@@ -11533,6 +11714,38 @@ out:
  	return ret;
  }
  
-+static int poulsbo_sgx_validate_submit_sgx_ta_work_queue_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_job_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *control_obj,
 +	struct psb_sgx_lab_object *status_obj)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue;
++	struct psb_sgx_lab_submit_sgx_ta_job *job;
 +	int ret;
 +
-+	work_queue = kmalloc(sizeof(*work_queue), GFP_KERNEL);
-+	if (!work_queue)
++	job = kmalloc(sizeof(*job), GFP_KERNEL);
++	if (!job)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_validate_submit_sgx_ta_sequence_locked(
++	ret = poulsbo_sgx_validate_submit_sgx_ta_work_queue_locked(
 +		dev_priv, submit, control_obj, status_obj);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_work_queue_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_job_locked(
 +		dev_priv, submit, PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE, 0, 0,
-+		work_queue);
++		job);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_work_queue_locked(
-+		dev_priv, submit, work_queue);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_job_locked(
++		dev_priv, submit, job);
 +
 +out:
-+	kfree(work_queue);
++	kfree(job);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  					      struct psb_sgx_lab_submit *submit)
  {
-@@ -11568,33 +11744,33 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -11744,33 +11957,33 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		submit, status_obj, NULL);
  	if (ret)
  		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_sequence_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_work_queue_locked(
+-	return poulsbo_sgx_validate_submit_sgx_ta_work_queue_locked(
++	return poulsbo_sgx_validate_submit_sgx_ta_job_locked(
  		dev_priv, submit, control_obj, status_obj);
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_sequence(
-+static int poulsbo_sgx_execute_submit_sgx_ta_work_queue(
+-static int poulsbo_sgx_execute_submit_sgx_ta_work_queue(
++static int poulsbo_sgx_execute_submit_sgx_ta_job(
  	struct drm_device *dev,
  	u32 submit_id,
  	u32 op_kind,
  	u32 owner_state,
  	u32 packet_count,
--	struct psb_sgx_lab_submit_sgx_ta_sequence **sequence_out)
-+	struct psb_sgx_lab_submit_sgx_ta_work_queue **work_queue_out)
+-	struct psb_sgx_lab_submit_sgx_ta_work_queue **work_queue_out)
++	struct psb_sgx_lab_submit_sgx_ta_job **job_out)
  {
  	struct drm_psb_private *dev_priv;
  	struct psb_sgx_lab_submit *submit;
--	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence;
-+	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue;
+-	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue;
++	struct psb_sgx_lab_submit_sgx_ta_job *job;
  	int ret;
  
--	if (!dev || !sequence_out)
-+	if (!dev || !work_queue_out)
+-	if (!dev || !work_queue_out)
++	if (!dev || !job_out)
  		return -EINVAL;
  
  	dev_priv = dev->dev_private;
  	if (!dev_priv)
  		return -ENODEV;
  
--	*sequence_out = NULL;
--	sequence = kmalloc(sizeof(*sequence), GFP_KERNEL);
--	if (!sequence)
-+	*work_queue_out = NULL;
-+	work_queue = kmalloc(sizeof(*work_queue), GFP_KERNEL);
-+	if (!work_queue)
+-	*work_queue_out = NULL;
+-	work_queue = kmalloc(sizeof(*work_queue), GFP_KERNEL);
+-	if (!work_queue)
++	*job_out = NULL;
++	job = kmalloc(sizeof(*job), GFP_KERNEL);
++	if (!job)
  		return -ENOMEM;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -11607,14 +11783,14 @@ static int poulsbo_sgx_execute_submit_sgx_ta_sequence(
+@@ -11783,14 +11996,13 @@ static int poulsbo_sgx_execute_submit_sgx_ta_work_queue(
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_sequence_locked(
-+	ret = poulsbo_sgx_build_submit_sgx_ta_work_queue_locked(
- 		dev_priv, submit, op_kind, owner_state, packet_count,
--		sequence);
-+		work_queue);
+-	ret = poulsbo_sgx_build_submit_sgx_ta_work_queue_locked(
+-		dev_priv, submit, op_kind, owner_state, packet_count,
+-		work_queue);
++	ret = poulsbo_sgx_build_submit_sgx_ta_job_locked(
++		dev_priv, submit, op_kind, owner_state, packet_count, job);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_apply_submit_sgx_ta_sequence_locked(
--		dev_priv, submit, sequence);
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_work_queue_locked(
-+		dev_priv, submit, work_queue);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_work_queue_locked(
+-		dev_priv, submit, work_queue);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_job_locked(dev_priv, submit,
++							 job);
  
  out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
-@@ -11622,11 +11798,11 @@ out_unlock:
+@@ -11798,11 +12010,11 @@ out_unlock:
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
  
  	if (ret) {
--		kfree(sequence);
-+		kfree(work_queue);
+-		kfree(work_queue);
++		kfree(job);
  		return ret;
  	}
  
--	*sequence_out = sequence;
-+	*work_queue_out = work_queue;
+-	*work_queue_out = work_queue;
++	*job_out = job;
  	return 0;
  }
  
-@@ -14112,12 +14288,12 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -14288,12 +14500,12 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
  					 u32 owner_state,
  					 u32 completed_packets)
  {
--	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_job *job = NULL;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_sequence(
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_work_queue(
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_work_queue(
++	ret = poulsbo_sgx_execute_submit_sgx_ta_job(
  		dev, submit_id, PSB_SGX_LAB_SUBMIT_SGX_TA_OP_TRANSITION,
--		owner_state, completed_packets, &sequence);
-+		owner_state, completed_packets, &work_queue);
+-		owner_state, completed_packets, &work_queue);
++		owner_state, completed_packets, &job);
  
  	if (!ret)
  		dev_info(dev->dev,
-@@ -14125,35 +14301,35 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -14301,35 +14513,35 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
  			 submit_id,
  			 poulsbo_sgx_lab_owner_state_name(owner_state),
  			 completed_packets,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.ccb_read_offset,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.ccb_write_offset,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.ccb_offset,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.queue_packet_count,
--			 !!sequence->scheduler.ta_op.work_item.event.commit.next_state.queue_head_packet_count,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.sync_complete_seq,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.owner_complete_cookie,
--			 sequence->scheduler.ta_op.work_item.event.commit.next_state.queue_epoch,
--			 sequence->scheduler.next_state.running_ticket,
--			 sequence->scheduler.next_state.complete_ticket);
--	kfree(sequence);
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_read_offset,
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_write_offset,
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_offset,
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_packet_count,
-+			 !!work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_head_packet_count,
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.sync_complete_seq,
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.owner_complete_cookie,
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_epoch,
-+			 work_queue->sequence.scheduler.next_state.running_ticket,
-+			 work_queue->sequence.scheduler.next_state.complete_ticket);
-+	kfree(work_queue);
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_read_offset,
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_write_offset,
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_offset,
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_packet_count,
+-			 !!work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_head_packet_count,
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.sync_complete_seq,
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.owner_complete_cookie,
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_epoch,
+-			 work_queue->sequence.scheduler.next_state.running_ticket,
+-			 work_queue->sequence.scheduler.next_state.complete_ticket);
+-	kfree(work_queue);
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_read_offset,
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_write_offset,
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.ccb_offset,
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_packet_count,
++			 !!job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_head_packet_count,
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.sync_complete_seq,
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.owner_complete_cookie,
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.next_state.queue_epoch,
++			 job->work_queue.sequence.scheduler.next_state.running_ticket,
++			 job->work_queue.sequence.scheduler.next_state.complete_ticket);
++	kfree(job);
  	return ret;
  }
  
  static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  				    u32 owner_state, u32 issued_packets)
  {
--	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_work_queue *work_queue = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_job *job = NULL;
  	const struct psb_sgx_lab_submit_sgx_issue_image *issue_image;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_sequence(
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_work_queue(
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_work_queue(
++	ret = poulsbo_sgx_execute_submit_sgx_ta_job(
  		dev, submit_id, PSB_SGX_LAB_SUBMIT_SGX_TA_OP_ISSUE,
--		owner_state, issued_packets, &sequence);
-+		owner_state, issued_packets, &work_queue);
+-		owner_state, issued_packets, &work_queue);
++		owner_state, issued_packets, &job);
  	if (ret)
  		goto out;
  
  	issue_image =
--		&sequence->scheduler.ta_op.work_item.event.commit.path.dispatch.issue_image;
-+		&work_queue->sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.issue_image;
+-		&work_queue->sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.issue_image;
++		&job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.issue_image;
  
  	if (!ret)
  		dev_info(dev->dev,
-@@ -14166,12 +14342,12 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+@@ -14342,12 +14554,12 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  			 issue_image->sync.pending_seq,
  			 issue_image->owner.owner_issue_cookie,
  			 issue_image->sync.epoch,
--			 sequence->scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
--			 sequence->scheduler.next_state.issue_ticket,
--			 sequence->scheduler.next_state.running_ticket);
-+			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
-+			 work_queue->sequence.scheduler.next_state.issue_ticket,
-+			 work_queue->sequence.scheduler.next_state.running_ticket);
+-			 work_queue->sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
+-			 work_queue->sequence.scheduler.next_state.issue_ticket,
+-			 work_queue->sequence.scheduler.next_state.running_ticket);
++			 job->work_queue.sequence.scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
++			 job->work_queue.sequence.scheduler.next_state.issue_ticket,
++			 job->work_queue.sequence.scheduler.next_state.running_ticket);
  
  out:
--	kfree(sequence);
-+	kfree(work_queue);
+-	kfree(work_queue);
++	kfree(job);
  	return ret;
  }
  

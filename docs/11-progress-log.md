@@ -5,6 +5,91 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### SGX submit TA job object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped top object:
+  - `psb_sgx_lab_submit_sgx_ta_job`
+- The top validator now moves from `sgx_ta_work_queue` to `sgx_ta_job`.
+- The live top-layer execution boundary is now unified too:
+  - `issue_submit()` builds and applies `sgx_ta_job`
+  - `transition_submit()` builds and applies `sgx_ta_job`
+- The new shared top object now owns:
+  - the existing `sgx_ta_work_queue`
+  - the typed submit contract:
+    - `submit_id`
+    - `context`
+    - `cmd_type`
+    - `ctrl_flags`
+    - `control_object_id`
+    - `pds_object_id`
+    - `use_object_id`
+    - `target_object_id`
+    - `status_object_id`
+    - `num_ta_status_vals`
+    - `num_3d_status_vals`
+    - `ta_dependency`
+  - the copied dependency-state array
+  - the top dependency summary:
+    - `active_dependency_count`
+    - `running_slot_busy`
+    - `can_enter_running`
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-201803-sgx-ta-job-deploy`
+  - final live override:
+    - `driver_srcversion=A0E6A4B613B1CF22BFAB9DC`
+    - `override_module_size=469344`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-202002-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=A0E6A4B613B1CF22BFAB9DC`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-202558-sgx-submit-ta-job-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-202643-sgx-multi-submit-ta-job-live/summary.log`
+  - final typed run proved:
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_dependency_active_count=1`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=11`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-202002`
+- Documented in:
+  - `docs/194-sgx-submit-ta-job-object.md`
+
 ### SGX submit TA work queue object
 
 - Updated:
