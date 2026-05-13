@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-023337-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-023337-guarded-deploy)
+  [logs/vaio-deploy/20260513-030640-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-030640-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=228151D0E1E224804A6E1E6`
-  - `override_module_size=446824`
+  - `driver_srcversion=A154282637C389A3032C8D9`
+  - `override_module_size=447160`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,16 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-024621-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-024621-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-030828-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-030828-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=228151D0E1E224804A6E1E6`
-- the new typed control-backed `issue-plan` block is also hardware-validated:
+  - `final_driver_srcversion=A154282637C389A3032C8D9`
+- the new internal `psb_sgx_lab_submit_exec_packet` batch is also
+  hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-024621-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-024621-sgx-plan-session)
+    [logs/vaio-plan-session/20260513-030828-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-030828-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-023956-sgx-submit-issue-plan-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-023956-sgx-submit-issue-plan-live/summary.log)
+    [logs/vaio-ioctl/20260513-030828-sgx-submit-exec-packet-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-030828-sgx-submit-exec-packet-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-024024-sgx-multi-submit-issue-plan-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-024024-sgx-multi-submit-issue-plan-live/summary.log)
+    [logs/vaio-ioctl/20260513-031429-sgx-multi-submit-exec-packet-live-typed-rerun2/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-031429-sgx-multi-submit-exec-packet-live-typed-rerun2/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -67,13 +68,16 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
+- the shared kernel execution model now has two explicit internal layers:
+  - `psb_sgx_lab_submit_exec_record`
+  - `psb_sgx_lab_submit_exec_packet`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-024621`
-  - `source_row_module_srcversion=228151D0E1E224804A6E1E6`
+  - `source_timestamp=20260513-030828`
+  - `source_row_module_srcversion=A154282637C389A3032C8D9`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -91,8 +95,8 @@ Current live note on May 13, 2026:
   regression proof without a redeploy:
   `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the next engineering step is no longer more exact ladder narrowing; it is
-  the next SGX execution-side change on top of the new shared kernel-internal
-  execution record and the validated
+  the next SGX execution-side change on top of the new shared
+  `exec_record -> exec_packet` kernel model and the validated
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan`
   model
 

@@ -5,6 +5,127 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### Shared SGX submit exec-packet structure and full validation
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+  - `scripts/run-vaio-sgx-multi-submit.sh`
+- Added one new explicit kernel-internal SGX-shaped execution layer above the
+  shared normalized record:
+  - `struct psb_sgx_lab_submit_exec_packet`
+  - `struct psb_sgx_lab_submit_ccb_command`
+  - `struct psb_sgx_lab_submit_ta_shared`
+- The new internal flow is now:
+  - `psb_sgx_lab_submit_exec_record`
+  - `-> psb_sgx_lab_submit_exec_packet`
+- That packet now feeds:
+  - `queue header`
+  - `ccb record`
+  - `sync`
+  - `owner`
+  - `report`
+  - `live`
+  - `result`
+  - `manifest`
+  - `descriptor`
+  - `plan`
+  - `issue-plan`
+- The first typed multi-submit rerun exposed two runner-side expectation bugs
+  only:
+  - `issue-plan dependency_active_count` stays `0` before `launch`
+  - on the dependent submit, it becomes `1` at `launch`
+  - it is back to `0` once the launched packet is consumed and later retired
+- Local validation passed:
+  - `git -C third_party/linux-ubuntu-5.4 diff --check -- drivers/gpu/drm/gma500`
+  - `./scripts/docker-build-vaio-gma500.sh`
+  - `bash -n scripts/run-vaio-sgx-multi-submit.sh`
+- Guarded deploy bundle:
+  - [logs/vaio-deploy/20260513-030640-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-030640-guarded-deploy)
+- That deploy rebooted the VAIO onto:
+  - `driver_srcversion=A154282637C389A3032C8D9`
+  - `override_module_size=447160`
+  - `lightdm_active=inactive`
+  - `kdump_service_active=active`
+- Exact terminal rerun:
+  - [logs/vaio-plan-session/20260513-030828-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-030828-sgx-plan-session)
+  - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete`
+  - result:
+    - `session_outcome=completed`
+    - `selected_phase_profile=complete`
+    - `final_driver_srcversion=A154282637C389A3032C8D9`
+- Focused typed submit bundle:
+  - [logs/vaio-ioctl/20260513-030828-sgx-submit-exec-packet-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-030828-sgx-submit-exec-packet-live/summary.log)
+- Final focused typed state:
+  - `submit_prepare_count=1`
+  - `submit_arm_count=1`
+  - `submit_emit_count=1`
+  - `submit_launch_count=1`
+  - `submit_dispatch_count=1`
+  - `submit_retired_count=1`
+  - `submit_issue_count=1`
+  - `submit_transition_count=2`
+  - `submit_live_stage_name=retired`
+  - `submit_result_stage_name=retired`
+  - `submit_issue_plan_stage_name=retired`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit bundle:
+  - [logs/vaio-ioctl/20260513-031429-sgx-multi-submit-exec-packet-live-typed-rerun2/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-031429-sgx-multi-submit-exec-packet-live-typed-rerun2/summary.log)
+- Final typed multi-submit state:
+  - `SUBMIT_A_ID=7`
+  - `SUBMIT_B_ID=8`
+  - submit A:
+    - `submit_live_stage_name=retired`
+    - `submit_live_stage_count=3`
+    - `submit_result_stage_name=retired`
+    - `submit_result_stage_count=3`
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_stage_count=3`
+    - `submit_arm_count=3`
+    - `submit_emit_count=3`
+    - `submit_launch_count=3`
+    - `submit_dispatch_count=3`
+    - `submit_retired_count=3`
+    - `submit_issue_count=3`
+    - `submit_transition_count=6`
+  - submit B:
+    - `submit_live_stage_name=retired`
+    - `submit_live_stage_count=2`
+    - `submit_result_stage_name=retired`
+    - `submit_result_stage_count=2`
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_stage_count=2`
+    - `submit_arm_count=2`
+    - `submit_emit_count=2`
+    - `submit_launch_count=2`
+    - `submit_dispatch_count=2`
+    - `submit_retired_count=2`
+    - `submit_issue_count=2`
+    - `submit_transition_count=4`
+    - `submit_live_dependency_active_count=1`
+    - `submit_result_dependency_active_count=1`
+    - `submit_plan_dependency_active_count=1`
+    - `submit_issue_plan_dependency_active_count=0`
+  - final cleanup:
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver stays terminal on the new module:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-030828`
+  - `source_row_module_srcversion=A154282637C389A3032C8D9`
+
+Conclusion:
+
+- the SGX submit model now has one more execution-oriented kernel-internal
+  layer above the normalized record
+- the fixed queue/CCB/sync/owner blocks and the typed submit views now share
+  one SGX-shaped packet image
+- the next useful work is to keep pushing that packet model toward the first
+  truly execution-oriented SGX kernel object, not to add more read-side view
+  plumbing
+
 ### Typed SGX submit `live` block and live validation
 
 - Updated:
