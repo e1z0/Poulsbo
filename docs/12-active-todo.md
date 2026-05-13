@@ -819,12 +819,13 @@ implementation if it materially changes scope.
     - `sgx_ta_timeline`
     - `sgx_ta_runtime`
     - `sgx_ta_gate`
+    - `sgx_ta_control`
   - the top SGX layers now also have explicit sync helpers for:
     - `sgx_device_sync_object`
     - `sgx_hwdevice_sync_list`
   - the next useful work is the next real microkernel-facing SGX control
-    object above that repaired `sgx_ta_gate` layer, not another no-code
-    rerun of the same ladder
+    or scheduling object above that repaired `sgx_ta_control` layer, not
+    another no-code rerun of the same ladder
 
 - [ ] If a no-code regression retest of the fixed module is needed, keep the
   terminal exact rerun as the canonical one:
