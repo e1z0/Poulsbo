@@ -1,123 +1,149 @@
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 258215676..1268e2042 100644
+index 1268e2042..1bd2e8e36 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1334,6 +1334,32 @@ struct psb_sgx_lab_submit_sgx_ta_execution {
- 	struct psb_sgx_lab_submit_sgx_ta_submission launch_submission;
+@@ -1360,6 +1360,37 @@ struct psb_sgx_lab_submit_sgx_ta_timeline {
+ 	struct psb_sgx_lab_submit_sgx_queued_ta_command retired_command;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_timeline {
-+	struct psb_sgx_lab_submit_sgx_ta_execution execution;
-+	u32 report_stage;
-+	u32 report_stage_count;
-+	u32 issue_count;
-+	u32 transition_count;
-+	u32 global_issue_ticket;
-+	u32 global_running_ticket;
-+	u32 global_complete_ticket;
-+	bool arm_valid;
-+	bool emit_valid;
-+	bool launch_valid;
-+	bool launch_consumed;
-+	bool dispatch_valid;
-+	bool retired_valid;
-+	bool have_launch_command;
-+	struct psb_sgx_lab_submit_ccb_kick launch_kick;
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command launch_command;
-+	bool have_dispatch_command;
-+	struct psb_sgx_lab_submit_ccb_kick dispatch_kick;
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command dispatch_command;
-+	bool have_retired_command;
-+	struct psb_sgx_lab_submit_ccb_kick retired_kick;
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command retired_command;
++struct psb_sgx_lab_submit_sgx_dependency_state {
++	bool active;
++	bool source_missing;
++	u32 submit_id;
++	u32 required_ticket;
++	u32 observed_complete_ticket;
++	u32 flags;
++};
++
++struct psb_sgx_lab_submit_sgx_coordination {
++	u32 issue_ticket;
++	u32 running_ticket;
++	u32 complete_ticket;
++	u32 issue_submit_id;
++	u32 running_submit_id;
++	u32 complete_submit_id;
++	bool active_running_valid;
++	u32 active_running_submit_id;
++	u32 running_owner_submit_count;
++	u32 running_owner_submit_id;
++};
++
++struct psb_sgx_lab_submit_sgx_ta_runtime {
++	struct psb_sgx_lab_submit_sgx_ta_timeline timeline;
++	struct psb_sgx_lab_submit_sgx_coordination coordination;
++	u32 sync_outstanding_count;
++	u32 owner_outstanding_count;
++	struct psb_sgx_lab_submit_sgx_dependency_state
++		dependencies[PSB_SGX_LAB_DEPENDENCY_SLOTS];
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_fill_submit_ccb_record_words_from_packet(
  	const struct psb_sgx_lab_submit_exec_packet *packet,
-@@ -3370,6 +3396,90 @@ static int poulsbo_sgx_build_submit_sgx_ta_execution_locked(
+@@ -1384,6 +1415,18 @@ static int poulsbo_sgx_build_submit_issue_plan_view_locked(
+ 	struct drm_psb_private *dev_priv,
+ 	struct psb_sgx_lab_submit *submit,
+ 	struct psb_sgx_lab_issue_plan_words *issue_plan);
++static u32 *poulsbo_sgx_dependency_submit_id_ptr(
++	struct psb_sgx_lab_submit *submit, unsigned int slot);
++static u32 *poulsbo_sgx_dependency_snapshot_flags_ptr(
++	struct psb_sgx_lab_submit *submit, unsigned int slot);
++static u32 poulsbo_sgx_dependency_required_ticket(
++	struct psb_sgx_lab_submit *submit, unsigned int slot);
++static int poulsbo_sgx_dependency_observed_ticket_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	unsigned int slot,
++	u32 *observed_complete_ticket_out,
++	bool *source_missing_out);
+ 
+ static const char *poulsbo_sgx_lab_role_name(u32 role)
+ {
+@@ -3480,6 +3523,92 @@ static int poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_queued_ta_command_from_source_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	enum psb_sgx_lab_exec_source source,
-+	struct psb_sgx_lab_submit_ccb_kick *kick,
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command)
++	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime)
 +{
++	struct psb_sgx_lab_submit *peer_submit;
++	unsigned int slot;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !kick || !queued_ta_command)
++	if (!dev_priv || !submit || !runtime)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_build_submit_ccb_kick_locked(
-+		dev_priv, submit, source, false, kick);
++	memset(runtime, 0, sizeof(*runtime));
++
++	ret = poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
++		dev_priv, submit, &runtime->timeline);
 +	if (ret)
 +		return ret;
 +
-+	return poulsbo_sgx_build_submit_sgx_queued_ta_command_locked(
-+		submit, kick, queued_ta_command);
-+}
++	runtime->coordination.issue_ticket = dev_priv->sgx_lab_global_issue_ticket;
++	runtime->coordination.running_ticket =
++		dev_priv->sgx_lab_global_running_ticket;
++	runtime->coordination.complete_ticket =
++		dev_priv->sgx_lab_global_complete_ticket;
++	runtime->coordination.issue_submit_id =
++		dev_priv->sgx_lab_global_issue_submit_id;
++	runtime->coordination.running_submit_id =
++		dev_priv->sgx_lab_global_running_submit_id;
++	runtime->coordination.complete_submit_id =
++		dev_priv->sgx_lab_global_complete_submit_id;
++	runtime->coordination.active_running_valid =
++		dev_priv->sgx_lab_running_active;
++	runtime->coordination.active_running_submit_id =
++		dev_priv->sgx_lab_active_running_submit_id;
 +
-+static int poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	struct psb_sgx_lab_submit_sgx_ta_timeline *timeline)
-+{
-+	int ret;
++	if (submit->sync_config_count)
++		runtime->sync_outstanding_count =
++			submit->sync_pending_seq - submit->sync_complete_seq;
++	if (submit->owner_config_count)
++		runtime->owner_outstanding_count =
++			submit->owner_issue_cookie - submit->owner_complete_cookie;
 +
-+	if (!dev_priv || !submit || !timeline)
-+		return -EINVAL;
++	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
++		struct psb_sgx_lab_submit_sgx_dependency_state *dependency;
++		u32 *dependency_submit_id;
++		u32 *dependency_snapshot_flags;
 +
-+	memset(timeline, 0, sizeof(*timeline));
++		dependency = &runtime->dependencies[slot];
++		dependency_submit_id =
++			poulsbo_sgx_dependency_submit_id_ptr(submit, slot);
++		dependency_snapshot_flags =
++			poulsbo_sgx_dependency_snapshot_flags_ptr(submit, slot);
++		if (!dependency_submit_id || !dependency_snapshot_flags)
++			return -EINVAL;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_execution_locked(
-+		dev_priv, submit, &timeline->execution);
-+	if (ret)
-+		return ret;
++		dependency->active =
++			poulsbo_sgx_dependency_slot_active(submit, slot);
++		dependency->submit_id = *dependency_submit_id;
++		dependency->required_ticket =
++			poulsbo_sgx_dependency_required_ticket(submit, slot);
++		dependency->flags = *dependency_snapshot_flags;
 +
-+	timeline->report_stage = poulsbo_sgx_submit_report_stage_locked(submit);
-+	timeline->report_stage_count =
-+		poulsbo_sgx_submit_report_stage_count_locked(
-+			submit, timeline->report_stage);
-+	timeline->issue_count = submit->issue_count;
-+	timeline->transition_count = submit->transition_count;
-+	timeline->global_issue_ticket = submit->global_issue_ticket;
-+	timeline->global_running_ticket = submit->global_running_ticket;
-+	timeline->global_complete_ticket = submit->global_complete_ticket;
-+	timeline->arm_valid = submit->arm_valid;
-+	timeline->emit_valid = submit->emit_valid;
-+	timeline->launch_valid = submit->launch_valid;
-+	timeline->launch_consumed = submit->launch_consumed;
-+	timeline->dispatch_valid = submit->dispatch_valid;
-+	timeline->retired_valid = submit->retired_valid;
++		if (!dependency->active)
++			continue;
 +
-+	if (submit->launch_valid) {
-+		ret = poulsbo_sgx_build_submit_sgx_queued_ta_command_from_source_locked(
-+			dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LAUNCH,
-+			&timeline->launch_kick, &timeline->launch_command);
++		ret = poulsbo_sgx_dependency_observed_ticket_locked(
++			dev_priv, submit, slot,
++			&dependency->observed_complete_ticket,
++			&dependency->source_missing);
 +		if (ret)
 +			return ret;
-+		timeline->have_launch_command = true;
 +	}
 +
-+	if (submit->dispatch_valid) {
-+		ret = poulsbo_sgx_build_submit_sgx_queued_ta_command_from_source_locked(
-+			dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_DISPATCH,
-+			&timeline->dispatch_kick, &timeline->dispatch_command);
-+		if (ret)
-+			return ret;
-+		timeline->have_dispatch_command = true;
-+	}
-+
-+	if (submit->retired_valid) {
-+		ret = poulsbo_sgx_build_submit_sgx_queued_ta_command_from_source_locked(
-+			dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_RETIRED,
-+			&timeline->retired_kick, &timeline->retired_command);
-+		if (ret)
-+			return ret;
-+		timeline->have_retired_command = true;
++	list_for_each_entry(peer_submit, &dev_priv->sgx_lab_submit_list, head) {
++		if (!peer_submit->owner_config_count)
++			continue;
++		if (peer_submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING)
++			continue;
++		runtime->coordination.running_owner_submit_count++;
++		runtime->coordination.running_owner_submit_id =
++			peer_submit->submit_id;
 +	}
 +
 +	return 0;
@@ -126,727 +152,487 @@ index 258215676..1268e2042 100644
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -7780,26 +7890,18 @@ static int poulsbo_sgx_validate_submit_status_side_images_locked(
- 	return 0;
+@@ -8391,29 +8520,23 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_execution_locked(
+ 		&execution->launch_kick, &execution->launch_submission);
  }
  
--static int poulsbo_sgx_validate_built_submit_sgx_ta_submission_locked(
--	struct psb_sgx_lab_submit *submit,
-+static int poulsbo_sgx_validate_submit_sgx_ta_command_locked(
- 	struct psb_sgx_lab_submit_ccb_kick *ccb_kick,
--	struct psb_sgx_lab_submit_sgx_ta_submission *ta_submission)
-+	struct psb_sgx_lab_submit_sgx_ta_command *ta_command)
- {
--	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command;
--	struct psb_sgx_lab_submit_sgx_ta_command *ta_command;
- 	struct psb_sgx_lab_submit_sgx_ta_kick *ta_kick;
- 	u32 index;
--	int ret;
- 
--	if (!submit || !ccb_kick || !ta_submission)
-+	if (!ccb_kick || !ta_command)
- 		return -EINVAL;
- 
--	queued_ta_command = &ta_submission->queued_ta_command;
--	ta_command = &queued_ta_command->ta_command;
- 	ta_kick = &ta_command->ta_kick;
--	if (ta_submission->kick != ccb_kick ||
--	    queued_ta_command->kick != ccb_kick ||
--	    ta_command->kick != ccb_kick || ta_kick->kick != ccb_kick ||
-+	if (ta_command->kick != ccb_kick || ta_kick->kick != ccb_kick ||
- 	    ta_kick->cmdta.kick != ccb_kick ||
- 	    ta_kick->cmdta.shared.kick != ccb_kick ||
- 	    ta_kick->command.service_address !=
-@@ -7822,22 +7924,6 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submission_locked(
- 		    ccb_kick->cmdta.packet.target_gpu_va32 ||
- 	    ta_command->ccb_record.status_gpu_va32 !=
- 		    ccb_kick->cmdta.packet.ccb_status_gpu_va32 ||
--	    queued_ta_command->queue_header.write_offset !=
--		    ccb_kick->cmdta.packet.ccb_write_offset ||
--	    queued_ta_command->queue_header.read_offset !=
--		    ccb_kick->cmdta.packet.ccb_read_offset ||
--	    queued_ta_command->queue_header.queue_base_offset !=
--		    ccb_kick->cmdta.packet.queue_base_offset ||
--	    queued_ta_command->queue_header.queue_size !=
--		    ccb_kick->cmdta.packet.queue_size ||
--	    queued_ta_command->queue_header.queue_packet_size !=
--		    ccb_kick->cmdta.packet.queue_packet_size ||
--	    queued_ta_command->queue_header.queue_packet_count !=
--		    ccb_kick->cmdta.packet.queue_packet_count ||
--	    queued_ta_command->queue_header.queue_tail_packet_count !=
--		    ccb_kick->cmdta.packet.queue_tail_packet_count ||
--	    queued_ta_command->queue_header.queue_head_packet_count !=
--		    ccb_kick->cmdta.packet.queue_head_packet_count ||
- 	    ta_kick->control_gpu_va32 != ccb_kick->cmdta.packet.control_gpu_va32 ||
- 	    ta_kick->ccb_gpu_va32 != ccb_kick->cmdta.ccb_gpu_va32 ||
- 	    ta_kick->cmdta_gpu_va32 != ccb_kick->cmdta.ccb_gpu_va32 ||
-@@ -7856,15 +7942,259 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submission_locked(
- 		    ta_kick->cmdta.shared.num_dst_sync_objects ||
- 	    ta_kick->cmdta.shared.num_ta_dst_syncs !=
- 		    ta_kick->cmdta.shared.num_dst_sync_objects) {
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
-+	}
-+	if (!ta_kick->cmdta.shared.num_dst_sync_objects &&
-+	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.shared.ta_tq_sync) ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.shared.threed_tq_sync) ||
-+	     ta_kick->cmdta.shared.hwdevice_sync_list.access_gpu_va32 ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.shared.hwdevice_sync_list.sync_data[0]) ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.ta_dst_syncs[0]) ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.threed_src_syncs[0]))) {
-+		return -EINVAL;
-+	}
-+	if (ta_kick->cmdta.shared.num_3d_src_syncs &&
-+	    (!ta_kick->cmdta.shared.ta3d_dependency.submit_id ||
-+	     !ta_kick->cmdta.shared.ta3d_dependency.required_complete_ticket)) {
-+		return -EINVAL;
-+	}
-+	if (!ta_kick->cmdta.shared.num_ta_dst_syncs &&
-+	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.shared.ta_tq_sync) ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &ta_kick->cmdta.shared.threed_tq_sync))) {
-+		return -EINVAL;
-+	}
-+	if (ta_kick->cmdta.shared.num_dst_sync_objects &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
-+		    &ta_kick->cmdta.shared.hwdevice_sync_list.sync_data[0],
-+		    &ta_kick->cmdta.shared.ta_tq_sync)) {
-+		return -EINVAL;
-+	}
-+	if (ta_kick->cmdta.shared.num_ta_src_syncs)
-+		return -EINVAL;
-+	if (!ta_kick->cmdta.shared.num_ta_dst_syncs &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		    &ta_kick->cmdta.ta_dst_syncs[0])) {
-+		return -EINVAL;
-+	}
-+	if (ta_kick->cmdta.shared.num_ta_dst_syncs &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
-+		    &ta_kick->cmdta.ta_dst_syncs[0],
-+		    &ta_kick->cmdta.shared.ta_tq_sync)) {
-+		return -EINVAL;
-+	}
-+	if (!ta_kick->cmdta.shared.num_3d_src_syncs &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		    &ta_kick->cmdta.shared.ta3d_dependency_sync)) {
-+		return -EINVAL;
-+	}
-+	if (!ta_kick->cmdta.shared.num_3d_src_syncs &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		    &ta_kick->cmdta.threed_src_syncs[0])) {
-+		return -EINVAL;
-+	}
-+	if (ta_kick->cmdta.shared.num_3d_src_syncs &&
-+	    (!ta_kick->cmdta.shared.ta3d_dependency_sync.write_complete_gpu_va32 ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_equal(
-+		     &ta_kick->cmdta.threed_src_syncs[0],
-+		     &ta_kick->cmdta.shared.ta3d_dependency_sync))) {
-+		return -EINVAL;
-+	}
-+	for (index = 0; index < ta_kick->cmdta.shared.num_ta_status_vals; index++) {
-+		if (ta_kick->cmdta.shared.ta_status_info[index].value_offset !=
-+			    ccb_kick->ta_status_updates[index].value_offset ||
-+		    ta_kick->cmdta.shared.ta_status_info[index].value_gpu_va32 !=
-+			    ccb_kick->ta_status_updates[index].value_gpu_va32 ||
-+		    ta_kick->cmdta.shared.ta_status_info[index].value !=
-+			    ccb_kick->ta_status_updates[index].value) {
-+			return -EINVAL;
-+		}
-+	}
-+	for (index = 0; index < ta_kick->cmdta.shared.num_3d_status_vals; index++) {
-+		if (ta_kick->cmdta.shared.threed_status_info[index].value_offset !=
-+			    ccb_kick->threed_status_updates[index].value_offset ||
-+		    ta_kick->cmdta.shared.threed_status_info[index].value_gpu_va32 !=
-+			    ccb_kick->threed_status_updates[index].value_gpu_va32 ||
-+		    ta_kick->cmdta.shared.threed_status_info[index].value !=
-+			    ccb_kick->threed_status_updates[index].value) {
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+	struct psb_sgx_lab_submit_ccb_kick *ccb_kick,
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command)
-+{
-+	int ret;
-+
-+	if (!ccb_kick || !queued_ta_command)
-+		return -EINVAL;
-+
-+	ret = poulsbo_sgx_validate_submit_sgx_ta_command_locked(
-+		ccb_kick, &queued_ta_command->ta_command);
-+	if (ret)
-+		return ret;
-+
-+	if (queued_ta_command->kick != ccb_kick ||
-+	    queued_ta_command->queue_header.write_offset !=
-+		    ccb_kick->cmdta.packet.ccb_write_offset ||
-+	    queued_ta_command->queue_header.read_offset !=
-+		    ccb_kick->cmdta.packet.ccb_read_offset ||
-+	    queued_ta_command->queue_header.queue_base_offset !=
-+		    ccb_kick->cmdta.packet.queue_base_offset ||
-+	    queued_ta_command->queue_header.queue_size !=
-+		    ccb_kick->cmdta.packet.queue_size ||
-+	    queued_ta_command->queue_header.queue_packet_size !=
-+		    ccb_kick->cmdta.packet.queue_packet_size ||
-+	    queued_ta_command->queue_header.queue_packet_count !=
-+		    ccb_kick->cmdta.packet.queue_packet_count ||
-+	    queued_ta_command->queue_header.queue_tail_packet_count !=
-+		    ccb_kick->cmdta.packet.queue_tail_packet_count ||
-+	    queued_ta_command->queue_header.queue_head_packet_count !=
-+		    ccb_kick->cmdta.packet.queue_head_packet_count ||
-+	    queued_ta_command->queue_header.queue_base_offset +
-+			    queued_ta_command->queue_header.read_offset !=
-+		    ccb_kick->cmdta.packet.ccb_offset) {
-+		return -EINVAL;
- 	}
--	if (queued_ta_command->queue_header.queue_base_offset +
--		    queued_ta_command->queue_header.read_offset !=
--	    ccb_kick->cmdta.packet.ccb_offset) {
-+
-+	return 0;
-+}
-+
-+static int poulsbo_sgx_validate_submit_sgx_queued_ta_command_issue_plan_locked(
-+	struct psb_sgx_lab_submit_ccb_kick *ccb_kick,
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command)
-+{
-+	if (!ccb_kick || !queued_ta_command)
-+		return -EINVAL;
-+
-+	if (queued_ta_command->have_issue_plan) {
-+		if (!ccb_kick->cmdta.have_issue_plan ||
-+		    queued_ta_command->issue_plan.owner_state !=
-+			    ccb_kick->cmdta.issue_plan.owner_state ||
-+		    queued_ta_command->issue_plan.issued_packets !=
-+			    ccb_kick->cmdta.issue_plan.issued_packets ||
-+		    queued_ta_command->issue_plan.refilled_from_complete !=
-+			    ccb_kick->cmdta.issue_plan.refilled_from_complete ||
-+		    queued_ta_command->issue_plan.new_queue_epoch !=
-+			    ccb_kick->cmdta.issue_plan.new_queue_epoch ||
-+		    queued_ta_command->issue_plan.new_packet_count !=
-+			    ccb_kick->cmdta.issue_plan.new_packet_count ||
-+		    queued_ta_command->issue_plan.new_tail_packets !=
-+			    ccb_kick->cmdta.issue_plan.new_tail_packets ||
-+		    queued_ta_command->issue_plan.new_head_packets !=
-+			    ccb_kick->cmdta.issue_plan.new_head_packets ||
-+		    queued_ta_command->issue_plan.new_write_offset !=
-+			    ccb_kick->cmdta.issue_plan.new_write_offset ||
-+		    queued_ta_command->issue_plan.new_sync_pending_seq !=
-+			    ccb_kick->cmdta.issue_plan.new_sync_pending_seq ||
-+		    queued_ta_command->issue_plan.new_owner_issue_cookie !=
-+			    ccb_kick->cmdta.issue_plan.new_owner_issue_cookie ||
-+		    queued_ta_command->issue_plan.new_global_issue_ticket !=
-+			    ccb_kick->cmdta.issue_plan.new_global_issue_ticket ||
-+		    queued_ta_command->issue_plan.new_sync_flags !=
-+			    ccb_kick->cmdta.issue_plan.new_sync_flags) {
-+			return -EINVAL;
-+		}
-+	} else if (ccb_kick->cmdta.have_issue_plan ||
-+		   queued_ta_command->issue_plan.issued_packets ||
-+		   queued_ta_command->issue_plan.new_packet_count ||
-+		   queued_ta_command->issue_plan.new_write_offset ||
-+		   queued_ta_command->issue_plan.new_global_issue_ticket) {
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static bool poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
-+	const struct psb_sgx_lab_submit_sgx_queued_ta_command *left,
-+	const struct psb_sgx_lab_submit_sgx_queued_ta_command *right)
-+{
-+	const struct psb_sgx_lab_submit_sgx_ta_command *left_command;
-+	const struct psb_sgx_lab_submit_sgx_ta_command *right_command;
-+	const struct psb_sgx_lab_submit_sgx_ta_kick *left_kick;
-+	const struct psb_sgx_lab_submit_sgx_ta_kick *right_kick;
-+
-+	if (!left || !right)
-+		return false;
-+
-+	left_command = &left->ta_command;
-+	right_command = &right->ta_command;
-+	left_kick = &left_command->ta_kick;
-+	right_kick = &right_command->ta_kick;
-+
-+	return left_command->ccb_record.service_address ==
-+		       right_command->ccb_record.service_address &&
-+	       left_command->ccb_record.cache_control ==
-+		       right_command->ccb_record.cache_control &&
-+	       left_command->ccb_record.data0 ==
-+		       right_command->ccb_record.data0 &&
-+	       left_command->ccb_record.data1 ==
-+		       right_command->ccb_record.data1 &&
-+	       left_command->ccb_record.pds_gpu_va32 ==
-+		       right_command->ccb_record.pds_gpu_va32 &&
-+	       left_command->ccb_record.use_gpu_va32 ==
-+		       right_command->ccb_record.use_gpu_va32 &&
-+	       left_command->ccb_record.target_gpu_va32 ==
-+		       right_command->ccb_record.target_gpu_va32 &&
-+	       left_command->ccb_record.status_gpu_va32 ==
-+		       right_command->ccb_record.status_gpu_va32 &&
-+	       left_kick->command.service_address ==
-+		       right_kick->command.service_address &&
-+	       left_kick->command.cache_control ==
-+		       right_kick->command.cache_control &&
-+	       left_kick->command.data0 == right_kick->command.data0 &&
-+	       left_kick->command.data1 == right_kick->command.data1 &&
-+	       left_kick->control_gpu_va32 == right_kick->control_gpu_va32 &&
-+	       left_kick->sync_gpu_va32 == right_kick->sync_gpu_va32 &&
-+	       left_kick->owner_gpu_va32 == right_kick->owner_gpu_va32 &&
-+	       left_kick->ta_status_gpu_va32 == right_kick->ta_status_gpu_va32 &&
-+	       left_kick->status_3d_gpu_va32 == right_kick->status_3d_gpu_va32 &&
-+	       left->queue_header.queue_base_offset ==
-+		       right->queue_header.queue_base_offset &&
-+	       left->queue_header.queue_size == right->queue_header.queue_size &&
-+	       left->queue_header.queue_packet_size ==
-+		       right->queue_header.queue_packet_size;
-+}
-+
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_submission_locked(
-+	struct psb_sgx_lab_submit *submit,
-+	struct psb_sgx_lab_submit_ccb_kick *ccb_kick,
-+	struct psb_sgx_lab_submit_sgx_ta_submission *ta_submission)
-+{
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command;
-+	struct psb_sgx_lab_submit_sgx_ta_command *ta_command;
-+	struct psb_sgx_lab_submit_sgx_ta_kick *ta_kick;
-+	int ret;
-+
-+	if (!submit || !ccb_kick || !ta_submission)
-+		return -EINVAL;
-+
-+	queued_ta_command = &ta_submission->queued_ta_command;
-+	ta_command = &queued_ta_command->ta_command;
-+	ta_kick = &ta_command->ta_kick;
-+	if (ta_submission->kick != ccb_kick) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
-+	ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+		ccb_kick, queued_ta_command);
-+	if (ret)
-+		goto out;
-+	ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_issue_plan_locked(
-+		ccb_kick, queued_ta_command);
-+	if (ret)
-+		goto out;
- 	if (!!submit->live_config_count != !!ta_submission->have_live ||
- 	    !!submit->manifest_config_count != !!ta_submission->have_manifest ||
- 	    !!submit->descriptor_config_count !=
-@@ -7997,138 +8327,6 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submission_locked(
- 		ret = -EINVAL;
- 		goto out;
- 	}
--	if (queued_ta_command->have_issue_plan) {
--		if (!ccb_kick->cmdta.have_issue_plan ||
--		    queued_ta_command->issue_plan.owner_state !=
--			    ccb_kick->cmdta.issue_plan.owner_state ||
--		    queued_ta_command->issue_plan.issued_packets !=
--			    ccb_kick->cmdta.issue_plan.issued_packets ||
--		    queued_ta_command->issue_plan.refilled_from_complete !=
--			    ccb_kick->cmdta.issue_plan.refilled_from_complete ||
--		    queued_ta_command->issue_plan.new_queue_epoch !=
--			    ccb_kick->cmdta.issue_plan.new_queue_epoch ||
--		    queued_ta_command->issue_plan.new_packet_count !=
--			    ccb_kick->cmdta.issue_plan.new_packet_count ||
--		    queued_ta_command->issue_plan.new_tail_packets !=
--			    ccb_kick->cmdta.issue_plan.new_tail_packets ||
--		    queued_ta_command->issue_plan.new_head_packets !=
--			    ccb_kick->cmdta.issue_plan.new_head_packets ||
--		    queued_ta_command->issue_plan.new_write_offset !=
--			    ccb_kick->cmdta.issue_plan.new_write_offset ||
--		    queued_ta_command->issue_plan.new_sync_pending_seq !=
--			    ccb_kick->cmdta.issue_plan.new_sync_pending_seq ||
--		    queued_ta_command->issue_plan.new_owner_issue_cookie !=
--			    ccb_kick->cmdta.issue_plan.new_owner_issue_cookie ||
--		    queued_ta_command->issue_plan.new_global_issue_ticket !=
--			    ccb_kick->cmdta.issue_plan.new_global_issue_ticket ||
--		    queued_ta_command->issue_plan.new_sync_flags !=
--			    ccb_kick->cmdta.issue_plan.new_sync_flags) {
--			ret = -EINVAL;
--			goto out;
--		}
--	} else if (ccb_kick->cmdta.have_issue_plan ||
--		   queued_ta_command->issue_plan.issued_packets ||
--		   queued_ta_command->issue_plan.new_packet_count ||
--		   queued_ta_command->issue_plan.new_write_offset ||
--		   queued_ta_command->issue_plan.new_global_issue_ticket) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (!ta_kick->cmdta.shared.num_dst_sync_objects &&
--	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.shared.ta_tq_sync) ||
--	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.shared.threed_tq_sync) ||
--	     ta_kick->cmdta.shared.hwdevice_sync_list.access_gpu_va32 ||
--	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.shared.hwdevice_sync_list.sync_data[0]) ||
--	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.ta_dst_syncs[0]) ||
--	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.threed_src_syncs[0]))) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (ta_kick->cmdta.shared.num_3d_src_syncs &&
--	    (!ta_kick->cmdta.shared.ta3d_dependency.submit_id ||
--	     !ta_kick->cmdta.shared.ta3d_dependency.required_complete_ticket)) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (!ta_kick->cmdta.shared.num_ta_dst_syncs &&
--	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.shared.ta_tq_sync) ||
--	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &ta_kick->cmdta.shared.threed_tq_sync))) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (ta_kick->cmdta.shared.num_dst_sync_objects &&
--	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
--		    &ta_kick->cmdta.shared.hwdevice_sync_list.sync_data[0],
--		    &ta_kick->cmdta.shared.ta_tq_sync)) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (ta_kick->cmdta.shared.num_ta_src_syncs) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (!ta_kick->cmdta.shared.num_ta_dst_syncs &&
--	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		    &ta_kick->cmdta.ta_dst_syncs[0])) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (ta_kick->cmdta.shared.num_ta_dst_syncs &&
--	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
--		    &ta_kick->cmdta.ta_dst_syncs[0],
--		    &ta_kick->cmdta.shared.ta_tq_sync)) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (!ta_kick->cmdta.shared.num_3d_src_syncs &&
--	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		    &ta_kick->cmdta.shared.ta3d_dependency_sync)) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (!ta_kick->cmdta.shared.num_3d_src_syncs &&
--	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		    &ta_kick->cmdta.threed_src_syncs[0])) {
--		ret = -EINVAL;
--		goto out;
--	}
--	if (ta_kick->cmdta.shared.num_3d_src_syncs &&
--	    (!ta_kick->cmdta.shared.ta3d_dependency_sync.write_complete_gpu_va32 ||
--	     !poulsbo_sgx_submit_sgx_device_sync_object_equal(
--		     &ta_kick->cmdta.threed_src_syncs[0],
--		     &ta_kick->cmdta.shared.ta3d_dependency_sync))) {
--		ret = -EINVAL;
--		goto out;
--	}
--	for (index = 0; index < ta_kick->cmdta.shared.num_ta_status_vals; index++) {
--		if (ta_kick->cmdta.shared.ta_status_info[index].value_offset !=
--			    ccb_kick->ta_status_updates[index].value_offset ||
--		    ta_kick->cmdta.shared.ta_status_info[index].value_gpu_va32 !=
--			    ccb_kick->ta_status_updates[index].value_gpu_va32 ||
--		    ta_kick->cmdta.shared.ta_status_info[index].value !=
--			    ccb_kick->ta_status_updates[index].value) {
--			ret = -EINVAL;
--			goto out;
--		}
--	}
--	for (index = 0; index < ta_kick->cmdta.shared.num_3d_status_vals; index++) {
--		if (ta_kick->cmdta.shared.threed_status_info[index].value_offset !=
--			    ccb_kick->threed_status_updates[index].value_offset ||
--		    ta_kick->cmdta.shared.threed_status_info[index].value_gpu_va32 !=
--			    ccb_kick->threed_status_updates[index].value_gpu_va32 ||
--		    ta_kick->cmdta.shared.threed_status_info[index].value !=
--			    ccb_kick->threed_status_updates[index].value) {
--			return -EINVAL;
--		}
--	}
--
- 	ret = 0;
- out:
- 	return ret;
-@@ -8139,126 +8337,174 @@ static int poulsbo_sgx_validate_launch_submit_sgx_ta_submission_locked(
- 	struct psb_sgx_lab_submit_sgx_ta_submission *ta_submission)
- {
- 	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command;
--	struct psb_sgx_lab_submit_sgx_ta_command *ta_command;
--	struct psb_sgx_lab_submit_sgx_ta_kick *ta_kick;
-+	int ret;
- 
- 	if (!ccb_kick || !ta_submission)
- 		return -EINVAL;
- 
- 	queued_ta_command = &ta_submission->queued_ta_command;
--	ta_command = &queued_ta_command->ta_command;
--	ta_kick = &ta_command->ta_kick;
--
--	if (ta_submission->kick != ccb_kick ||
--	    queued_ta_command->kick != ccb_kick ||
--	    ta_command->kick != ccb_kick || ta_kick->kick != ccb_kick ||
--	    ta_kick->cmdta.kick != ccb_kick ||
--	    ta_kick->cmdta.shared.kick != ccb_kick ||
--	    ta_kick->command.service_address !=
--		    ccb_kick->cmdta.packet.command.service_address ||
--	    ta_kick->command.cache_control !=
--		    ccb_kick->cmdta.packet.command.cache_control ||
--	    ta_kick->command.data0 != ccb_kick->cmdta.packet.command.data0 ||
--	    ta_kick->command.data1 != ccb_kick->cmdta.packet.command.data1 ||
--	    ta_command->ccb_record.service_address !=
--		    ta_kick->command.service_address ||
--	    ta_command->ccb_record.cache_control !=
--		    ta_kick->command.cache_control ||
--	    ta_command->ccb_record.data0 != ta_kick->command.data0 ||
--	    ta_command->ccb_record.data1 != ta_kick->command.data1 ||
--	    queued_ta_command->queue_header.write_offset !=
--		    ccb_kick->cmdta.packet.ccb_write_offset ||
--	    queued_ta_command->queue_header.read_offset !=
--		    ccb_kick->cmdta.packet.ccb_read_offset ||
--	    queued_ta_command->queue_header.queue_base_offset !=
--		    ccb_kick->cmdta.packet.queue_base_offset ||
--	    queued_ta_command->queue_header.queue_size !=
--		    ccb_kick->cmdta.packet.queue_size ||
--	    queued_ta_command->queue_header.queue_packet_size !=
--		    ccb_kick->cmdta.packet.queue_packet_size ||
--	    queued_ta_command->queue_header.queue_packet_count !=
--		    ccb_kick->cmdta.packet.queue_packet_count ||
--	    queued_ta_command->queue_header.queue_tail_packet_count !=
--		    ccb_kick->cmdta.packet.queue_tail_packet_count ||
--	    queued_ta_command->queue_header.queue_head_packet_count !=
--		    ccb_kick->cmdta.packet.queue_head_packet_count ||
--	    !queued_ta_command->have_issue_plan ||
-+	if (ta_submission->kick != ccb_kick || !queued_ta_command->have_issue_plan ||
- 	    !ccb_kick->cmdta.have_issue_plan) {
- 		return -EINVAL;
- 	}
- 
--	if (queued_ta_command->issue_plan.owner_state !=
--		    ccb_kick->cmdta.issue_plan.owner_state ||
--	    queued_ta_command->issue_plan.issued_packets !=
--		    ccb_kick->cmdta.issue_plan.issued_packets ||
--	    queued_ta_command->issue_plan.refilled_from_complete !=
--		    ccb_kick->cmdta.issue_plan.refilled_from_complete ||
--	    queued_ta_command->issue_plan.new_queue_epoch !=
--		    ccb_kick->cmdta.issue_plan.new_queue_epoch ||
--	    queued_ta_command->issue_plan.new_packet_count !=
--		    ccb_kick->cmdta.issue_plan.new_packet_count ||
--	    queued_ta_command->issue_plan.new_tail_packets !=
--		    ccb_kick->cmdta.issue_plan.new_tail_packets ||
--	    queued_ta_command->issue_plan.new_head_packets !=
--		    ccb_kick->cmdta.issue_plan.new_head_packets ||
--	    queued_ta_command->issue_plan.new_write_offset !=
--		    ccb_kick->cmdta.issue_plan.new_write_offset ||
--	    queued_ta_command->issue_plan.new_sync_pending_seq !=
--		    ccb_kick->cmdta.issue_plan.new_sync_pending_seq ||
--	    queued_ta_command->issue_plan.new_owner_issue_cookie !=
--		    ccb_kick->cmdta.issue_plan.new_owner_issue_cookie ||
--	    queued_ta_command->issue_plan.new_global_issue_ticket !=
--		    ccb_kick->cmdta.issue_plan.new_global_issue_ticket ||
--	    queued_ta_command->issue_plan.new_sync_flags !=
--		    ccb_kick->cmdta.issue_plan.new_sync_flags) {
--		return -EINVAL;
--	}
-+	ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+		ccb_kick, queued_ta_command);
-+	if (ret)
-+		return ret;
- 
--	return 0;
-+	return poulsbo_sgx_validate_submit_sgx_queued_ta_command_issue_plan_locked(
-+		ccb_kick, queued_ta_command);
- }
- 
--static int poulsbo_sgx_validate_submit_sgx_ta_execution_locked(
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_execution_locked(
+-static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_timeline_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
  	struct psb_sgx_lab_object *control_obj,
 -	struct psb_sgx_lab_object *status_obj)
 +	struct psb_sgx_lab_object *status_obj,
-+	struct psb_sgx_lab_submit_sgx_ta_execution *execution)
++	struct psb_sgx_lab_submit_sgx_ta_timeline *timeline)
  {
--	struct psb_sgx_lab_submit_sgx_ta_execution *execution;
+ 	struct psb_sgx_lab_submit_sgx_queued_ta_command *launch_submission_command;
+-	struct psb_sgx_lab_submit_sgx_ta_timeline *timeline;
  	int ret;
  
--	execution = kmalloc(sizeof(*execution), GFP_KERNEL);
- 	if (!execution)
+-	timeline = kmalloc(sizeof(*timeline), GFP_KERNEL);
+ 	if (!timeline)
 -		return -ENOMEM;
 -
--	ret = poulsbo_sgx_build_submit_sgx_ta_execution_locked(
--		dev_priv, submit, execution);
+-	ret = poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
+-		dev_priv, submit, timeline);
 -	if (ret)
 -		goto out;
 +		return -EINVAL;
  
- 	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submission_locked(
- 		submit, &execution->live_kick, &execution->live_submission);
+ 	ret = poulsbo_sgx_validate_built_submit_sgx_ta_execution_locked(
+ 		dev_priv, submit, control_obj, status_obj, &timeline->execution);
  	if (ret)
 -		goto out;
 +		return ret;
  
- 	ret = poulsbo_sgx_validate_submit_control_side_images_locked(
- 		submit, control_obj, &execution->live_submission);
- 	if (ret)
+ 	if (timeline->report_stage != poulsbo_sgx_submit_report_stage_locked(submit) ||
+ 	    timeline->report_stage_count !=
+@@ -8433,48 +8556,42 @@ static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
+ 	    !!timeline->have_launch_command != !!submit->launch_valid ||
+ 	    !!timeline->have_dispatch_command != !!submit->dispatch_valid ||
+ 	    !!timeline->have_retired_command != !!submit->retired_valid) {
+-		ret = -EINVAL;
 -		goto out;
-+		return ret;
++		return -EINVAL;
+ 	}
  
- 	ret = poulsbo_sgx_validate_submit_status_side_images_locked(
- 		dev_priv, submit, status_obj, &execution->live_submission);
- 	if (ret)
-+		return ret;
-+
-+	if (!execution->have_launch_submission)
+-	if (timeline->have_retired_command && !timeline->have_dispatch_command) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
++	if (timeline->have_retired_command && !timeline->have_dispatch_command)
++		return -EINVAL;
+ 
+ 	if (timeline->have_launch_command) {
+ 		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
+ 			&timeline->launch_kick, &timeline->launch_command);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 	}
+ 	if (timeline->have_dispatch_command) {
+ 		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
+ 			&timeline->dispatch_kick, &timeline->dispatch_command);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 		if (timeline->have_launch_command &&
+ 		    !poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
+ 			    &timeline->launch_command,
+-			    &timeline->dispatch_command)) {
+-			ret = -EINVAL;
+-			goto out;
+-		}
++			    &timeline->dispatch_command))
++			return -EINVAL;
+ 	}
+ 	if (timeline->have_retired_command) {
+ 		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
+ 			&timeline->retired_kick, &timeline->retired_command);
+ 		if (ret)
+-			goto out;
++			return ret;
+ 		if (!poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
+-			    &timeline->dispatch_command, &timeline->retired_command)) {
+-			ret = -EINVAL;
+-			goto out;
+-		}
++			    &timeline->dispatch_command,
++			    &timeline->retired_command))
++			return -EINVAL;
+ 	}
+ 
+ 	if (!timeline->execution.have_launch_submission)
+-		goto out_ok;
 +		return 0;
+ 
+ 	launch_submission_command =
+ 		&timeline->execution.launch_submission.queued_ta_command;
+@@ -8496,15 +8613,193 @@ static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
+ 	    launch_submission_command->queue_header.queue_tail_packet_count !=
+ 		    timeline->launch_command.queue_header.queue_tail_packet_count ||
+ 	    launch_submission_command->queue_header.queue_head_packet_count !=
+-		    timeline->launch_command.queue_header.queue_head_packet_count) {
++		    timeline->launch_command.queue_header.queue_head_packet_count)
++		return -EINVAL;
 +
-+	return poulsbo_sgx_validate_launch_submit_sgx_ta_submission_locked(
-+		&execution->launch_kick, &execution->launch_submission);
++	return 0;
 +}
 +
-+static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *control_obj,
 +	struct psb_sgx_lab_object *status_obj)
 +{
-+	struct psb_sgx_lab_submit_sgx_queued_ta_command *launch_submission_command;
-+	struct psb_sgx_lab_submit_sgx_ta_timeline *timeline;
++	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime;
++	bool any_dependency_active = false;
++	bool any_dependency_required = false;
++	unsigned int slot;
 +	int ret;
 +
-+	timeline = kmalloc(sizeof(*timeline), GFP_KERNEL);
-+	if (!timeline)
++	runtime = kmalloc(sizeof(*runtime), GFP_KERNEL);
++	if (!runtime)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
-+		dev_priv, submit, timeline);
++	ret = poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
++		dev_priv, submit, runtime);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_execution_locked(
-+		dev_priv, submit, control_obj, status_obj, &timeline->execution);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_timeline_locked(
++		dev_priv, submit, control_obj, status_obj, &runtime->timeline);
 +	if (ret)
 +		goto out;
 +
-+	if (timeline->report_stage != poulsbo_sgx_submit_report_stage_locked(submit) ||
-+	    timeline->report_stage_count !=
-+		    poulsbo_sgx_submit_report_stage_count_locked(
-+			    submit, timeline->report_stage) ||
-+	    timeline->issue_count != submit->issue_count ||
-+	    timeline->transition_count != submit->transition_count ||
-+	    timeline->global_issue_ticket != submit->global_issue_ticket ||
-+	    timeline->global_running_ticket != submit->global_running_ticket ||
-+	    timeline->global_complete_ticket != submit->global_complete_ticket ||
-+	    timeline->arm_valid != submit->arm_valid ||
-+	    timeline->emit_valid != submit->emit_valid ||
-+	    timeline->launch_valid != submit->launch_valid ||
-+	    timeline->launch_consumed != submit->launch_consumed ||
-+	    timeline->dispatch_valid != submit->dispatch_valid ||
-+	    timeline->retired_valid != submit->retired_valid ||
-+	    !!timeline->have_launch_command != !!submit->launch_valid ||
-+	    !!timeline->have_dispatch_command != !!submit->dispatch_valid ||
-+	    !!timeline->have_retired_command != !!submit->retired_valid) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	if (timeline->have_retired_command && !timeline->have_dispatch_command) {
-+		ret = -EINVAL;
++	if (runtime->coordination.issue_ticket !=
++		    dev_priv->sgx_lab_global_issue_ticket ||
++	    runtime->coordination.running_ticket !=
++		    dev_priv->sgx_lab_global_running_ticket ||
++	    runtime->coordination.complete_ticket !=
++		    dev_priv->sgx_lab_global_complete_ticket ||
++	    runtime->coordination.issue_submit_id !=
++		    dev_priv->sgx_lab_global_issue_submit_id ||
++	    runtime->coordination.running_submit_id !=
++		    dev_priv->sgx_lab_global_running_submit_id ||
++	    runtime->coordination.complete_submit_id !=
++		    dev_priv->sgx_lab_global_complete_submit_id ||
++	    runtime->coordination.active_running_valid !=
++		    dev_priv->sgx_lab_running_active ||
++	    runtime->coordination.active_running_submit_id !=
++		    dev_priv->sgx_lab_active_running_submit_id) {
+ 		ret = -EINVAL;
  		goto out;
-+	}
- 
--	if (execution->have_launch_submission) {
--		ret = poulsbo_sgx_validate_launch_submit_sgx_ta_submission_locked(
--			&execution->launch_kick, &execution->launch_submission);
-+	if (timeline->have_launch_command) {
-+		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+			&timeline->launch_kick, &timeline->launch_command);
- 		if (ret)
- 			goto out;
  	}
-+	if (timeline->have_dispatch_command) {
-+		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+			&timeline->dispatch_kick, &timeline->dispatch_command);
-+		if (ret)
-+			goto out;
-+		if (timeline->have_launch_command &&
-+		    !poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
-+			    &timeline->launch_command,
-+			    &timeline->dispatch_command)) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
-+	if (timeline->have_retired_command) {
-+		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+			&timeline->retired_kick, &timeline->retired_command);
-+		if (ret)
-+			goto out;
-+		if (!poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
-+			    &timeline->dispatch_command, &timeline->retired_command)) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
  
-+	if (!timeline->execution.have_launch_submission)
-+		goto out_ok;
+-out_ok:
++	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
++		struct psb_sgx_lab_submit_sgx_dependency_state *dependency;
++		u32 *dependency_submit_id;
++		u32 *dependency_snapshot_flags;
 +
-+	launch_submission_command =
-+		&timeline->execution.launch_submission.queued_ta_command;
-+	if (!timeline->have_launch_command ||
-+	    !poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
-+		    launch_submission_command, &timeline->launch_command) ||
-+	    launch_submission_command->queue_header.write_offset !=
-+		    timeline->launch_command.queue_header.write_offset ||
-+	    launch_submission_command->queue_header.read_offset !=
-+		    timeline->launch_command.queue_header.read_offset ||
-+	    launch_submission_command->queue_header.queue_base_offset !=
-+		    timeline->launch_command.queue_header.queue_base_offset ||
-+	    launch_submission_command->queue_header.queue_size !=
-+		    timeline->launch_command.queue_header.queue_size ||
-+	    launch_submission_command->queue_header.queue_packet_size !=
-+		    timeline->launch_command.queue_header.queue_packet_size ||
-+	    launch_submission_command->queue_header.queue_packet_count !=
-+		    timeline->launch_command.queue_header.queue_packet_count ||
-+	    launch_submission_command->queue_header.queue_tail_packet_count !=
-+		    timeline->launch_command.queue_header.queue_tail_packet_count ||
-+	    launch_submission_command->queue_header.queue_head_packet_count !=
-+		    timeline->launch_command.queue_header.queue_head_packet_count) {
-+		ret = -EINVAL;
-+		goto out;
++		dependency = &runtime->dependencies[slot];
++		dependency_submit_id =
++			poulsbo_sgx_dependency_submit_id_ptr(submit, slot);
++		dependency_snapshot_flags =
++			poulsbo_sgx_dependency_snapshot_flags_ptr(submit, slot);
++		if (!dependency_submit_id || !dependency_snapshot_flags) {
++			ret = -EINVAL;
++			goto out;
++		}
++		if (*dependency_submit_id == submit->submit_id) {
++			ret = -EINVAL;
++			goto out;
++		}
++		if (dependency->active !=
++		    poulsbo_sgx_dependency_slot_active(submit, slot) ||
++		    dependency->submit_id != *dependency_submit_id ||
++		    dependency->required_ticket !=
++			    poulsbo_sgx_dependency_required_ticket(
++				    submit, slot) ||
++		    dependency->flags != *dependency_snapshot_flags) {
++			ret = -EINVAL;
++			goto out;
++		}
++		if (!dependency->active)
++			continue;
++
++		any_dependency_active = true;
++		if (dependency->required_ticket)
++			any_dependency_required = true;
++		/*
++		 * Validation is allowed to observe a still-blocked dependency.
++		 * The launch/issue path enforces the gate when execution tries
++		 * to consume the submission.
++		 */
++		if (dependency->submit_id &&
++		    dependency->source_missing &&
++		    !(dependency->flags &
++		      PSB_SGX_LAB_DEPENDENCY_FLAG_SOURCE_MISSING)) {
++			ret = -EINVAL;
++			goto out;
++		}
 +	}
 +
-+out_ok:
-+	ret = 0;
++	if (submit->sync_config_count) {
++		if (any_dependency_active && !any_dependency_required) {
++			ret = -EINVAL;
++			goto out;
++		}
++		if (submit->sync_pending_seq < submit->sync_complete_seq ||
++		    runtime->sync_outstanding_count !=
++			    submit->sync_pending_seq -
++				    submit->sync_complete_seq ||
++		    runtime->sync_outstanding_count !=
++			    submit->queue_packet_count ||
++		    !!submit->issue_count != !!submit->global_issue_ticket ||
++		    submit->global_issue_ticket >
++			    runtime->coordination.issue_ticket) {
++			ret = -EINVAL;
++			goto out;
++		}
++	}
++
++	if (submit->owner_config_count) {
++		if (submit->owner_issue_cookie < submit->owner_complete_cookie ||
++		    runtime->owner_outstanding_count !=
++			    submit->owner_issue_cookie -
++				    submit->owner_complete_cookie ||
++		    runtime->owner_outstanding_count !=
++			    runtime->sync_outstanding_count ||
++		    (!submit->transition_count &&
++		     (submit->global_complete_ticket ||
++		      submit->global_running_ticket)) ||
++		    submit->global_running_ticket >
++			    runtime->coordination.running_ticket ||
++		    submit->global_complete_ticket >
++			    runtime->coordination.complete_ticket) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++		if (runtime->coordination.running_owner_submit_count > 1) {
++			ret = -EINVAL;
++			goto out;
++		}
++		if (runtime->coordination.running_owner_submit_count) {
++			if (!runtime->coordination.active_running_valid ||
++			    runtime->coordination.active_running_submit_id !=
++				    runtime->coordination.running_owner_submit_id) {
++				ret = -EINVAL;
++				goto out;
++			}
++		} else if (runtime->coordination.active_running_valid) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++		if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
++			if (!submit->global_running_ticket ||
++			    !runtime->coordination.active_running_valid ||
++			    runtime->coordination.active_running_submit_id !=
++				    submit->submit_id ||
++			    runtime->coordination.running_ticket !=
++				    submit->global_running_ticket) {
++				ret = -EINVAL;
++				goto out;
++			}
++		} else if (runtime->coordination.active_running_valid &&
++			   runtime->coordination.active_running_submit_id ==
++				   submit->submit_id) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++		if (!runtime->owner_outstanding_count) {
++			if (submit->owner_state != PSB_SGX_LAB_OWNER_COMPLETE ||
++			    !submit->global_complete_ticket) {
++				ret = -EINVAL;
++				goto out;
++			}
++		} else if (submit->owner_state ==
++			   PSB_SGX_LAB_OWNER_COMPLETE) {
++			ret = -EINVAL;
++			goto out;
++		}
++	}
++
+ 	ret = 0;
++
  out:
--	kfree(execution);
-+	kfree(timeline);
+-	kfree(timeline);
++	kfree(runtime);
  	return ret;
  }
  
-@@ -8606,7 +8852,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -8518,13 +8813,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+ 	u32 expected_roles[5];
+ 	u32 expected_classes[5];
+ 	u32 expected_gpu_uses[5];
+-	u32 expected_sync_outstanding;
+-	u32 expected_owner_outstanding;
+-	u32 running_submit_count = 0;
+-	u32 running_submit_id = 0;
+-	u32 dependency_complete_ticket[PSB_SGX_LAB_DEPENDENCY_SLOTS] = { 0 };
+ 	unsigned int i, slot;
+-	bool dependency_source_missing[PSB_SGX_LAB_DEPENDENCY_SLOTS] = { false };
+ 	int ret;
+ 
+ 	if (submit->context == PSB_SGX_LAB_CONTEXT_AUTO)
+@@ -8537,15 +8826,6 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+ 
+ 		if (!dependency_submit_id)
+ 			return -EINVAL;
+-		if (*dependency_submit_id == submit->submit_id)
+-			return -EINVAL;
+-		if (!poulsbo_sgx_dependency_slot_active(submit, slot))
+-			continue;
+-		ret = poulsbo_sgx_dependency_observed_ticket_locked(
+-			dev_priv, submit, slot, &dependency_complete_ticket[slot],
+-			&dependency_source_missing[slot]);
+-		if (ret)
+-			return ret;
+ 	}
+ 	if (submit->cmd_type != PSB_SGX_LAB_CMD_TA)
+ 		return -EOPNOTSUPP;
+@@ -8622,18 +8902,6 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+ 	    submit->queue_size / submit->queue_packet_size)
+ 		return -EINVAL;
+ 	if (submit->sync_config_count) {
+-		bool any_dependency_active = false;
+-		bool any_dependency_required = false;
+-
+-		for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
+-			if (!poulsbo_sgx_dependency_slot_active(submit, slot))
+-				continue;
+-			any_dependency_active = true;
+-			if (poulsbo_sgx_dependency_required_ticket(submit, slot))
+-				any_dependency_required = true;
+-		}
+-		if (any_dependency_active && !any_dependency_required)
+-			return -EINVAL;
+ 		if (!(submit->sync_flags & PSB_SGX_LAB_SYNC_FLAG_READY))
+ 			return -EINVAL;
+ 		if (submit->sync_flags &
+@@ -8645,131 +8913,25 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+ 			return -EINVAL;
+ 		if (submit->sync_pending_seq < submit->sync_complete_seq)
+ 			return -EINVAL;
+-		expected_sync_outstanding = submit->sync_pending_seq -
+-					    submit->sync_complete_seq;
+-		if (expected_sync_outstanding != submit->queue_packet_count)
+-			return -EINVAL;
+-		if (!!submit->issue_count != !!submit->global_issue_ticket)
+-			return -EINVAL;
+-		if (submit->global_issue_ticket >
+-		    dev_priv->sgx_lab_global_issue_ticket)
+-			return -EINVAL;
+ 	}
+ 	if (submit->owner_config_count) {
+-		struct psb_sgx_lab_submit *peer_submit;
+-
+ 		if (!submit->sync_config_count)
+ 			return -EINVAL;
+ 		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
+ 		    submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING &&
+ 		    submit->owner_state != PSB_SGX_LAB_OWNER_COMPLETE)
+ 			return -EINVAL;
+-		if (submit->owner_issue_cookie < submit->owner_complete_cookie)
+-			return -EINVAL;
+-		expected_owner_outstanding = submit->owner_issue_cookie -
+-					       submit->owner_complete_cookie;
+-		if (expected_owner_outstanding != expected_sync_outstanding)
+-			return -EINVAL;
+-		if (!submit->transition_count &&
+-		    submit->global_complete_ticket)
+-			return -EINVAL;
+-		if (!submit->transition_count &&
+-		    submit->global_running_ticket)
+-			return -EINVAL;
+-		if (submit->global_running_ticket >
+-		    dev_priv->sgx_lab_global_running_ticket)
+-			return -EINVAL;
+ 		if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING ||
+ 		    submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
+-			bool has_dependency = false;
+-
+ 			for (slot = 0;
+ 			     slot < PSB_SGX_LAB_DEPENDENCY_SLOTS;
+ 			     slot++) {
+-				u32 *dependency_submit_id =
+-					poulsbo_sgx_dependency_submit_id_ptr(
+-						submit, slot);
+-				u32 *dependency_snapshot_flags =
+-					poulsbo_sgx_dependency_snapshot_flags_ptr(
+-						submit, slot);
+-
+ 				if (!poulsbo_sgx_dependency_slot_active(
+ 					    submit, slot))
+ 					continue;
+-				has_dependency = true;
+-				if (!dependency_submit_id ||
+-				    !dependency_snapshot_flags)
+-					return -EINVAL;
+-				if (dependency_complete_ticket[slot] <
+-				    poulsbo_sgx_dependency_required_ticket(
+-					    submit, slot))
+-					return -EINVAL;
+-				if (*dependency_submit_id &&
+-				    dependency_source_missing[slot] &&
+-				    !(*dependency_snapshot_flags &
+-				      PSB_SGX_LAB_DEPENDENCY_FLAG_SOURCE_MISSING))
+-					return -EINVAL;
+-			}
+-			if (!has_dependency) {
+-				for (slot = 0;
+-				     slot < PSB_SGX_LAB_DEPENDENCY_SLOTS;
+-				     slot++) {
+-					if (!poulsbo_sgx_dependency_required_ticket(
+-						    submit, slot))
+-						continue;
+-					return -EINVAL;
+-				}
++				break;
+ 			}
+ 		}
+-		if (submit->global_complete_ticket >
+-		    dev_priv->sgx_lab_global_complete_ticket)
+-			return -EINVAL;
+-		list_for_each_entry(peer_submit, &dev_priv->sgx_lab_submit_list,
+-				    head) {
+-			if (!peer_submit->owner_config_count)
+-				continue;
+-			if (peer_submit->owner_state !=
+-			    PSB_SGX_LAB_OWNER_RUNNING)
+-				continue;
+-			running_submit_count++;
+-			running_submit_id = peer_submit->submit_id;
+-		}
+-		if (running_submit_count > 1)
+-			return -EINVAL;
+-		if (running_submit_count) {
+-			if (!dev_priv->sgx_lab_running_active)
+-				return -EINVAL;
+-			if (dev_priv->sgx_lab_active_running_submit_id !=
+-			    running_submit_id)
+-				return -EINVAL;
+-		} else if (dev_priv->sgx_lab_running_active) {
+-			return -EINVAL;
+-		}
+-		if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
+-			if (!submit->global_running_ticket)
+-				return -EINVAL;
+-			if (!dev_priv->sgx_lab_running_active)
+-				return -EINVAL;
+-			if (dev_priv->sgx_lab_active_running_submit_id !=
+-			    submit->submit_id)
+-				return -EINVAL;
+-			if (dev_priv->sgx_lab_global_running_ticket !=
+-			    submit->global_running_ticket)
+-				return -EINVAL;
+-		} else if (dev_priv->sgx_lab_running_active &&
+-			   dev_priv->sgx_lab_active_running_submit_id ==
+-			   submit->submit_id) {
+-			return -EINVAL;
+-		}
+-		if (!expected_owner_outstanding) {
+-			if (submit->owner_state != PSB_SGX_LAB_OWNER_COMPLETE)
+-				return -EINVAL;
+-			if (!submit->global_complete_ticket)
+-				return -EINVAL;
+-		} else if (submit->owner_state ==
+-			   PSB_SGX_LAB_OWNER_COMPLETE) {
+-			return -EINVAL;
+-		}
+ 	}
+ 	if (submit->report_config_count) {
+ 		if (!submit->status_object_id)
+@@ -8852,7 +9014,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		submit, status_obj, NULL);
  	if (ret)
  		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_execution_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
+-	return poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
++	return poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
  		dev_priv, submit, control_obj, status_obj);
  }
  

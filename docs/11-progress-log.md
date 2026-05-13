@@ -11623,3 +11623,74 @@ Repaired draft:
     - `submit_dependency_active_count=1`
 - documented in:
   - `docs/179-sgx-submit-ta-timeline-object.md`
+
+2026-05-13: added `psb_sgx_lab_submit_sgx_ta_runtime` above
+`psb_sgx_lab_submit_sgx_ta_timeline`, then fixed the first live validator draft
+after it wrongly rejected unresolved dependencies during `prepare`.
+
+First draft:
+
+- deploy:
+  - `logs/vaio-deploy/20260513-125935-guarded-deploy`
+  - live override `srcversion BC32B83F0BFBD10FB1D0645`
+- exact `complete` still passed:
+  - `logs/vaio-plan-session/20260513-130122-sgx-plan-session`
+- focused typed submit still passed:
+  - `logs/vaio-ioctl/20260513-130233-sgx-submit-ta-runtime-live/summary.log`
+- typed multi-submit failed at `submit_prepare 6` with `errno=22`:
+  - `logs/vaio-ioctl/20260513-130314-sgx-multi-submit-ta-runtime-live/summary.log`
+- traced failure bundle:
+  - `logs/vaio-ioctl/20260513-130855-sgx-multi-submit-ta-runtime-trace/summary.log`
+
+Repaired draft:
+
+- deploy:
+  - `logs/vaio-deploy/20260513-131259-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=440FDB3F77708F25340DA25`
+    - `override_module_size=456232`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- exact proof back to green:
+  - `logs/vaio-plan-session/20260513-131445-sgx-plan-session`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=440FDB3F77708F25340DA25`
+- focused typed submit passed:
+  - `logs/vaio-ioctl/20260513-131554-sgx-submit-ta-runtime-live/summary.log`
+  - final focused state:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- typed multi-submit passed on the repaired validator:
+  - `logs/vaio-ioctl/20260513-131635-sgx-multi-submit-ta-runtime-live/summary.log`
+  - `SUBMIT_A_ID=3`
+  - `SUBMIT_B_ID=4`
+  - submit A final:
+    - `submit_arm_count=3`
+    - `submit_emit_count=3`
+    - `submit_launch_count=3`
+    - `submit_dispatch_count=3`
+    - `submit_retired_count=3`
+    - `submit_issue_count=3`
+    - `submit_transition_count=6`
+    - `submit_dependency_active_count=0`
+  - submit B final:
+    - `submit_arm_count=2`
+    - `submit_emit_count=2`
+    - `submit_launch_count=2`
+    - `submit_dispatch_count=2`
+    - `submit_retired_count=2`
+    - `submit_issue_count=2`
+    - `submit_transition_count=4`
+    - `submit_dependency_active_count=1`
+    - `dependency[1]_required_ticket=3`
+    - `dependency[1]_observed_complete_ticket=5`
+- documented in:
+  - `docs/180-sgx-submit-ta-runtime-object.md`

@@ -1,0 +1,1567 @@
++ command -v flock
++ exec
++ flock -w 600 9
++ mkdir -p /root/poulsbo-workloads
++ rm -f /root/poulsbo-workloads/drm_probe
++ install -m 0755 -T /root/drm_probe.2255630.6079.new /root/poulsbo-workloads/drm_probe
++ rm -f /root/drm_probe.2255630.6079.new
++ use_ioctl_object_setup=1
++ use_ioctl_submit_setup=1
++ use_ioctl_dependency_setup=1
++ use_ioctl_range_discovery=1
++ use_ioctl_verification=1
++ target_obj_bin=/root/poulsbo-workloads/psb_sgx_lab_object_op
++ target_op_bin=/root/poulsbo-workloads/psb_sgx_lab_submit_op
++ target_query_bin=/root/poulsbo-workloads/psb_sgx_lab_query
++ target_range_bin=/root/poulsbo-workloads/psb_sgx_lab_range_query
++ target_gtt_state_bin=/root/poulsbo-workloads/psb_sgx_lab_gtt_state_query
++ target_dump_bin=/root/poulsbo-workloads/psb_sgx_lab_dump
++ [[ 1 == \1 ]]
++ install -m 0755 -T /root/psb_sgx_lab_object_op.2255630.14524.new /root/poulsbo-workloads/psb_sgx_lab_object_op
++ rm -f /root/psb_sgx_lab_object_op.2255630.14524.new
++ [[ 1 == \1 ]]
++ install -m 0755 -T /root/psb_sgx_lab_query.2255630.12.new /root/poulsbo-workloads/psb_sgx_lab_query
++ install -m 0755 -T /root/psb_sgx_lab_gtt_state_query.2255630.1453.new /root/poulsbo-workloads/psb_sgx_lab_gtt_state_query
++ install -m 0755 -T /root/psb_sgx_lab_dump.2255630.16648.new /root/poulsbo-workloads/psb_sgx_lab_dump
++ rm -f /root/psb_sgx_lab_query.2255630.12.new /root/psb_sgx_lab_gtt_state_query.2255630.1453.new /root/psb_sgx_lab_dump.2255630.16648.new
++ [[ 1 == \1 ]]
++ install -m 0755 -T /root/psb_sgx_lab_range_query.2255630.31143.new /root/poulsbo-workloads/psb_sgx_lab_range_query
++ rm -f /root/psb_sgx_lab_range_query.2255630.31143.new
++ [[ 1 == \1 ]]
++ install -m 0755 -T /root/psb_sgx_lab_submit_op.2255630.13433.new /root/poulsbo-workloads/psb_sgx_lab_submit_op
++ rm -f /root/psb_sgx_lab_submit_op.2255630.13433.new
++ object_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_object
++ objects_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_objects
++ submit_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_submit
++ submits_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_submits
++ submit_state_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_submit_state
++ coord_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_sgx_coord_state
++ gtt_node=/sys/devices/pci0000:00/0000:00:02.0/poulsbo_gtt_state
++ hold_seconds=30
++ submit_b_dependency_offset=0x60
++ submit_b_dependency_complete_ticket_dec=3
++ submit_b_dependency_complete_ticket_relative=0
++ submit_b_dependency2_offset=0x70
++ submit_b_dependency3_offset=0xe0
++ submit_b_dependency4_offset=0x100
++ submit_b_dependency2_complete_ticket_dec=0
++ submit_b_dependency2_complete_ticket_relative=0
++ submit_b_dependency3_complete_ticket_dec=0
++ submit_b_dependency3_complete_ticket_relative=0
++ submit_b_dependency4_complete_ticket_dec=0
++ submit_b_dependency4_complete_ticket_relative=0
++ use_indexed_dependencies=0
++ stale_submit_scan_max=256
++ stale_object_scan_max=512
++ range_query_scan_max=512
+++ mktemp -d
++ tmpdir=/tmp/tmp.sBRrS10tqz
++ probe_pids=()
++ trap cleanup EXIT
++ [[ 1 != \1 ]]
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 cleanup
++ echo STALE_SUBMIT_CLEANUP=ioctl
+STALE_SUBMIT_CLEANUP=ioctl
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 cleanup
++ echo STALE_OBJECT_CLEANUP=ioctl
+STALE_OBJECT_CLEANUP=ioctl
++ capture_gtt_snapshot before_gtt.txt
++ local outfile=before_gtt.txt
++ [[ 1 == \1 ]]
++ gtt_state_capture before_gtt.txt
++ local outfile=before_gtt.txt
++ /root/poulsbo-workloads/psb_sgx_lab_gtt_state_query /dev/dri/card0
++ capture_objects_snapshot before_objects.txt
++ local outfile=before_objects.txt
++ [[ 1 == \1 ]]
++ typed_dump_capture before_objects.txt cached
++ local outfile=before_objects.txt
++ local mode=cached
++ /root/poulsbo-workloads/psb_sgx_lab_dump /dev/dri/card0 cached
++ capture_submits_snapshot before_submits.txt
++ local outfile=before_submits.txt
++ [[ 1 == \1 ]]
++ typed_dump_capture before_submits.txt cached
++ local outfile=before_submits.txt
++ local mode=cached
++ /root/poulsbo-workloads/psb_sgx_lab_dump /dev/dri/card0 cached
++ before_range_ids=()
++ read -r before_range_id
+++ range_query_list_gem_ids before
+++ local prefix=before
+++ local idx=0
+++ local range_id
+++ [[ 0 -lt 512 ]]
+++ range_query_capture before_range_query_0.txt index 0 gem
+++ break
+++ awk '
+/^range id=/ {
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^id=/) {
+            split($i, a, "=")
+            if (a[2] + 0 > max_id)
+                max_id = a[2] + 0
+        }
+    }
+}
+END {
+    print max_id + 0
+}
+' /tmp/tmp.sBRrS10tqz/before_gtt.txt
++ max_before_range_id=0
+++ seq 1 10
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ probe_pids+=("$!")
++ for idx in $(seq 1 "10")
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ probe_pids+=("$!")
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
++ /root/poulsbo-workloads/drm_probe /dev/dri/card0 30
+++ seq 1 35
++ for _ in $(seq 1 $((hold_seconds + 5)))
+++ wc -l
+++ grep -h '^drm_hold_seconds=' /tmp/tmp.sBRrS10tqz/drm_probe_1.log /tmp/tmp.sBRrS10tqz/drm_probe_10.log /tmp/tmp.sBRrS10tqz/drm_probe_2.log /tmp/tmp.sBRrS10tqz/drm_probe_3.log /tmp/tmp.sBRrS10tqz/drm_probe_4.log /tmp/tmp.sBRrS10tqz/drm_probe_5.log /tmp/tmp.sBRrS10tqz/drm_probe_6.log /tmp/tmp.sBRrS10tqz/drm_probe_7.log /tmp/tmp.sBRrS10tqz/drm_probe_8.log /tmp/tmp.sBRrS10tqz/drm_probe_9.log
+++ true
++ ready_count=0
++ [[ 0 -ge 10 ]]
++ sleep 1
++ for _ in $(seq 1 $((hold_seconds + 5)))
+++ wc -l
+++ grep -h '^drm_hold_seconds=' /tmp/tmp.sBRrS10tqz/drm_probe_1.log /tmp/tmp.sBRrS10tqz/drm_probe_10.log /tmp/tmp.sBRrS10tqz/drm_probe_2.log /tmp/tmp.sBRrS10tqz/drm_probe_3.log /tmp/tmp.sBRrS10tqz/drm_probe_4.log /tmp/tmp.sBRrS10tqz/drm_probe_5.log /tmp/tmp.sBRrS10tqz/drm_probe_6.log /tmp/tmp.sBRrS10tqz/drm_probe_7.log /tmp/tmp.sBRrS10tqz/drm_probe_8.log /tmp/tmp.sBRrS10tqz/drm_probe_9.log
++ ready_count=6
++ [[ 6 -ge 10 ]]
++ sleep 1
++ for _ in $(seq 1 $((hold_seconds + 5)))
+++ grep -h '^drm_hold_seconds=' /tmp/tmp.sBRrS10tqz/drm_probe_1.log /tmp/tmp.sBRrS10tqz/drm_probe_10.log /tmp/tmp.sBRrS10tqz/drm_probe_2.log /tmp/tmp.sBRrS10tqz/drm_probe_3.log /tmp/tmp.sBRrS10tqz/drm_probe_4.log /tmp/tmp.sBRrS10tqz/drm_probe_5.log /tmp/tmp.sBRrS10tqz/drm_probe_6.log /tmp/tmp.sBRrS10tqz/drm_probe_7.log /tmp/tmp.sBRrS10tqz/drm_probe_8.log /tmp/tmp.sBRrS10tqz/drm_probe_9.log
+++ wc -l
++ ready_count=10
++ [[ 10 -ge 10 ]]
++ break
++ capture_gtt_snapshot during_gtt.txt
++ local outfile=during_gtt.txt
++ [[ 1 == \1 ]]
++ gtt_state_capture during_gtt.txt
++ local outfile=during_gtt.txt
++ /root/poulsbo-workloads/psb_sgx_lab_gtt_state_query /dev/dri/card0
++ range_ids=()
++ object_ids=()
++ candidate_range_ids=
++ range_query_during_available=0
++ read -r candidate_range_id
+++ range_query_list_gem_ids during
+++ local prefix=during
+++ local idx=0
+++ local range_id
+++ [[ 0 -lt 512 ]]
+++ range_query_capture during_range_query_0.txt index 0 gem
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_0.txt
+++ range_id=24
+++ [[ -z 24 ]]
+++ [[ 24 == \0 ]]
+++ printf '%s\n' 24
+++ idx=1
+++ [[ 1 -lt 512 ]]
+++ range_query_capture during_range_query_1.txt index 1 gem
++ [[ -n 24 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \2\4 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='24
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_1.txt
+++ range_id=25
+++ [[ -z 25 ]]
+++ [[ 25 == \0 ]]
+++ printf '%s\n' 25
+++ idx=2
+++ [[ 2 -lt 512 ]]
+++ range_query_capture during_range_query_2.txt index 2 gem
++ [[ -n 25 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \2\5 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='25
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_2.txt
+++ range_id=26
+++ [[ -z 26 ]]
+++ [[ 26 == \0 ]]
+++ printf '%s\n' 26
+++ idx=3
+++ [[ 3 -lt 512 ]]
+++ range_query_capture during_range_query_3.txt index 3 gem
++ [[ -n 26 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \2\6 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='26
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_3.txt
+++ range_id=27
+++ [[ -z 27 ]]
+++ [[ 27 == \0 ]]
+++ printf '%s\n' 27
+++ idx=4
+++ [[ 4 -lt 512 ]]
+++ range_query_capture during_range_query_4.txt index 4 gem
++ [[ -n 27 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \2\7 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='27
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_4.txt
+++ range_id=28
+++ [[ -z 28 ]]
+++ [[ 28 == \0 ]]
+++ printf '%s\n' 28
++ [[ -n 28 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \2\8 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='28
+'
++ read -r candidate_range_id
+++ idx=5
+++ [[ 5 -lt 512 ]]
+++ range_query_capture during_range_query_5.txt index 5 gem
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_5.txt
+++ range_id=29
+++ [[ -z 29 ]]
+++ [[ 29 == \0 ]]
+++ printf '%s\n' 29
++ [[ -n 29 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \2\9 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='29
+'
++ read -r candidate_range_id
+++ idx=6
+++ [[ 6 -lt 512 ]]
+++ range_query_capture during_range_query_6.txt index 6 gem
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_6.txt
+++ range_id=30
+++ [[ -z 30 ]]
+++ [[ 30 == \0 ]]
+++ printf '%s\n' 30
+++ idx=7
+++ [[ 7 -lt 512 ]]
+++ range_query_capture during_range_query_7.txt index 7 gem
++ [[ -n 30 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \3\0 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='30
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_7.txt
+++ range_id=31
+++ [[ -z 31 ]]
+++ [[ 31 == \0 ]]
+++ printf '%s\n' 31
+++ idx=8
+++ [[ 8 -lt 512 ]]
+++ range_query_capture during_range_query_8.txt index 8 gem
++ [[ -n 31 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \3\1 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='31
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_8.txt
+++ range_id=32
+++ [[ -z 32 ]]
+++ [[ 32 == \0 ]]
+++ printf '%s\n' 32
+++ idx=9
+++ [[ 9 -lt 512 ]]
+++ range_query_capture during_range_query_9.txt index 9 gem
++ [[ -n 32 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
++ [[ '' == \3\2 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='32
+'
++ read -r candidate_range_id
++++ awk -F= '/^range_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/during_range_query_9.txt
+++ range_id=33
+++ [[ -z 33 ]]
+++ [[ 33 == \0 ]]
+++ printf '%s\n' 33
+++ idx=10
++ [[ -n 33 ]]
+++ [[ 10 -lt 512 ]]
++ range_query_during_available=1
++ local_seen=0
++ for before_range_id in "${before_range_ids[@]:-}"
+++ range_query_capture during_range_query_10.txt index 10 gem
++ [[ '' == \3\3 ]]
++ [[ 0 == \0 ]]
++ candidate_range_ids+='33
+'
++ read -r candidate_range_id
+++ break
++ [[ 1 != \1 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 24 object_adopt_range_24
++ adopted_object_id=21
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 1 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 25 object_adopt_range_25
++ adopted_object_id=22
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 2 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 26 object_adopt_range_26
++ adopted_object_id=23
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 3 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 27 object_adopt_range_27
++ adopted_object_id=24
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 4 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 28 object_adopt_range_28
++ adopted_object_id=25
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 5 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 29 object_adopt_range_29
++ adopted_object_id=26
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 6 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 30 object_adopt_range_30
++ adopted_object_id=27
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 7 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 31 object_adopt_range_31
++ adopted_object_id=28
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 8 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 32 object_adopt_range_32
++ adopted_object_id=29
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 9 -ge 10 ]]
++ for candidate_range_id in ${candidate_range_ids}
++ [[ 1 == \1 ]]
+++ object_adopt 33 object_adopt_range_33
++ adopted_object_id=30
++ range_ids+=("${candidate_range_id}")
++ object_ids+=("${adopted_object_id}")
++ [[ 10 -ge 10 ]]
++ break
++ [[ 1 != \1 ]]
++ [[ 10 -lt 10 ]]
++ [[ 1 == \1 ]]
++ capture_objects_snapshot after_adopt_objects.txt
++ local outfile=after_adopt_objects.txt
++ [[ 1 == \1 ]]
++ typed_dump_capture after_adopt_objects.txt cached
++ local outfile=after_adopt_objects.txt
++ local mode=cached
++ /root/poulsbo-workloads/psb_sgx_lab_dump /dev/dri/card0 cached
++ [[ 10 -lt 10 ]]
++ object_a_control=21
++ object_a_pds=22
++ object_a_use=23
++ object_a_target=24
++ object_a_status=25
++ object_b_control=26
++ object_b_pds=27
++ object_b_use=28
++ object_b_target=29
++ object_b_status=30
++ object_c_control=
++ object_c_pds=
++ object_c_use=
++ object_c_target=
++ object_c_status=
++ object_d_control=
++ object_d_pds=
++ object_d_use=
++ object_d_target=
++ object_d_status=
++ object_e_control=
++ object_e_pds=
++ object_e_use=
++ object_e_target=
++ object_e_status=
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 21 ]]
++ [[ -z 21 ]]
++ [[ 21 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 22 ]]
++ [[ -z 22 ]]
++ [[ 22 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 23 ]]
++ [[ -z 23 ]]
++ [[ 23 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 24 ]]
++ [[ -z 24 ]]
++ [[ 24 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 25 ]]
++ [[ -z 25 ]]
++ [[ 25 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 26 ]]
++ [[ -z 26 ]]
++ [[ 26 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 27 ]]
++ [[ -z 27 ]]
++ [[ 27 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 28 ]]
++ [[ -z 28 ]]
++ [[ 28 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 29 ]]
++ [[ -z 29 ]]
++ [[ 29 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n 30 ]]
++ [[ -z 30 ]]
++ [[ 30 == \0 ]]
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ for object_id in "${object_a_control}" "${object_a_pds}" "${object_a_use}" "${object_a_target}" "${object_a_status}" "${object_b_control}" "${object_b_pds}" "${object_b_use}" "${object_b_target}" "${object_b_status}" "${object_c_control}" "${object_c_pds}" "${object_c_use}" "${object_c_target}" "${object_c_status}" "${object_d_control}" "${object_d_pds}" "${object_d_use}" "${object_d_target}" "${object_d_status}" "${object_e_control}" "${object_e_pds}" "${object_e_use}" "${object_e_target}" "${object_e_status}"
++ [[ -n '' ]]
++ continue
++ setup_object 21 control packet control_ccb
++ local object_id=21
++ local role=control
++ local object_class=packet
++ local gpu_use=control_ccb
++ [[ 1 == \1 ]]
++ object_role 21 control
++ local object_id=21
++ local role=control
++ object_ioctl_capture object_role_21.txt role 21 control
++ local outfile=object_role_21.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 21 control
++ object_class 21 packet
++ local object_id=21
++ local object_class=packet
++ object_ioctl_capture object_class_21.txt class 21 packet
++ local outfile=object_class_21.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 21 packet
++ object_gpu_use 21 control_ccb
++ local object_id=21
++ local gpu_use=control_ccb
++ object_ioctl_capture object_gpu_use_21.txt gpu_use 21 control_ccb
++ local outfile=object_gpu_use_21.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 21 control_ccb
++ object_context 21 pf
++ local object_id=21
++ local context_name=pf
++ object_ioctl_capture object_context_21.txt context 21 pf
++ local outfile=object_context_21.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 21 pf
++ object_pf_bind 21
++ local object_id=21
++ object_ioctl_capture object_pf_bind_21.txt pf_bind 21
++ local outfile=object_pf_bind_21.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 21
++ setup_object 22 pds code pds_code
++ local object_id=22
++ local role=pds
++ local object_class=code
++ local gpu_use=pds_code
++ [[ 1 == \1 ]]
++ object_role 22 pds
++ local object_id=22
++ local role=pds
++ object_ioctl_capture object_role_22.txt role 22 pds
++ local outfile=object_role_22.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 22 pds
++ object_class 22 code
++ local object_id=22
++ local object_class=code
++ object_ioctl_capture object_class_22.txt class 22 code
++ local outfile=object_class_22.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 22 code
++ object_gpu_use 22 pds_code
++ local object_id=22
++ local gpu_use=pds_code
++ object_ioctl_capture object_gpu_use_22.txt gpu_use 22 pds_code
++ local outfile=object_gpu_use_22.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 22 pds_code
++ object_context 22 pf
++ local object_id=22
++ local context_name=pf
++ object_ioctl_capture object_context_22.txt context 22 pf
++ local outfile=object_context_22.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 22 pf
++ object_pf_bind 22
++ local object_id=22
++ object_ioctl_capture object_pf_bind_22.txt pf_bind 22
++ local outfile=object_pf_bind_22.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 22
++ setup_object 23 use code use_code
++ local object_id=23
++ local role=use
++ local object_class=code
++ local gpu_use=use_code
++ [[ 1 == \1 ]]
++ object_role 23 use
++ local object_id=23
++ local role=use
++ object_ioctl_capture object_role_23.txt role 23 use
++ local outfile=object_role_23.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 23 use
++ object_class 23 code
++ local object_id=23
++ local object_class=code
++ object_ioctl_capture object_class_23.txt class 23 code
++ local outfile=object_class_23.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 23 code
++ object_gpu_use 23 use_code
++ local object_id=23
++ local gpu_use=use_code
++ object_ioctl_capture object_gpu_use_23.txt gpu_use 23 use_code
++ local outfile=object_gpu_use_23.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 23 use_code
++ object_context 23 pf
++ local object_id=23
++ local context_name=pf
++ object_ioctl_capture object_context_23.txt context 23 pf
++ local outfile=object_context_23.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 23 pf
++ object_pf_bind 23
++ local object_id=23
++ object_ioctl_capture object_pf_bind_23.txt pf_bind 23
++ local outfile=object_pf_bind_23.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 23
++ setup_object 24 target surface render_target
++ local object_id=24
++ local role=target
++ local object_class=surface
++ local gpu_use=render_target
++ [[ 1 == \1 ]]
++ object_role 24 target
++ local object_id=24
++ local role=target
++ object_ioctl_capture object_role_24.txt role 24 target
++ local outfile=object_role_24.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 24 target
++ object_class 24 surface
++ local object_id=24
++ local object_class=surface
++ object_ioctl_capture object_class_24.txt class 24 surface
++ local outfile=object_class_24.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 24 surface
++ object_gpu_use 24 render_target
++ local object_id=24
++ local gpu_use=render_target
++ object_ioctl_capture object_gpu_use_24.txt gpu_use 24 render_target
++ local outfile=object_gpu_use_24.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 24 render_target
++ object_context 24 pf
++ local object_id=24
++ local context_name=pf
++ object_ioctl_capture object_context_24.txt context 24 pf
++ local outfile=object_context_24.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 24 pf
++ object_pf_bind 24
++ local object_id=24
++ object_ioctl_capture object_pf_bind_24.txt pf_bind 24
++ local outfile=object_pf_bind_24.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 24
++ setup_object 25 status state status_block
++ local object_id=25
++ local role=status
++ local object_class=state
++ local gpu_use=status_block
++ [[ 1 == \1 ]]
++ object_role 25 status
++ local object_id=25
++ local role=status
++ object_ioctl_capture object_role_25.txt role 25 status
++ local outfile=object_role_25.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 25 status
++ object_class 25 state
++ local object_id=25
++ local object_class=state
++ object_ioctl_capture object_class_25.txt class 25 state
++ local outfile=object_class_25.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 25 state
++ object_gpu_use 25 status_block
++ local object_id=25
++ local gpu_use=status_block
++ object_ioctl_capture object_gpu_use_25.txt gpu_use 25 status_block
++ local outfile=object_gpu_use_25.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 25 status_block
++ object_context 25 pf
++ local object_id=25
++ local context_name=pf
++ object_ioctl_capture object_context_25.txt context 25 pf
++ local outfile=object_context_25.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 25 pf
++ object_pf_bind 25
++ local object_id=25
++ object_ioctl_capture object_pf_bind_25.txt pf_bind 25
++ local outfile=object_pf_bind_25.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 25
++ setup_object 26 control packet control_ccb
++ local object_id=26
++ local role=control
++ local object_class=packet
++ local gpu_use=control_ccb
++ [[ 1 == \1 ]]
++ object_role 26 control
++ local object_id=26
++ local role=control
++ object_ioctl_capture object_role_26.txt role 26 control
++ local outfile=object_role_26.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 26 control
++ object_class 26 packet
++ local object_id=26
++ local object_class=packet
++ object_ioctl_capture object_class_26.txt class 26 packet
++ local outfile=object_class_26.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 26 packet
++ object_gpu_use 26 control_ccb
++ local object_id=26
++ local gpu_use=control_ccb
++ object_ioctl_capture object_gpu_use_26.txt gpu_use 26 control_ccb
++ local outfile=object_gpu_use_26.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 26 control_ccb
++ object_context 26 pf
++ local object_id=26
++ local context_name=pf
++ object_ioctl_capture object_context_26.txt context 26 pf
++ local outfile=object_context_26.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 26 pf
++ object_pf_bind 26
++ local object_id=26
++ object_ioctl_capture object_pf_bind_26.txt pf_bind 26
++ local outfile=object_pf_bind_26.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 26
++ setup_object 27 pds code pds_code
++ local object_id=27
++ local role=pds
++ local object_class=code
++ local gpu_use=pds_code
++ [[ 1 == \1 ]]
++ object_role 27 pds
++ local object_id=27
++ local role=pds
++ object_ioctl_capture object_role_27.txt role 27 pds
++ local outfile=object_role_27.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 27 pds
++ object_class 27 code
++ local object_id=27
++ local object_class=code
++ object_ioctl_capture object_class_27.txt class 27 code
++ local outfile=object_class_27.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 27 code
++ object_gpu_use 27 pds_code
++ local object_id=27
++ local gpu_use=pds_code
++ object_ioctl_capture object_gpu_use_27.txt gpu_use 27 pds_code
++ local outfile=object_gpu_use_27.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 27 pds_code
++ object_context 27 pf
++ local object_id=27
++ local context_name=pf
++ object_ioctl_capture object_context_27.txt context 27 pf
++ local outfile=object_context_27.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 27 pf
++ object_pf_bind 27
++ local object_id=27
++ object_ioctl_capture object_pf_bind_27.txt pf_bind 27
++ local outfile=object_pf_bind_27.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 27
++ setup_object 28 use code use_code
++ local object_id=28
++ local role=use
++ local object_class=code
++ local gpu_use=use_code
++ [[ 1 == \1 ]]
++ object_role 28 use
++ local object_id=28
++ local role=use
++ object_ioctl_capture object_role_28.txt role 28 use
++ local outfile=object_role_28.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 28 use
++ object_class 28 code
++ local object_id=28
++ local object_class=code
++ object_ioctl_capture object_class_28.txt class 28 code
++ local outfile=object_class_28.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 28 code
++ object_gpu_use 28 use_code
++ local object_id=28
++ local gpu_use=use_code
++ object_ioctl_capture object_gpu_use_28.txt gpu_use 28 use_code
++ local outfile=object_gpu_use_28.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 28 use_code
++ object_context 28 pf
++ local object_id=28
++ local context_name=pf
++ object_ioctl_capture object_context_28.txt context 28 pf
++ local outfile=object_context_28.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 28 pf
++ object_pf_bind 28
++ local object_id=28
++ object_ioctl_capture object_pf_bind_28.txt pf_bind 28
++ local outfile=object_pf_bind_28.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 28
++ setup_object 29 target surface render_target
++ local object_id=29
++ local role=target
++ local object_class=surface
++ local gpu_use=render_target
++ [[ 1 == \1 ]]
++ object_role 29 target
++ local object_id=29
++ local role=target
++ object_ioctl_capture object_role_29.txt role 29 target
++ local outfile=object_role_29.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 29 target
++ object_class 29 surface
++ local object_id=29
++ local object_class=surface
++ object_ioctl_capture object_class_29.txt class 29 surface
++ local outfile=object_class_29.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 29 surface
++ object_gpu_use 29 render_target
++ local object_id=29
++ local gpu_use=render_target
++ object_ioctl_capture object_gpu_use_29.txt gpu_use 29 render_target
++ local outfile=object_gpu_use_29.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 29 render_target
++ object_context 29 pf
++ local object_id=29
++ local context_name=pf
++ object_ioctl_capture object_context_29.txt context 29 pf
++ local outfile=object_context_29.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 29 pf
++ object_pf_bind 29
++ local object_id=29
++ object_ioctl_capture object_pf_bind_29.txt pf_bind 29
++ local outfile=object_pf_bind_29.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 29
++ setup_object 30 status state status_block
++ local object_id=30
++ local role=status
++ local object_class=state
++ local gpu_use=status_block
++ [[ 1 == \1 ]]
++ object_role 30 status
++ local object_id=30
++ local role=status
++ object_ioctl_capture object_role_30.txt role 30 status
++ local outfile=object_role_30.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 role 30 status
++ object_class 30 state
++ local object_id=30
++ local object_class=state
++ object_ioctl_capture object_class_30.txt class 30 state
++ local outfile=object_class_30.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 class 30 state
++ object_gpu_use 30 status_block
++ local object_id=30
++ local gpu_use=status_block
++ object_ioctl_capture object_gpu_use_30.txt gpu_use 30 status_block
++ local outfile=object_gpu_use_30.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 gpu_use 30 status_block
++ object_context 30 pf
++ local object_id=30
++ local context_name=pf
++ object_ioctl_capture object_context_30.txt context 30 pf
++ local outfile=object_context_30.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 context 30 pf
++ object_pf_bind 30
++ local object_id=30
++ object_ioctl_capture object_pf_bind_30.txt pf_bind 30
++ local outfile=object_pf_bind_30.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_object_op /dev/dri/card0 pf_bind 30
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ capture_objects_snapshot after_role_bind_objects.txt
++ local outfile=after_role_bind_objects.txt
++ [[ 1 == \1 ]]
++ typed_dump_capture after_role_bind_objects.txt cached
++ local outfile=after_role_bind_objects.txt
++ local mode=cached
++ /root/poulsbo-workloads/psb_sgx_lab_dump /dev/dri/card0 cached
++ capture_gtt_snapshot after_role_bind_gtt.txt
++ local outfile=after_role_bind_gtt.txt
++ [[ 1 == \1 ]]
++ gtt_state_capture after_role_bind_gtt.txt
++ local outfile=after_role_bind_gtt.txt
++ /root/poulsbo-workloads/psb_sgx_lab_gtt_state_query /dev/dri/card0
++ capture_coord_snapshot_file coord_state_before_submit_setup.txt
++ local outfile=coord_state_before_submit_setup.txt
++ [[ 1 == \1 ]]
++ submit_coord_capture coord_state_before_submit_setup.txt
++ local outfile=coord_state_before_submit_setup.txt
++ submit_query_capture coord_state_before_submit_setup.txt coord
++ local outfile=coord_state_before_submit_setup.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_query /dev/dri/card0 coord
+++ extract_value_from_file coord_state_before_submit_setup.txt coord_complete_ticket
+++ local infile=coord_state_before_submit_setup.txt
+++ local key=coord_complete_ticket
+++ awk -F= -v want=coord_complete_ticket '$1 == want { print substr($0, index($0, "=") + 1); exit }' /tmp/tmp.sBRrS10tqz/coord_state_before_submit_setup.txt
++ coord_complete_ticket_baseline=2
++ [[ -z 2 ]]
++ [[ -z 2 ]]
++ [[ ! 2 =~ ^[0-9]+$ ]]
+++ resolve_dependency_ticket_value 3 0 2
+++ local absolute_value=3
+++ local relative_delta=0
+++ local baseline_complete=2
+++ [[ 0 -gt 0 ]]
+++ printf '%s\n' 3
++ submit_b_dependency_complete_ticket_dec=3
+++ resolve_dependency_ticket_value 0 0 2
+++ local absolute_value=0
+++ local relative_delta=0
+++ local baseline_complete=2
+++ [[ 0 -gt 0 ]]
+++ printf '%s\n' 0
++ submit_b_dependency2_complete_ticket_dec=0
+++ resolve_dependency_ticket_value 0 0 2
+++ local absolute_value=0
+++ local relative_delta=0
+++ local baseline_complete=2
+++ [[ 0 -gt 0 ]]
+++ printf '%s\n' 0
++ submit_b_dependency3_complete_ticket_dec=0
+++ resolve_dependency_ticket_value 0 0 2
+++ local absolute_value=0
+++ local relative_delta=0
+++ local baseline_complete=2
+++ [[ 0 -gt 0 ]]
+++ printf '%s\n' 0
++ submit_b_dependency4_complete_ticket_dec=0
++ [[ 1 == \1 ]]
+++ submit_create pf submit_a_create
+++ local context=pf
+++ local label=submit_a_create
+++ submit_ioctl_capture submit_a_create.txt create pf
+++ local outfile=submit_a_create.txt
+++ shift
+++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 create pf
+++ awk -F= '/^submit_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/submit_a_create.txt
++ submit_a_id=5
++ capture_submits_snapshot after_submit_a_create_submits.txt
++ local outfile=after_submit_a_create_submits.txt
++ [[ 1 == \1 ]]
++ typed_dump_capture after_submit_a_create_submits.txt cached
++ local outfile=after_submit_a_create_submits.txt
++ local mode=cached
++ /root/poulsbo-workloads/psb_sgx_lab_dump /dev/dri/card0 cached
++ [[ -z 5 ]]
+++ submit_create pf submit_b_create
+++ local context=pf
+++ local label=submit_b_create
+++ submit_ioctl_capture submit_b_create.txt create pf
+++ local outfile=submit_b_create.txt
+++ shift
+++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 create pf
+++ awk -F= '/^submit_resolved_id=/ { print $2; exit }' /tmp/tmp.sBRrS10tqz/submit_b_create.txt
++ submit_b_id=6
++ submit_focus 6
++ local submit_id=6
++ [[ 1 == \1 ]]
++ submit_ioctl_capture focus_6.txt focus 6
++ local outfile=focus_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 focus 6
++ [[ 1 == \1 ]]
++ submit_query_capture after_submit_b_focus.txt focus
++ local outfile=after_submit_b_focus.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_query /dev/dri/card0 focus
++ submit_c_id=
++ submit_d_id=
++ submit_e_id=
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ [[ 0 == \1 ]]
++ configure_submit 5 wrap 21 22 23 24 25 0
++ local submit_id=5
++ local mode=wrap
++ local object_control=21
++ local object_pds=22
++ local object_use=23
++ local object_target=24
++ local object_status=25
++ local ta_dependency=0
++ local kick_ccb_offset
++ local ccb_write_offset
++ local ccb_read_offset
++ local queue_base_offset=0x20
++ local queue_size
++ local queue_packet_size=0x20
++ local queue_packet_count=1
++ local sync_offset=0x20
++ local sync_complete_seq=0x40
++ local sync_pending_seq=0x41
++ local sync_flags=0x1
++ local owner_offset=0x40
++ local owner_issue_cookie=0x101
++ local owner_complete_cookie=0x100
++ local report_offset=0x120
++ local result_offset=0x180
++ local manifest_offset=0x180
++ local descriptor_offset=0x200
++ local plan_offset=0x300
++ local live_offset=0x3c0
++ local issue_plan_offset=0x4a0
++ case "${mode}" in
++ kick_ccb_offset=0x80
++ ccb_write_offset=0x0
++ ccb_read_offset=0x60
++ queue_size=0x80
++ submit_attach 5 control 21
++ local submit_id=5
++ local slot_name=control
++ local object_id=21
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_5_control.txt attach 5 control 21
++ local outfile=attach_5_control.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 5 control 21
++ submit_attach 5 pds 22
++ local submit_id=5
++ local slot_name=pds
++ local object_id=22
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_5_pds.txt attach 5 pds 22
++ local outfile=attach_5_pds.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 5 pds 22
++ submit_attach 5 use 23
++ local submit_id=5
++ local slot_name=use
++ local object_id=23
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_5_use.txt attach 5 use 23
++ local outfile=attach_5_use.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 5 use 23
++ submit_attach 5 target 24
++ local submit_id=5
++ local slot_name=target
++ local object_id=24
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_5_target.txt attach 5 target 24
++ local outfile=attach_5_target.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 5 target 24
++ submit_attach 5 status 25
++ local submit_id=5
++ local slot_name=status
++ local object_id=25
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_5_status.txt attach 5 status 25
++ local outfile=attach_5_status.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 5 status 25
++ submit_kick 5 0x80 0
++ local submit_id=5
++ local ccb_offset=0x80
++ local ta_dependency=0
++ [[ 1 == \1 ]]
++ submit_ioctl_capture kick_5.txt kick 5 ta 0x80 0x1 1 1 0
++ local outfile=kick_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 kick 5 ta 0x80 0x1 1 1 0
++ submit_ccb 5 0x0 0x60
++ local submit_id=5
++ local write_offset=0x0
++ local read_offset=0x60
++ [[ 1 == \1 ]]
++ submit_ioctl_capture ccb_5.txt ccb 5 0x0 0x60 0x1000 0x0 0xc0de0001 0xc0de0002
++ local outfile=ccb_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 ccb 5 0x0 0x60 0x1000 0x0 0xc0de0001 0xc0de0002
++ submit_queue 5 0x20 0x80 0x20 1
++ local submit_id=5
++ local base_offset=0x20
++ local queue_size=0x80
++ local packet_size=0x20
++ local packet_count=1
++ [[ 1 == \1 ]]
++ submit_ioctl_capture queue_5.txt queue 5 0x20 0x80 0x20 1
++ local outfile=queue_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 queue 5 0x20 0x80 0x20 1
++ submit_status 5
++ local submit_id=5
++ [[ 1 == \1 ]]
++ submit_ioctl_capture status_5.txt status 5 0x80 0xc0 0x4 0x5a500000
++ local outfile=status_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 status 5 0x80 0xc0 0x4 0x5a500000
++ submit_sync 5 0x20 0x40 0x41 0x1
++ local submit_id=5
++ local sync_offset=0x20
++ local complete_seq=0x40
++ local pending_seq=0x41
++ local sync_flags=0x1
++ [[ 1 == \1 ]]
++ submit_ioctl_capture sync_5.txt sync 5 0x20 0x40 0x41 0x1
++ local outfile=sync_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 sync 5 0x20 0x40 0x41 0x1
++ submit_owner 5 0x40 queued 0x101 0x100
++ local submit_id=5
++ local owner_offset=0x40
++ local owner_state=queued
++ local issue_cookie=0x101
++ local complete_cookie=0x100
++ [[ 1 == \1 ]]
++ submit_ioctl_capture owner_5.txt owner 5 0x40 queued 0x101 0x100
++ local outfile=owner_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 owner 5 0x40 queued 0x101 0x100
++ submit_report 5 0x120
++ local submit_id=5
++ local report_offset=0x120
++ [[ 1 == \1 ]]
++ submit_ioctl_capture report_5.txt report 5 0x120
++ local outfile=report_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 report 5 0x120
++ submit_live 5 0x3c0
++ local submit_id=5
++ local live_offset=0x3c0
++ [[ 1 == \1 ]]
++ submit_ioctl_capture live_5.txt live 5 0x3c0
++ local outfile=live_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 live 5 0x3c0
++ submit_manifest 5 0x180
++ local submit_id=5
++ local manifest_offset=0x180
++ [[ 1 == \1 ]]
++ submit_ioctl_capture manifest_5.txt manifest 5 0x180
++ local outfile=manifest_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 manifest 5 0x180
++ submit_descriptor 5 0x200
++ local submit_id=5
++ local descriptor_offset=0x200
++ [[ 1 == \1 ]]
++ submit_ioctl_capture descriptor_5.txt descriptor 5 0x200
++ local outfile=descriptor_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 descriptor 5 0x200
++ submit_plan 5 0x300
++ local submit_id=5
++ local plan_offset=0x300
++ [[ 1 == \1 ]]
++ submit_ioctl_capture plan_5.txt plan 5 0x300
++ local outfile=plan_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 plan 5 0x300
++ submit_issue_plan 5 0x4a0 queued 1
++ local submit_id=5
++ local issue_plan_offset=0x4a0
++ local owner_state=queued
++ local issued_packets=1
++ [[ 1 == \1 ]]
++ submit_ioctl_capture issue_plan_5.txt issue-plan 5 0x4a0 queued 1
++ local outfile=issue_plan_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 issue-plan 5 0x4a0 queued 1
++ submit_result 5 0x180
++ local submit_id=5
++ local result_offset=0x180
++ [[ 1 == \1 ]]
++ submit_ioctl_capture result_5.txt result 5 0x180
++ local outfile=result_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 result 5 0x180
++ submit_prepare 5
++ local submit_id=5
++ [[ 1 == \1 ]]
++ submit_ioctl_capture prepare_5.txt prepare 5
++ local outfile=prepare_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 prepare 5
++ submit_validate 5
++ local submit_id=5
++ [[ 1 == \1 ]]
++ submit_ioctl_capture validate_5.txt validate 5
++ local outfile=validate_5.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 validate 5
++ configure_submit 6 nowrap 26 27 28 29 30 3
++ local submit_id=6
++ local mode=nowrap
++ local object_control=26
++ local object_pds=27
++ local object_use=28
++ local object_target=29
++ local object_status=30
++ local ta_dependency=3
++ local kick_ccb_offset
++ local ccb_write_offset
++ local ccb_read_offset
++ local queue_base_offset=0x20
++ local queue_size
++ local queue_packet_size=0x20
++ local queue_packet_count=1
++ local sync_offset=0x20
++ local sync_complete_seq=0x40
++ local sync_pending_seq=0x41
++ local sync_flags=0x1
++ local owner_offset=0x40
++ local owner_issue_cookie=0x101
++ local owner_complete_cookie=0x100
++ local report_offset=0x120
++ local result_offset=0x180
++ local manifest_offset=0x180
++ local descriptor_offset=0x200
++ local plan_offset=0x300
++ local live_offset=0x3c0
++ local issue_plan_offset=0x4a0
++ case "${mode}" in
++ kick_ccb_offset=0x20
++ ccb_write_offset=0x20
++ ccb_read_offset=0x0
++ queue_size=0x40
++ submit_attach 6 control 26
++ local submit_id=6
++ local slot_name=control
++ local object_id=26
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_6_control.txt attach 6 control 26
++ local outfile=attach_6_control.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 6 control 26
++ submit_attach 6 pds 27
++ local submit_id=6
++ local slot_name=pds
++ local object_id=27
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_6_pds.txt attach 6 pds 27
++ local outfile=attach_6_pds.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 6 pds 27
++ submit_attach 6 use 28
++ local submit_id=6
++ local slot_name=use
++ local object_id=28
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_6_use.txt attach 6 use 28
++ local outfile=attach_6_use.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 6 use 28
++ submit_attach 6 target 29
++ local submit_id=6
++ local slot_name=target
++ local object_id=29
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_6_target.txt attach 6 target 29
++ local outfile=attach_6_target.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 6 target 29
++ submit_attach 6 status 30
++ local submit_id=6
++ local slot_name=status
++ local object_id=30
++ [[ 1 == \1 ]]
++ submit_ioctl_capture attach_6_status.txt attach 6 status 30
++ local outfile=attach_6_status.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 attach 6 status 30
++ submit_kick 6 0x20 3
++ local submit_id=6
++ local ccb_offset=0x20
++ local ta_dependency=3
++ [[ 1 == \1 ]]
++ submit_ioctl_capture kick_6.txt kick 6 ta 0x20 0x1 1 1 3
++ local outfile=kick_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 kick 6 ta 0x20 0x1 1 1 3
++ submit_ccb 6 0x20 0x0
++ local submit_id=6
++ local write_offset=0x20
++ local read_offset=0x0
++ [[ 1 == \1 ]]
++ submit_ioctl_capture ccb_6.txt ccb 6 0x20 0x0 0x1000 0x0 0xc0de0001 0xc0de0002
++ local outfile=ccb_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 ccb 6 0x20 0x0 0x1000 0x0 0xc0de0001 0xc0de0002
++ submit_queue 6 0x20 0x40 0x20 1
++ local submit_id=6
++ local base_offset=0x20
++ local queue_size=0x40
++ local packet_size=0x20
++ local packet_count=1
++ [[ 1 == \1 ]]
++ submit_ioctl_capture queue_6.txt queue 6 0x20 0x40 0x20 1
++ local outfile=queue_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 queue 6 0x20 0x40 0x20 1
++ submit_status 6
++ local submit_id=6
++ [[ 1 == \1 ]]
++ submit_ioctl_capture status_6.txt status 6 0x80 0xc0 0x4 0x5a500000
++ local outfile=status_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 status 6 0x80 0xc0 0x4 0x5a500000
++ submit_sync 6 0x20 0x40 0x41 0x1
++ local submit_id=6
++ local sync_offset=0x20
++ local complete_seq=0x40
++ local pending_seq=0x41
++ local sync_flags=0x1
++ [[ 1 == \1 ]]
++ submit_ioctl_capture sync_6.txt sync 6 0x20 0x40 0x41 0x1
++ local outfile=sync_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 sync 6 0x20 0x40 0x41 0x1
++ submit_owner 6 0x40 queued 0x101 0x100
++ local submit_id=6
++ local owner_offset=0x40
++ local owner_state=queued
++ local issue_cookie=0x101
++ local complete_cookie=0x100
++ [[ 1 == \1 ]]
++ submit_ioctl_capture owner_6.txt owner 6 0x40 queued 0x101 0x100
++ local outfile=owner_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 owner 6 0x40 queued 0x101 0x100
++ submit_report 6 0x120
++ local submit_id=6
++ local report_offset=0x120
++ [[ 1 == \1 ]]
++ submit_ioctl_capture report_6.txt report 6 0x120
++ local outfile=report_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 report 6 0x120
++ submit_live 6 0x3c0
++ local submit_id=6
++ local live_offset=0x3c0
++ [[ 1 == \1 ]]
++ submit_ioctl_capture live_6.txt live 6 0x3c0
++ local outfile=live_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 live 6 0x3c0
++ submit_manifest 6 0x180
++ local submit_id=6
++ local manifest_offset=0x180
++ [[ 1 == \1 ]]
++ submit_ioctl_capture manifest_6.txt manifest 6 0x180
++ local outfile=manifest_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 manifest 6 0x180
++ submit_descriptor 6 0x200
++ local submit_id=6
++ local descriptor_offset=0x200
++ [[ 1 == \1 ]]
++ submit_ioctl_capture descriptor_6.txt descriptor 6 0x200
++ local outfile=descriptor_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 descriptor 6 0x200
++ submit_plan 6 0x300
++ local submit_id=6
++ local plan_offset=0x300
++ [[ 1 == \1 ]]
++ submit_ioctl_capture plan_6.txt plan 6 0x300
++ local outfile=plan_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 plan 6 0x300
++ submit_issue_plan 6 0x4a0 queued 1
++ local submit_id=6
++ local issue_plan_offset=0x4a0
++ local owner_state=queued
++ local issued_packets=1
++ [[ 1 == \1 ]]
++ submit_ioctl_capture issue_plan_6.txt issue-plan 6 0x4a0 queued 1
++ local outfile=issue_plan_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 issue-plan 6 0x4a0 queued 1
++ submit_result 6 0x180
++ local submit_id=6
++ local result_offset=0x180
++ [[ 1 == \1 ]]
++ submit_ioctl_capture result_6.txt result 6 0x180
++ local outfile=result_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 result 6 0x180
++ submit_prepare 6
++ local submit_id=6
++ [[ 1 == \1 ]]
++ submit_ioctl_capture prepare_6.txt prepare 6
++ local outfile=prepare_6.txt
++ shift
++ /root/poulsbo-workloads/psb_sgx_lab_submit_op /dev/dri/card0 prepare 6
++ cat /tmp/tmp.sBRrS10tqz/prepare_6.txt
+drm_path=/dev/dri/card0
+drm_open_result=3
+submit_op_name=prepare
+submit_selector=6
+submit_flags=0x0
+submit_op_ret=-1 errno=22
+submit_resolved_id=0
+submit_result_count=0
+submit_context=0
+submit_context_name=auto
+submit_slot=0
+submit_slot_name=unknown
+submit_object_id=0
+submit_cmd_type=0
+submit_cmd_type_name=invalid
+submit_ccb_offset=0x0
+submit_ctrl_flags=0x0
+submit_num_ta_status_vals=0
+submit_num_3d_status_vals=0
+submit_ta_dependency=0
+submit_ccb_write_offset=0x0
+submit_ccb_read_offset=0x0
+submit_ccb_service_address=0x0
+submit_ccb_cache_control=0x0
+submit_ccb_data0=0x0
+submit_ccb_data1=0x0
+submit_queue_base_offset=0x0
+submit_queue_size=0x0
+submit_queue_packet_size=0x0
+submit_queue_packet_count=0
+submit_status_ta_offset=0x0
+submit_status_3d_offset=0x0
+submit_status_stride=0x0
+submit_status_value_seed=0x0
+submit_sync_offset=0x0
+submit_sync_complete_seq=0x0
+submit_sync_pending_seq=0x0
+submit_sync_flags=0x0
+submit_owner_offset=0x0
+submit_owner_issue_cookie=0x0
+submit_owner_complete_cookie=0x0
+submit_dependency_slot=0
+submit_dependency_submit_id=0
+submit_dependency_ticket=0
+submit_dependency_offset=0x0
+submit_report_offset=0x0
+submit_live_offset=0x0
+submit_manifest_offset=0x0
+submit_descriptor_offset=0x0
+submit_plan_offset=0x0
+submit_issue_plan_offset=0x0
+submit_owner_state=0
+submit_owner_state_name=none
+submit_packet_count=0
++ return 1
++ cleanup
++ local pid
++ for pid in "${probe_pids[@]:-}"
++ kill 8553
++ wait 8553
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8554
++ wait 8554
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8555
++ wait 8555
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8556
++ wait 8556
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8557
++ wait 8557
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8558
++ wait 8558
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8559
++ wait 8559
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8560
++ wait 8560
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8561
++ wait 8561
++ true
++ for pid in "${probe_pids[@]:-}"
++ kill 8562
++ wait 8562
++ true
++ rm -rf /tmp/tmp.sBRrS10tqz
