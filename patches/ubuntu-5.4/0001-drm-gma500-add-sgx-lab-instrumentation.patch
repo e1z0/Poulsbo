@@ -1,477 +1,82 @@
-From 5ffe593034c9a974cd9e9bd42bb8fcbbd9d23e2d Mon Sep 17 00:00:00 2001
+From c3fd2828c523ea86ff797ada4f1776aa6d26276d Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Wed, 13 May 2026 17:01:57 +0300
-Subject: [PATCH] drm/gma500: add SGX TA path object
+Date: Wed, 13 May 2026 17:19:04 +0300
+Subject: [PATCH] drm/gma500: route SGX issue path through TA path
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 339 +++++++++++++++++++++----------
- 1 file changed, 237 insertions(+), 102 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 95d73acce..d98e37759 100644
+index d98e37759..b967b5013 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1484,11 +1484,27 @@ struct psb_sgx_lab_submit_sgx_issue_image {
- 	struct psb_sgx_lab_owner_words owner;
- };
- 
-+struct psb_sgx_lab_submit_sgx_transition_image {
-+	bool active;
-+	u32 queue_region_end;
-+	u32 sync_region_end;
-+	u32 owner_region_end;
-+	struct psb_sgx_lab_queue_header_words queue_header;
-+	struct psb_sgx_lab_ccb_record_words ccb_record;
-+	struct psb_sgx_lab_sync_words sync;
-+	struct psb_sgx_lab_owner_words owner;
-+};
-+
- struct psb_sgx_lab_submit_sgx_ta_dispatch {
- 	struct psb_sgx_lab_submit_sgx_ta_schedule schedule;
- 	struct psb_sgx_lab_submit_sgx_issue_image issue_image;
- };
- 
-+struct psb_sgx_lab_submit_sgx_ta_path {
-+	struct psb_sgx_lab_submit_sgx_ta_dispatch dispatch;
-+	struct psb_sgx_lab_submit_sgx_transition_image transition_image;
-+};
-+
- static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
- static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
- 					u32 *end_out);
-@@ -4206,6 +4222,126 @@ static int poulsbo_sgx_build_submit_sgx_ta_dispatch_locked(
- 	return 0;
+@@ -4366,6 +4366,16 @@ static int poulsbo_sgx_submit_sgx_ta_path_transition_status_locked(
+ 		&path->dispatch.schedule);
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_path_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	bool have_issue_request,
-+	u32 issue_owner_state,
-+	u32 issued_packets,
-+	bool have_transition_request,
-+	u32 transition_owner_state,
-+	u32 completed_packets,
-+	struct psb_sgx_lab_submit_sgx_ta_path *path)
-+{
-+	struct psb_sgx_lab_submit_sgx_transition_image *transition_image;
-+	int ret;
-+
-+	if (!dev_priv || !submit || !path)
-+		return -EINVAL;
-+	if (have_issue_request && have_transition_request)
-+		return -EINVAL;
-+
-+	memset(path, 0, sizeof(*path));
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_dispatch_locked(
-+		dev_priv, submit, have_issue_request, issue_owner_state,
-+		issued_packets, &path->dispatch);
-+	if (ret)
-+		return ret;
-+
-+	if (!have_transition_request)
-+		return 0;
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
-+		dev_priv, submit, true, transition_owner_state,
-+		completed_packets, &path->dispatch.schedule);
-+	if (ret)
-+		return ret;
-+
-+	transition_image = &path->transition_image;
-+	transition_image->active = true;
-+
-+	ret = poulsbo_sgx_queue_region_end(submit->queue_base_offset,
-+					   submit->queue_size,
-+					   &transition_image->queue_region_end);
-+	if (ret)
-+		return ret;
-+	ret = poulsbo_sgx_sync_region_end(submit->sync_offset,
-+					  &transition_image->sync_region_end);
-+	if (ret)
-+		return ret;
-+	ret = poulsbo_sgx_owner_region_end(submit->owner_offset,
-+					   &transition_image->owner_region_end);
-+	if (ret)
-+		return ret;
-+
-+	memset(&transition_image->queue_header, 0,
-+	       sizeof(transition_image->queue_header));
-+	transition_image->queue_header.write_offset =
-+		path->dispatch.schedule.transition_request.new_write_offset;
-+	transition_image->queue_header.read_offset =
-+		path->dispatch.schedule.transition_request.new_read_offset;
-+	transition_image->queue_header.queue_base_offset =
-+		submit->queue_base_offset;
-+	transition_image->queue_header.queue_size = submit->queue_size;
-+	transition_image->queue_header.queue_packet_size =
-+		submit->queue_packet_size;
-+	transition_image->queue_header.queue_packet_count =
-+		path->dispatch.schedule.transition_request.new_packet_count;
-+	transition_image->queue_header.queue_tail_packet_count =
-+		path->dispatch.schedule.transition_request.new_tail_packets;
-+	transition_image->queue_header.queue_head_packet_count =
-+		path->dispatch.schedule.transition_request.new_head_packets;
-+
-+	memset(&transition_image->ccb_record, 0,
-+	       sizeof(transition_image->ccb_record));
-+	transition_image->ccb_record.service_address =
-+		submit->ccb_service_address;
-+	transition_image->ccb_record.cache_control =
-+		submit->ccb_cache_control;
-+	transition_image->ccb_record.data0 = submit->ccb_data0;
-+	transition_image->ccb_record.data1 = submit->ccb_data1;
-+	ret = poulsbo_sgx_resolve_submit_ccb_gpu_va32_locked(
-+		dev_priv, submit, &transition_image->ccb_record.pds_gpu_va32,
-+		&transition_image->ccb_record.use_gpu_va32,
-+		&transition_image->ccb_record.target_gpu_va32,
-+		&transition_image->ccb_record.status_gpu_va32);
-+	if (ret)
-+		return ret;
-+
-+	memset(&transition_image->sync, 0, sizeof(transition_image->sync));
-+	transition_image->sync.read_offset =
-+		path->dispatch.schedule.transition_request.new_read_offset;
-+	transition_image->sync.write_offset =
-+		path->dispatch.schedule.transition_request.new_write_offset;
-+	transition_image->sync.complete_seq =
-+		path->dispatch.schedule.transition_request.new_sync_complete_seq;
-+	transition_image->sync.pending_seq = submit->sync_pending_seq;
-+	transition_image->sync.flags =
-+		path->dispatch.schedule.transition_request.new_sync_flags;
-+	transition_image->sync.epoch = submit->queue_epoch;
-+	transition_image->sync.global_issue_ticket =
-+		submit->global_issue_ticket;
-+
-+	memset(&transition_image->owner, 0, sizeof(transition_image->owner));
-+	transition_image->owner.owner_state =
-+		path->dispatch.schedule.transition_request.owner_state;
-+	transition_image->owner.owner_issue_cookie =
-+		submit->owner_issue_cookie;
-+	transition_image->owner.owner_complete_cookie =
-+		path->dispatch.schedule.transition_request
-+			.new_owner_complete_cookie;
-+	transition_image->owner.epoch = submit->queue_epoch;
-+	transition_image->owner.global_complete_ticket =
-+		path->dispatch.schedule.transition_request
-+			.new_global_complete_ticket;
-+	transition_image->owner.global_running_ticket =
-+		path->dispatch.schedule.transition_request
-+			.new_global_running_ticket;
-+
-+	return 0;
-+}
-+
- static int poulsbo_sgx_submit_sgx_ta_dispatch_issue_status_locked(
- 	const struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch)
- {
-@@ -4218,6 +4354,18 @@ static int poulsbo_sgx_submit_sgx_ta_dispatch_issue_status_locked(
- 		&dispatch->schedule.control);
- }
- 
-+static int poulsbo_sgx_submit_sgx_ta_path_transition_status_locked(
++static int poulsbo_sgx_submit_sgx_ta_path_issue_status_locked(
 +	const struct psb_sgx_lab_submit_sgx_ta_path *path)
 +{
 +	if (!path)
 +		return -EINVAL;
-+	if (!path->transition_image.active)
-+		return -EINVAL;
 +
-+	return poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
-+		&path->dispatch.schedule);
++	return poulsbo_sgx_submit_sgx_ta_dispatch_issue_status_locked(
++		&path->dispatch);
 +}
 +
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -9841,6 +9989,55 @@ out:
- 	return ret;
- }
- 
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_path_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_path *path)
-+{
-+	int ret;
-+
-+	if (!dev_priv || !submit || !path)
-+		return -EINVAL;
-+
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_dispatch_locked(
-+		dev_priv, submit, &path->dispatch);
-+	if (ret)
-+		return ret;
-+
-+	return path->transition_image.active ? -EINVAL : 0;
-+}
-+
-+static int poulsbo_sgx_validate_submit_sgx_ta_path_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_object *status_obj)
-+{
-+	struct psb_sgx_lab_submit_sgx_ta_path *path;
-+	int ret;
-+
-+	path = kmalloc(sizeof(*path), GFP_KERNEL);
-+	if (!path)
-+		return -ENOMEM;
-+
-+	ret = poulsbo_sgx_validate_submit_sgx_ta_dispatch_locked(
-+		dev_priv, submit, control_obj, status_obj);
-+	if (ret)
-+		goto out;
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_path_locked(
-+		dev_priv, submit, false, 0, 0, false, 0, 0, path);
-+	if (ret)
-+		goto out;
-+
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_path_locked(
-+		dev_priv, submit, path);
-+
-+out:
-+	kfree(path);
-+	return ret;
-+}
-+
- static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 					      struct psb_sgx_lab_submit *submit)
- {
-@@ -10052,7 +10249,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 		submit, status_obj, NULL);
- 	if (ret)
- 		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_dispatch_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_path_locked(
- 		dev_priv, submit, control_obj, status_obj);
- }
- 
-@@ -12540,18 +12737,9 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -12943,7 +12953,7 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  {
  	struct drm_psb_private *dev_priv = dev->dev_private;
  	struct psb_sgx_lab_submit *submit;
-+	const struct psb_sgx_lab_submit_sgx_transition_image *transition_image;
- 	struct psb_sgx_lab_object *control_obj;
--	struct psb_sgx_lab_object *pds_obj;
--	struct psb_sgx_lab_object *use_obj;
--	struct psb_sgx_lab_object *target_obj;
- 	struct psb_sgx_lab_object *status_obj;
--	struct psb_sgx_lab_queue_header_words queue_header;
--	struct psb_sgx_lab_ccb_record_words ccb_record;
--	struct psb_sgx_lab_sync_words sync;
--	struct psb_sgx_lab_owner_words owner;
--	u32 queue_region_end;
--	u32 sync_region_end;
--	u32 owner_region_end;
- 	u32 new_packet_count;
- 	u32 new_read_offset;
- 	u32 new_write_offset;
-@@ -12564,7 +12752,7 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
- 	u32 new_global_running_ticket;
- 	u32 new_global_complete_ticket;
- 	bool entering_running;
--	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch = NULL;
 +	struct psb_sgx_lab_submit_sgx_ta_path *path = NULL;
- 	int ret;
- 
- 	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -12593,77 +12781,61 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+ 	const struct psb_sgx_lab_submit_sgx_issue_image *issue_image;
+ 	struct psb_sgx_lab_object *control_obj;
+ 	struct psb_sgx_lab_object *pds_obj;
+@@ -12985,23 +12995,24 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  		goto out_unlock;
  	}
  
--	schedule = kmalloc(sizeof(*schedule), GFP_KERNEL);
--	if (!schedule) {
+-	dispatch = kmalloc(sizeof(*dispatch), GFP_KERNEL);
+-	if (!dispatch) {
 +	path = kmalloc(sizeof(*path), GFP_KERNEL);
 +	if (!path) {
  		ret = -ENOMEM;
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
--		dev_priv, submit, true, owner_state, completed_packets,
--		schedule);
+-	ret = poulsbo_sgx_build_submit_sgx_ta_dispatch_locked(
+-		dev_priv, submit, true, owner_state, issued_packets, dispatch);
 +	ret = poulsbo_sgx_build_submit_sgx_ta_path_locked(
-+		dev_priv, submit, false, 0, 0, true, owner_state,
-+		completed_packets, path);
++		dev_priv, submit, true, owner_state, issued_packets, false, 0, 0,
++		path);
  	if (ret)
  		goto out_unlock;
--	ret = poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
--		schedule);
-+	ret = poulsbo_sgx_submit_sgx_ta_path_transition_status_locked(path);
- 	if (ret)
+-	ret = poulsbo_sgx_submit_sgx_ta_dispatch_issue_status_locked(dispatch);
++	ret = poulsbo_sgx_submit_sgx_ta_path_issue_status_locked(path);
+ 	if (ret) {
+ 		if (ret == -ESTALE)
+ 			poulsbo_sgx_disarm_submit_locked(submit);
  		goto out_unlock;
-+	transition_image = &path->transition_image;
- 
- 	entering_running =
--		schedule->transition_request.entering_running;
-+		path->dispatch.schedule.transition_request.entering_running;
- 	new_global_running_ticket =
--		schedule->transition_request.new_global_running_ticket;
-+		path->dispatch.schedule.transition_request
-+			.new_global_running_ticket;
- 	new_packet_count =
--		schedule->transition_request.new_packet_count;
-+		path->dispatch.schedule.transition_request.new_packet_count;
- 	new_read_offset =
--		schedule->transition_request.new_read_offset;
-+		path->dispatch.schedule.transition_request.new_read_offset;
- 	new_write_offset =
--		schedule->transition_request.new_write_offset;
-+		path->dispatch.schedule.transition_request.new_write_offset;
- 	new_tail_packets =
--		schedule->transition_request.new_tail_packets;
-+		path->dispatch.schedule.transition_request.new_tail_packets;
- 	new_head_packets =
--		schedule->transition_request.new_head_packets;
-+		path->dispatch.schedule.transition_request.new_head_packets;
- 	new_ccb_offset =
--		schedule->transition_request.new_ccb_offset;
-+		path->dispatch.schedule.transition_request.new_ccb_offset;
- 	new_sync_complete_seq =
--		schedule->transition_request.new_sync_complete_seq;
-+		path->dispatch.schedule.transition_request.new_sync_complete_seq;
- 	new_owner_complete_cookie =
--		schedule->transition_request.new_owner_complete_cookie;
-+		path->dispatch.schedule.transition_request
-+			.new_owner_complete_cookie;
- 	new_global_complete_ticket =
--		schedule->transition_request.new_global_complete_ticket;
-+		path->dispatch.schedule.transition_request
-+			.new_global_complete_ticket;
- 	new_sync_flags =
--		schedule->transition_request.new_sync_flags;
--
--	ret = poulsbo_sgx_queue_region_end(submit->queue_base_offset,
--					   submit->queue_size,
--					   &queue_region_end);
--	if (ret)
--		goto out_unlock;
--	ret = poulsbo_sgx_sync_region_end(submit->sync_offset,
--					  &sync_region_end);
--	if (ret)
--		goto out_unlock;
--	ret = poulsbo_sgx_owner_region_end(submit->owner_offset,
--					   &owner_region_end);
--	if (ret)
--		goto out_unlock;
-+		path->dispatch.schedule.transition_request.new_sync_flags;
+ 	}
+-	issue_image = &dispatch->issue_image;
++	issue_image = &path->dispatch.issue_image;
  
  	control_obj = poulsbo_sgx_find_object_locked(dev_priv,
- 						     submit->control_object_id);
--	pds_obj = poulsbo_sgx_find_object_locked(dev_priv,
--						 submit->pds_object_id);
--	use_obj = poulsbo_sgx_find_object_locked(dev_priv,
--						 submit->use_object_id);
--	target_obj = poulsbo_sgx_find_object_locked(
--		dev_priv, submit->target_object_id);
- 	status_obj = poulsbo_sgx_find_object_locked(dev_priv,
- 						    submit->status_object_id);
--	if (!control_obj || !pds_obj || !use_obj || !target_obj || !status_obj) {
-+	if (!control_obj || !status_obj) {
- 		ret = -ENOENT;
- 		goto out_unlock;
- 	}
--	if (queue_region_end > control_obj->gt->gem.size ||
--	    new_ccb_offset + PSB_SGX_LAB_CCB_RECORD_BYTES > queue_region_end) {
-+	if (transition_image->queue_region_end > control_obj->gt->gem.size ||
-+	    new_ccb_offset + PSB_SGX_LAB_CCB_RECORD_BYTES >
-+		    transition_image->queue_region_end) {
- 		ret = -EINVAL;
- 		goto out_unlock;
- 	}
-@@ -12675,69 +12847,32 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
- 	if (ret)
- 		goto out_unlock;
- 	ret = poulsbo_sgx_object_access_ok(status_obj, submit->sync_offset,
--					   sync_region_end - submit->sync_offset);
-+					   transition_image->sync_region_end -
-+						   submit->sync_offset);
- 	if (ret)
- 		goto out_unlock;
- 	ret = poulsbo_sgx_object_access_ok(status_obj, submit->owner_offset,
--					   owner_region_end -
--					   submit->owner_offset);
-+					   transition_image->owner_region_end -
-+						   submit->owner_offset);
- 	if (ret)
- 		goto out_unlock;
- 
--	memset(&queue_header, 0, sizeof(queue_header));
--	queue_header.write_offset = new_write_offset;
--	queue_header.read_offset = new_read_offset;
--	queue_header.queue_base_offset = submit->queue_base_offset;
--	queue_header.queue_size = submit->queue_size;
--	queue_header.queue_packet_size = submit->queue_packet_size;
--	queue_header.queue_packet_count = new_packet_count;
--	queue_header.queue_tail_packet_count = new_tail_packets;
--	queue_header.queue_head_packet_count = new_head_packets;
--	ret = poulsbo_sgx_write_queue_header_locked(control_obj, 0,
--						    &queue_header);
-+	ret = poulsbo_sgx_write_queue_header_locked(
-+		control_obj, 0, &transition_image->queue_header);
- 	if (ret)
- 		goto out_unlock;
--	memset(&ccb_record, 0, sizeof(ccb_record));
--	ccb_record.service_address = submit->ccb_service_address;
--	ccb_record.cache_control = submit->ccb_cache_control;
--	ccb_record.data0 = submit->ccb_data0;
--	ccb_record.data1 = submit->ccb_data1;
--	ccb_record.pds_gpu_va32 =
--		(u32)poulsbo_sgx_object_gpu_va(dev_priv, pds_obj);
--	ccb_record.use_gpu_va32 =
--		(u32)poulsbo_sgx_object_gpu_va(dev_priv, use_obj);
--	ccb_record.target_gpu_va32 =
--		(u32)poulsbo_sgx_object_gpu_va(dev_priv, target_obj);
--	ccb_record.status_gpu_va32 =
--		(u32)poulsbo_sgx_object_gpu_va(dev_priv, status_obj);
- 	ret = poulsbo_sgx_write_submit_ccb_record_locked(
--		control_obj, new_ccb_offset, &ccb_record);
-+		control_obj, new_ccb_offset, &transition_image->ccb_record);
- 	if (ret)
- 		goto out_unlock;
--
--	memset(&sync, 0, sizeof(sync));
--	sync.read_offset = new_read_offset;
--	sync.write_offset = new_write_offset;
--	sync.complete_seq = new_sync_complete_seq;
--	sync.pending_seq = submit->sync_pending_seq;
--	sync.flags = new_sync_flags;
--	sync.epoch = submit->queue_epoch;
--	sync.global_issue_ticket = submit->global_issue_ticket;
- 	ret = poulsbo_sgx_write_submit_sync_locked(status_obj,
--						   submit->sync_offset, &sync);
-+						   submit->sync_offset,
-+						   &transition_image->sync);
- 	if (ret)
- 		goto out_unlock;
--
--	memset(&owner, 0, sizeof(owner));
--	owner.owner_state = owner_state;
--	owner.owner_issue_cookie = submit->owner_issue_cookie;
--	owner.owner_complete_cookie = new_owner_complete_cookie;
--	owner.epoch = submit->queue_epoch;
--	owner.global_complete_ticket = new_global_complete_ticket;
--	owner.global_running_ticket = new_global_running_ticket;
- 	ret = poulsbo_sgx_write_submit_owner_locked(status_obj,
- 						    submit->owner_offset,
--						    &owner);
-+						    &transition_image->owner);
- 	if (ret)
- 		goto out_unlock;
- 
-@@ -12788,7 +12923,7 @@ out_unlock:
- 	mutex_unlock(&dev_priv->gtt_mutex);
- 	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
- 	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
--	kfree(schedule);
+ 						     submit->launch_control_object_id);
+@@ -13116,7 +13127,7 @@ out_unlock:
+ 			 submit->launch_refilled_from_complete,
+ 			 issue_image->sync.global_issue_ticket,
+ 			 issue_image->owner.global_running_ticket);
+-	kfree(dispatch);
 +	kfree(path);
+ 	return ret;
+ }
  
- 	if (!ret)
- 		dev_info(dev->dev,
 -- 
 2.34.1
 

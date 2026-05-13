@@ -5,6 +5,79 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### SGX submit TA path issue unification
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- No new top object was added in this batch.
+- The live issue path is now unified with the existing typed top object:
+  - `psb_sgx_lab_submit_sgx_ta_path`
+- The new shared top-layer issue helper now routes `issue_submit()` through:
+  - `poulsbo_sgx_submit_sgx_ta_path_issue_status_locked()`
+- The live-path split is now closed:
+  - top validator uses `sgx_ta_path`
+  - `transition_submit()` uses `sgx_ta_path`
+  - `issue_submit()` now also uses `sgx_ta_path`
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-170524-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=5B50AE965337A8FBA71E50E`
+    - `override_module_size=462900`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-170719-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=5B50AE965337A8FBA71E50E`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-170719-sgx-submit-ta-path-issue-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+    - final cleanup:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-170719-sgx-multi-submit-ta-path-issue-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=3`
+    - `SUBMIT_B_ID=4`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_dependency_active_count=1`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=4`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-170719`
+- Documented in:
+  - `docs/186-sgx-submit-ta-path-issue-unification.md`
+
 ### SGX submit TA path object
 
 - Updated:
