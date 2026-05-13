@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-034651-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-034651-guarded-deploy)
+  [logs/vaio-deploy/20260513-042457-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-042457-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=8B053004C83E74C5824A815`
-  - `override_module_size=448296`
+  - `driver_srcversion=529917AB9D340930B19FF28`
+  - `override_module_size=449016`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,17 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-034951-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-034951-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-042638-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-042638-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=8B053004C83E74C5824A815`
-- the new internal `psb_sgx_lab_submit_ccb_kick` batch is also
+  - `final_driver_srcversion=529917AB9D340930B19FF28`
+- the new internal `psb_sgx_lab_submit_sgx_ccb_kick` batch is also
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-034951-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-034951-sgx-plan-session)
+    [logs/vaio-plan-session/20260513-042638-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-042638-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-035055-sgx-submit-ccb-kick-live/summary.log)
+    [logs/vaio-ioctl/20260513-042800-sgx-submit-sgx-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-042800-sgx-submit-sgx-ccb-kick-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-035151-sgx-multi-submit-ccb-kick-live/summary.log)
+    [logs/vaio-ioctl/20260513-042841-sgx-multi-submit-sgx-ccb-kick-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-042841-sgx-multi-submit-sgx-ccb-kick-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -68,18 +68,19 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
-- the shared kernel execution model now has four explicit internal layers:
+- the shared kernel execution model now has five explicit internal layers:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
   - `psb_sgx_lab_submit_cmdta_kick`
   - `psb_sgx_lab_submit_ccb_kick`
+  - `psb_sgx_lab_submit_sgx_ccb_kick`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-034951`
-  - `source_row_module_srcversion=8B053004C83E74C5824A815`
+  - `source_timestamp=20260513-042638`
+  - `source_row_module_srcversion=529917AB9D340930B19FF28`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -98,8 +99,9 @@ Current live note on May 13, 2026:
   `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the next engineering step is no longer more exact ladder narrowing; it is
   the next SGX execution-side change on top of the new shared
-  `exec_record -> exec_packet` kernel model and the validated
-  `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan`
+  `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick`
+  kernel model and the validated
+  `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
   model
 
 ## Why This Target

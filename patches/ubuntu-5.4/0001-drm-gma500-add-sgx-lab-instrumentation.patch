@@ -2285,7 +2285,7 @@ index 000000000..cfee864f9
 +
 +#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..cc013b283 100644
+index d414525ec..8de2b9583 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -2305,7 +2305,7 @@ index d414525ec..cc013b283 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,14986 @@
+@@ -37,6 +40,15082 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -3466,6 +3466,25 @@ index d414525ec..cc013b283 100644
 +		ta_status_updates[PSB_SGX_LAB_MAX_STATUS_VALS];
 +	struct psb_sgx_lab_submit_status_update
 +		threed_status_updates[PSB_SGX_LAB_MAX_STATUS_VALS];
++};
++
++struct psb_sgx_lab_submit_sgx_ccb_kick {
++	const struct psb_sgx_lab_submit_ccb_kick *kick;
++	u32 num_dst_sync_objects;
++	u32 num_ta_status_vals;
++	u32 num_3d_status_vals;
++	bool first_kick_or_resume;
++	u32 ccb_offset;
++	u32 num_ta_src_syncs;
++	u32 num_ta_dst_syncs;
++	u32 num_3d_src_syncs;
++	bool ta_dependency;
++	u32 ta3d_dependency_submit_id;
++	u32 ta3d_dependency_required_complete_ticket;
++	u32 ta3d_dependency_observed_complete_ticket;
++	u32 ta3d_dependency_flags;
++	u32 ta_sync_gpu_va32;
++	u32 threed_sync_gpu_va32;
 +};
 +
 +static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
@@ -5076,6 +5095,51 @@ index d414525ec..cc013b283 100644
 +		kick->cmdta.packet.ta_shared.status_stride,
 +		kick->cmdta.packet.ta_shared.status_value_seed,
 +		true, kick->threed_status_updates);
++}
++
++static int poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_submit_ccb_kick *ccb_kick,
++	struct psb_sgx_lab_submit_sgx_ccb_kick *sgx_kick)
++{
++	bool dependency_active;
++
++	if (!submit || !ccb_kick || !sgx_kick)
++		return -EINVAL;
++
++	memset(sgx_kick, 0, sizeof(*sgx_kick));
++
++	sgx_kick->kick = ccb_kick;
++	sgx_kick->num_dst_sync_objects =
++		ccb_kick->cmdta.sync_gpu_va32 ? 1 : 0;
++	sgx_kick->num_ta_status_vals = ccb_kick->num_ta_status_updates;
++	sgx_kick->num_3d_status_vals = ccb_kick->num_3d_status_updates;
++	sgx_kick->first_kick_or_resume =
++		!ccb_kick->cmdta.packet.refilled_from_complete &&
++		!ccb_kick->cmdta.packet.queue_epoch;
++	sgx_kick->ccb_offset = ccb_kick->ccb_offset;
++	sgx_kick->num_ta_src_syncs = 0;
++	sgx_kick->num_ta_dst_syncs = sgx_kick->num_dst_sync_objects;
++	dependency_active = ccb_kick->ta_dependency &&
++		ccb_kick->cmdta.packet.ta_shared.dependency_active_count &&
++		submit->dependency_snapshot_source_submit_id &&
++		submit->dependency_snapshot_required_ticket;
++	sgx_kick->num_3d_src_syncs = dependency_active ? 1 : 0;
++	sgx_kick->ta_dependency = ccb_kick->ta_dependency;
++	sgx_kick->ta_sync_gpu_va32 = ccb_kick->cmdta.sync_gpu_va32;
++	sgx_kick->threed_sync_gpu_va32 = ccb_kick->cmdta.sync_gpu_va32;
++
++	if (!dependency_active)
++		return 0;
++
++	sgx_kick->ta3d_dependency_submit_id =
++		submit->dependency_snapshot_source_submit_id;
++	sgx_kick->ta3d_dependency_required_complete_ticket =
++		submit->dependency_snapshot_required_ticket;
++	sgx_kick->ta3d_dependency_observed_complete_ticket =
++		submit->dependency_snapshot_observed_complete_ticket;
++	sgx_kick->ta3d_dependency_flags = submit->dependency_snapshot_flags;
++	return 0;
 +}
 +
 +static int poulsbo_sgx_collect_submit_view_records_locked(
@@ -9345,11 +9409,12 @@ index d414525ec..cc013b283 100644
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *status_obj,
-+	const struct psb_sgx_lab_submit_ccb_kick *live_ccb_kick)
++	const struct psb_sgx_lab_submit_sgx_ccb_kick *live_sgx_ccb_kick)
 +{
 +	struct psb_sgx_lab_dependency_words expected_dependency;
 +	struct psb_sgx_lab_dependency_words ctl_dependency;
 +	const struct psb_sgx_lab_submit_status_update *update;
++	const struct psb_sgx_lab_submit_ccb_kick *live_ccb_kick;
 +	unsigned int slot;
 +	u32 index;
 +	int ret;
@@ -9408,8 +9473,9 @@ index d414525ec..cc013b283 100644
 +			return -EINVAL;
 +	}
 +
-+	if (!live_ccb_kick)
++	if (!live_sgx_ccb_kick || !live_sgx_ccb_kick->kick)
 +		return -EINVAL;
++	live_ccb_kick = live_sgx_ccb_kick->kick;
 +
 +	for (index = 0; index < live_ccb_kick->num_ta_status_updates; index++) {
 +		u32 value;
@@ -9438,12 +9504,13 @@ index d414525ec..cc013b283 100644
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_validate_submit_ccb_kick_locked(
++static int poulsbo_sgx_validate_submit_sgx_ccb_kick_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *status_obj)
 +{
 +	struct psb_sgx_lab_submit_ccb_kick ccb_kick;
++	struct psb_sgx_lab_submit_sgx_ccb_kick sgx_ccb_kick;
 +	int ret;
 +
 +	ret = poulsbo_sgx_build_submit_ccb_kick_locked(
@@ -9451,17 +9518,46 @@ index d414525ec..cc013b283 100644
 +		&ccb_kick);
 +	if (ret)
 +		return ret;
++	ret = poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
++		submit, &ccb_kick, &sgx_ccb_kick);
++	if (ret)
++		return ret;
++	if (sgx_ccb_kick.kick != &ccb_kick ||
++	    sgx_ccb_kick.num_ta_status_vals != ccb_kick.num_ta_status_updates ||
++	    sgx_ccb_kick.num_3d_status_vals !=
++		    ccb_kick.num_3d_status_updates ||
++	    sgx_ccb_kick.ccb_offset != ccb_kick.ccb_offset ||
++	    sgx_ccb_kick.ta_dependency != ccb_kick.ta_dependency ||
++	    sgx_ccb_kick.num_ta_dst_syncs >
++		    sgx_ccb_kick.num_dst_sync_objects)
++		return -EINVAL;
++	if (!sgx_ccb_kick.num_dst_sync_objects &&
++	    (sgx_ccb_kick.ta_sync_gpu_va32 ||
++	     sgx_ccb_kick.threed_sync_gpu_va32))
++		return -EINVAL;
++	if (sgx_ccb_kick.num_3d_src_syncs &&
++	    !sgx_ccb_kick.ta3d_dependency_submit_id)
++		return -EINVAL;
 +
 +	ret = poulsbo_sgx_validate_submit_status_side_images_locked(
-+		dev_priv, submit, status_obj, &ccb_kick);
++		dev_priv, submit, status_obj, &sgx_ccb_kick);
 +	if (ret)
 +		return ret;
 +
 +	if (submit->launch_valid && !submit->launch_consumed &&
-+	    submit->issue_plan_packet_count)
-+		return poulsbo_sgx_build_submit_ccb_kick_locked(
++	    submit->issue_plan_packet_count) {
++		ret = poulsbo_sgx_build_submit_ccb_kick_locked(
 +			dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LAUNCH,
 +			true, &ccb_kick);
++		if (ret)
++			return ret;
++		ret = poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
++			submit, &ccb_kick, &sgx_ccb_kick);
++		if (ret)
++			return ret;
++		if (!sgx_ccb_kick.kick || !sgx_ccb_kick.kick->cmdta.have_issue_plan)
++			return -EINVAL;
++	}
 +
 +	return 0;
 +}
@@ -9824,7 +9920,7 @@ index d414525ec..cc013b283 100644
 +		status_obj);
 +	if (ret)
 +		return ret;
-+	return poulsbo_sgx_validate_submit_ccb_kick_locked(
++	return poulsbo_sgx_validate_submit_sgx_ccb_kick_locked(
 +		dev_priv, submit, status_obj);
 +}
 +
@@ -17292,7 +17388,7 @@ index d414525ec..cc013b283 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +15085,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +15181,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -17315,7 +17411,7 @@ index d414525ec..cc013b283 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +15123,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +15219,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -17323,7 +17419,7 @@ index d414525ec..cc013b283 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +15151,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +15247,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -17343,7 +17439,7 @@ index d414525ec..cc013b283 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +15238,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +15334,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -17356,7 +17452,7 @@ index d414525ec..cc013b283 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +15388,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +15484,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);

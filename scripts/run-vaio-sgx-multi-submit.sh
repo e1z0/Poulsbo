@@ -930,7 +930,10 @@ range_query_list_gem_ids() {
 submit_ioctl_capture() {
     local outfile="\$1"
     shift
-    "\${target_op_bin}" "${target_node}" "\$@" > "\${tmpdir}/\${outfile}"
+    if ! "\${target_op_bin}" "${target_node}" "\$@" > "\${tmpdir}/\${outfile}"; then
+        cat "\${tmpdir}/\${outfile}" >&2 || true
+        return 1
+    fi
 }
 
 submit_create() {
