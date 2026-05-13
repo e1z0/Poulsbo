@@ -7440,3 +7440,95 @@ The saved current-boundary view therefore stays terminal on the new module:
 - `resolved_profile=complete`
 - `resolved_reason=latest_phase_evidence_terminal`
 - `source_timestamp=20260513-081039`
+
+## SGX submit TA timeline object
+
+The next validated internal SGX-shaped runtime layer is now:
+
+- `psb_sgx_lab_submit_sgx_ta_timeline`
+
+This layer sits above `psb_sgx_lab_submit_sgx_ta_execution` and keeps one
+explicit TA runtime object coherent across:
+
+- the live submission snapshot
+- the optional future launch snapshot
+- the historical launch, dispatch, and retired queued-command snapshots
+- the runtime issue, transition, and global-ticket state around them
+
+This batch needed one live fix after the first draft over-constrained the
+running multi-submit path.
+
+First draft:
+
+- guarded deploy:
+  - `logs/vaio-deploy/20260513-123521-guarded-deploy`
+  - live override `srcversion 82C2FB699E0C6937AB04CC2`
+- exact no-redeploy `plan` proof still passed:
+  - `logs/vaio-plan-session/20260513-123726-sgx-plan-session`
+- focused typed submit also still passed:
+  - `logs/vaio-ioctl/20260513-123846-sgx-submit-ta-timeline-live/summary.log`
+- typed multi-submit exposed the bad invariant:
+  - `logs/vaio-ioctl/20260513-123933-sgx-multi-submit-ta-timeline-live/summary.log`
+  - failure at `SUBMIT_A_AFTER_RUNNING_VALIDATE`
+  - `submit_op_ret=-1 errno=22`
+
+Final repaired module:
+
+- guarded deploy:
+  - `logs/vaio-deploy/20260513-124147-guarded-deploy`
+  - live override:
+    - `driver_srcversion=A1A66310C19EE4235C25ED2`
+    - `override_module_size=455932`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+
+Canonical live proof set on the repaired module:
+
+- exact `complete` proof:
+  - `logs/vaio-plan-session/20260513-124338-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=A1A66310C19EE4235C25ED2`
+- focused typed submit:
+  - `logs/vaio-ioctl/20260513-124444-sgx-submit-ta-timeline-live/summary.log`
+  - final focused state:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- typed multi-submit:
+  - `logs/vaio-ioctl/20260513-124523-sgx-multi-submit-ta-timeline-live/summary.log`
+  - final typed state:
+    - `SUBMIT_A_ID=3`
+    - `SUBMIT_B_ID=4`
+    - submit A final:
+      - `submit_arm_count=1`
+      - `submit_emit_count=1`
+      - `submit_launch_count=1`
+      - `submit_dispatch_count=1`
+      - `submit_retired_count=1`
+      - `submit_issue_count=1`
+      - `submit_transition_count=2`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=1`
+      - `submit_emit_count=1`
+      - `submit_launch_count=1`
+      - `submit_dispatch_count=1`
+      - `submit_retired_count=1`
+      - `submit_issue_count=1`
+      - `submit_transition_count=2`
+      - `submit_dependency_active_count=1`
+
+The saved current-boundary view therefore still stays terminal on the repaired
+module:
+
+- `resolved_profile=complete`
+- `resolved_reason=latest_phase_evidence_terminal`
+- `source_timestamp=20260513-124338`

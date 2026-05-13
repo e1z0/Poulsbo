@@ -11556,3 +11556,70 @@ Conclusion:
   - `source_timestamp=20260513-055558`
 - Documented in:
   - `docs/174-sgx-submit-ta-kick-object.md`
+
+2026-05-13: added `psb_sgx_lab_submit_sgx_ta_timeline` above
+`psb_sgx_lab_submit_sgx_ta_execution`, split the duplicated TA command /
+queued-command / issue-plan validation into shared helpers, and validated the
+repaired runtime object on hardware. First draft:
+
+- deploy:
+  - `logs/vaio-deploy/20260513-123521-guarded-deploy`
+  - live override `srcversion 82C2FB699E0C6937AB04CC2`
+- exact `complete` still passed:
+  - `logs/vaio-plan-session/20260513-123726-sgx-plan-session`
+- focused typed submit still passed:
+  - `logs/vaio-ioctl/20260513-123846-sgx-submit-ta-timeline-live/summary.log`
+- typed multi-submit failed at `SUBMIT_A_AFTER_RUNNING_VALIDATE` with
+  `submit_op_ret=-1 errno=22` in:
+  - `logs/vaio-ioctl/20260513-123933-sgx-multi-submit-ta-timeline-live/summary.log`
+
+Repaired draft:
+
+- deploy:
+  - `logs/vaio-deploy/20260513-124147-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=A1A66310C19EE4235C25ED2`
+    - `override_module_size=455932`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- exact proof back to green:
+  - `logs/vaio-plan-session/20260513-124338-sgx-plan-session`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=A1A66310C19EE4235C25ED2`
+- focused typed submit passed:
+  - `logs/vaio-ioctl/20260513-124444-sgx-submit-ta-timeline-live/summary.log`
+  - final focused state:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- typed multi-submit passed on the repaired validator:
+  - `logs/vaio-ioctl/20260513-124523-sgx-multi-submit-ta-timeline-live/summary.log`
+  - `SUBMIT_A_ID=3`
+  - `SUBMIT_B_ID=4`
+  - submit A final:
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+  - submit B final:
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=1`
+- documented in:
+  - `docs/179-sgx-submit-ta-timeline-object.md`
