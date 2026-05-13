@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 311989DA7E14F05C171ED79`
-  - `override_module_size=454160`
+  - `srcversion A84CAC0D63EBA733BE134C6`
+  - `override_module_size=462848`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -61,13 +61,13 @@ implementation if it materially changes scope.
   - `complete`
 - canonical bundles for that fixed-module line:
   - `logs/vaio-plan-session/20260513-120641-sgx-plan-session`
-- the newest internal `ta-execution` batch is now hardware-validated:
+- the newest internal `ta-path` batch is now hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260513-120641-sgx-plan-session`
+    - `logs/vaio-plan-session/20260513-164848-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260513-120825-sgx-submit-ta-execution-live/summary.log`
+    - `logs/vaio-ioctl/20260513-165147-sgx-submit-ta-path-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260513-120927-sgx-multi-submit-ta-execution-live/summary.log`
+    - `logs/vaio-ioctl/20260513-165002-sgx-multi-submit-ta-path-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
@@ -75,7 +75,7 @@ implementation if it materially changes scope.
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
   - `source_timestamp=20260513-120641`
-  - `source_row_module_srcversion=311989DA7E14F05C171ED79`
+  - `source_row_module_srcversion=A84CAC0D63EBA733BE134C6`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -181,7 +181,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 329853678DD9A992924BB5C`
+  `srcversion A84CAC0D63EBA733BE134C6`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -196,23 +196,31 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_command`
   - `psb_sgx_lab_submit_sgx_queued_ta_command`
   - `psb_sgx_lab_submit_sgx_ta_submission`
+  - `psb_sgx_lab_submit_sgx_ta_execution`
+  - `psb_sgx_lab_submit_sgx_ta_timeline`
+  - `psb_sgx_lab_submit_sgx_ta_runtime`
+  - `psb_sgx_lab_submit_sgx_ta_gate`
+  - `psb_sgx_lab_submit_sgx_ta_control`
+  - `psb_sgx_lab_submit_sgx_ta_schedule`
+  - `psb_sgx_lab_submit_sgx_ta_dispatch`
+  - `psb_sgx_lab_submit_sgx_ta_path`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `329853678DD9A992924BB5C` as the
+- keep the current guarded-deploy override `A84CAC0D63EBA733BE134C6` as the
   active headless, panic-safe validation base
 - treat the exact single-submit ladder as closed for the current module:
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submission` validation bundles as the active typed-submit
+- use the new `ta-path` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log`
+    `logs/vaio-ioctl/20260513-165147-sgx-submit-ta-path-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log`
+    `logs/vaio-ioctl/20260513-165002-sgx-multi-submit-ta-path-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`

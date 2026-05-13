@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-120442-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-120442-guarded-deploy)
+  [logs/vaio-deploy/20260513-164652-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-164652-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=311989DA7E14F05C171ED79`
-  - `override_module_size=454160`
+  - `driver_srcversion=A84CAC0D63EBA733BE134C6`
+  - `override_module_size=462848`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,17 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-120641-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-120641-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-164848-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-164848-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=311989DA7E14F05C171ED79`
-- the new internal `psb_sgx_lab_submit_sgx_ta_execution` batch is also
+  - `final_driver_srcversion=A84CAC0D63EBA733BE134C6`
+- the new internal `psb_sgx_lab_submit_sgx_ta_path` batch is also
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-120641-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-120641-sgx-plan-session)
+    [logs/vaio-plan-session/20260513-164848-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-164848-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-120825-sgx-submit-ta-execution-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-120825-sgx-submit-ta-execution-live/summary.log)
+    [logs/vaio-ioctl/20260513-165147-sgx-submit-ta-path-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-165147-sgx-submit-ta-path-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-120927-sgx-multi-submit-ta-execution-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-120927-sgx-multi-submit-ta-execution-live/summary.log)
+    [logs/vaio-ioctl/20260513-165002-sgx-multi-submit-ta-path-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-165002-sgx-multi-submit-ta-path-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -68,7 +68,7 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
-- the shared kernel execution model now has twelve explicit internal layers:
+- the shared kernel execution model now has nineteen explicit internal layers:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
   - `psb_sgx_lab_submit_cmdta_kick`
@@ -81,13 +81,20 @@ Current live note on May 13, 2026:
   - `psb_sgx_lab_submit_sgx_queued_ta_command`
   - `psb_sgx_lab_submit_sgx_ta_submission`
   - `psb_sgx_lab_submit_sgx_ta_execution`
+  - `psb_sgx_lab_submit_sgx_ta_timeline`
+  - `psb_sgx_lab_submit_sgx_ta_runtime`
+  - `psb_sgx_lab_submit_sgx_ta_gate`
+  - `psb_sgx_lab_submit_sgx_ta_control`
+  - `psb_sgx_lab_submit_sgx_ta_schedule`
+  - `psb_sgx_lab_submit_sgx_ta_dispatch`
+  - `psb_sgx_lab_submit_sgx_ta_path`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-120641`
-  - `source_row_module_srcversion=311989DA7E14F05C171ED79`
+  - `source_timestamp=20260513-164848`
+  - `source_row_module_srcversion=A84CAC0D63EBA733BE134C6`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -106,7 +113,7 @@ Current live note on May 13, 2026:
   `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the next engineering step is no longer more exact ladder narrowing; it is
   the next SGX execution-side change on top of the new shared
-  `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command -> sgx_queued_ta_command -> sgx_ta_submission -> sgx_ta_execution`
+  `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command -> sgx_queued_ta_command -> sgx_ta_submission -> sgx_ta_execution -> sgx_ta_timeline -> sgx_ta_runtime -> sgx_ta_gate -> sgx_ta_control -> sgx_ta_schedule -> sgx_ta_dispatch -> sgx_ta_path`
   kernel model and the validated
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
   model
@@ -7824,3 +7831,58 @@ writeback image onto that shared typed dispatch object.
     - `dependency[1]_observed_complete_ticket=5`
 - documented in:
   - `docs/184-sgx-submit-ta-dispatch-object.md`
+
+2026-05-13: added `psb_sgx_lab_submit_sgx_ta_path` above
+`psb_sgx_lab_submit_sgx_ta_dispatch`, and moved the transition-side
+queue/CCB/sync/owner writeback image onto that shared typed path object.
+
+- deploy:
+  - `logs/vaio-deploy/20260513-164652-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=A84CAC0D63EBA733BE134C6`
+    - `override_module_size=462848`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- exact proof back to green:
+  - `logs/vaio-plan-session/20260513-164848-sgx-plan-session`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=A84CAC0D63EBA733BE134C6`
+- focused typed submit passed:
+  - `logs/vaio-ioctl/20260513-165147-sgx-submit-ta-path-live/summary.log`
+  - final focused state:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- typed multi-submit passed on the new path object:
+  - `logs/vaio-ioctl/20260513-165002-sgx-multi-submit-ta-path-live/summary.log`
+  - `SUBMIT_A_ID=3`
+  - `SUBMIT_B_ID=4`
+  - submit A final:
+    - `submit_arm_count=3`
+    - `submit_emit_count=3`
+    - `submit_launch_count=3`
+    - `submit_dispatch_count=3`
+    - `submit_retired_count=3`
+    - `submit_issue_count=3`
+    - `submit_transition_count=6`
+    - `submit_dependency_active_count=0`
+  - submit B final:
+    - `submit_arm_count=2`
+    - `submit_emit_count=2`
+    - `submit_launch_count=2`
+    - `submit_dispatch_count=2`
+    - `submit_retired_count=2`
+    - `submit_issue_count=2`
+    - `submit_transition_count=4`
+    - `submit_dependency_active_count=1`
+    - `dependency[1]_required_ticket=3`
+    - `dependency[1]_observed_complete_ticket=5`
+- documented in:
+  - `docs/185-sgx-submit-ta-path-object.md`
