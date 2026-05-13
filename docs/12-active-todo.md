@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 5B50AE965337A8FBA71E50E`
-  - `override_module_size=462900`
+  - `srcversion F387C89C0831778420098EB`
+  - `override_module_size=463956`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260513-120442-guarded-deploy`
+  - `logs/vaio-deploy/20260513-185946-sgx-ta-op-deploy`
 - exact live reruns on the fixed module now all complete cleanly:
   - `plan_query_offset`
   - `plan_query_config`
@@ -61,22 +61,22 @@ implementation if it materially changes scope.
   - `complete`
 - canonical bundles for that fixed-module line:
   - `logs/vaio-plan-session/20260513-120641-sgx-plan-session`
-- the newest internal `ta-path` issue-unification batch is now
+- the newest internal `ta-op` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260513-170719-sgx-plan-session`
+    - `logs/vaio-plan-session/20260513-190135-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260513-170719-sgx-submit-ta-path-issue-live/summary.log`
+    - `logs/vaio-ioctl/20260513-190259-sgx-submit-ta-op-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260513-170719-sgx-multi-submit-ta-path-issue-live/summary.log`
+    - `logs/vaio-ioctl/20260513-190345-sgx-multi-submit-ta-op-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-170719`
-  - `source_row_module_srcversion=5B50AE965337A8FBA71E50E`
+  - `source_timestamp=20260513-190135`
+  - `source_row_module_srcversion=F387C89C0831778420098EB`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
