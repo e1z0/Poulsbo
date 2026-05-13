@@ -1,638 +1,388 @@
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 1268e2042..1bd2e8e36 100644
+index 1bd2e8e36..8ac6de741 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1360,6 +1360,37 @@ struct psb_sgx_lab_submit_sgx_ta_timeline {
- 	struct psb_sgx_lab_submit_sgx_queued_ta_command retired_command;
+@@ -1391,6 +1391,33 @@ struct psb_sgx_lab_submit_sgx_ta_runtime {
+ 		dependencies[PSB_SGX_LAB_DEPENDENCY_SLOTS];
  };
  
-+struct psb_sgx_lab_submit_sgx_dependency_state {
++struct psb_sgx_lab_submit_sgx_gate_slot {
 +	bool active;
++	bool source_bound;
 +	bool source_missing;
++	bool gated;
++	bool satisfied;
++	bool blocked;
++	bool ready;
 +	u32 submit_id;
 +	u32 required_ticket;
 +	u32 observed_complete_ticket;
 +	u32 flags;
 +};
 +
-+struct psb_sgx_lab_submit_sgx_coordination {
-+	u32 issue_ticket;
-+	u32 running_ticket;
-+	u32 complete_ticket;
-+	u32 issue_submit_id;
-+	u32 running_submit_id;
-+	u32 complete_submit_id;
-+	bool active_running_valid;
-+	u32 active_running_submit_id;
-+	u32 running_owner_submit_count;
-+	u32 running_owner_submit_id;
-+};
-+
-+struct psb_sgx_lab_submit_sgx_ta_runtime {
-+	struct psb_sgx_lab_submit_sgx_ta_timeline timeline;
-+	struct psb_sgx_lab_submit_sgx_coordination coordination;
-+	u32 sync_outstanding_count;
-+	u32 owner_outstanding_count;
-+	struct psb_sgx_lab_submit_sgx_dependency_state
++struct psb_sgx_lab_submit_sgx_ta_gate {
++	struct psb_sgx_lab_submit_sgx_gate_slot
 +		dependencies[PSB_SGX_LAB_DEPENDENCY_SLOTS];
++	u32 active_dependency_count;
++	u32 source_bound_dependency_count;
++	u32 gated_dependency_count;
++	u32 satisfied_dependency_count;
++	u32 blocked_dependency_count;
++	u32 missing_dependency_count;
++	bool running_slot_busy;
++	bool can_enter_running;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_fill_submit_ccb_record_words_from_packet(
  	const struct psb_sgx_lab_submit_exec_packet *packet,
-@@ -1384,6 +1415,18 @@ static int poulsbo_sgx_build_submit_issue_plan_view_locked(
- 	struct drm_psb_private *dev_priv,
- 	struct psb_sgx_lab_submit *submit,
- 	struct psb_sgx_lab_issue_plan_words *issue_plan);
-+static u32 *poulsbo_sgx_dependency_submit_id_ptr(
-+	struct psb_sgx_lab_submit *submit, unsigned int slot);
-+static u32 *poulsbo_sgx_dependency_snapshot_flags_ptr(
-+	struct psb_sgx_lab_submit *submit, unsigned int slot);
-+static u32 poulsbo_sgx_dependency_required_ticket(
-+	struct psb_sgx_lab_submit *submit, unsigned int slot);
-+static int poulsbo_sgx_dependency_observed_ticket_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	unsigned int slot,
-+	u32 *observed_complete_ticket_out,
-+	bool *source_missing_out);
- 
- static const char *poulsbo_sgx_lab_role_name(u32 role)
- {
-@@ -3480,6 +3523,92 @@ static int poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
+@@ -3609,6 +3636,100 @@ static int poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
-+	struct drm_psb_private *dev_priv,
++static int poulsbo_sgx_build_submit_sgx_ta_gate_locked(
 +	struct psb_sgx_lab_submit *submit,
-+	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime)
++	const struct psb_sgx_lab_submit_sgx_ta_runtime *runtime,
++	struct psb_sgx_lab_submit_sgx_ta_gate *gate)
 +{
-+	struct psb_sgx_lab_submit *peer_submit;
 +	unsigned int slot;
-+	int ret;
 +
-+	if (!dev_priv || !submit || !runtime)
++	if (!submit || !runtime || !gate)
 +		return -EINVAL;
 +
-+	memset(runtime, 0, sizeof(*runtime));
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
-+		dev_priv, submit, &runtime->timeline);
-+	if (ret)
-+		return ret;
-+
-+	runtime->coordination.issue_ticket = dev_priv->sgx_lab_global_issue_ticket;
-+	runtime->coordination.running_ticket =
-+		dev_priv->sgx_lab_global_running_ticket;
-+	runtime->coordination.complete_ticket =
-+		dev_priv->sgx_lab_global_complete_ticket;
-+	runtime->coordination.issue_submit_id =
-+		dev_priv->sgx_lab_global_issue_submit_id;
-+	runtime->coordination.running_submit_id =
-+		dev_priv->sgx_lab_global_running_submit_id;
-+	runtime->coordination.complete_submit_id =
-+		dev_priv->sgx_lab_global_complete_submit_id;
-+	runtime->coordination.active_running_valid =
-+		dev_priv->sgx_lab_running_active;
-+	runtime->coordination.active_running_submit_id =
-+		dev_priv->sgx_lab_active_running_submit_id;
-+
-+	if (submit->sync_config_count)
-+		runtime->sync_outstanding_count =
-+			submit->sync_pending_seq - submit->sync_complete_seq;
-+	if (submit->owner_config_count)
-+		runtime->owner_outstanding_count =
-+			submit->owner_issue_cookie - submit->owner_complete_cookie;
++	memset(gate, 0, sizeof(*gate));
 +
 +	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
-+		struct psb_sgx_lab_submit_sgx_dependency_state *dependency;
-+		u32 *dependency_submit_id;
-+		u32 *dependency_snapshot_flags;
++		const struct psb_sgx_lab_submit_sgx_dependency_state *dependency;
++		struct psb_sgx_lab_submit_sgx_gate_slot *gate_dependency;
 +
 +		dependency = &runtime->dependencies[slot];
-+		dependency_submit_id =
-+			poulsbo_sgx_dependency_submit_id_ptr(submit, slot);
-+		dependency_snapshot_flags =
-+			poulsbo_sgx_dependency_snapshot_flags_ptr(submit, slot);
-+		if (!dependency_submit_id || !dependency_snapshot_flags)
-+			return -EINVAL;
++		gate_dependency = &gate->dependencies[slot];
 +
-+		dependency->active =
-+			poulsbo_sgx_dependency_slot_active(submit, slot);
-+		dependency->submit_id = *dependency_submit_id;
-+		dependency->required_ticket =
-+			poulsbo_sgx_dependency_required_ticket(submit, slot);
-+		dependency->flags = *dependency_snapshot_flags;
++		gate_dependency->active = dependency->active;
++		gate_dependency->source_bound = !!dependency->submit_id;
++		gate_dependency->source_missing = dependency->source_missing;
++		gate_dependency->gated = !!dependency->required_ticket;
++		gate_dependency->submit_id = dependency->submit_id;
++		gate_dependency->required_ticket = dependency->required_ticket;
++		gate_dependency->observed_complete_ticket =
++			dependency->observed_complete_ticket;
++		gate_dependency->flags = dependency->flags;
++		gate_dependency->satisfied =
++			dependency->active &&
++			(!gate_dependency->gated ||
++			 dependency->observed_complete_ticket >=
++				 dependency->required_ticket);
++		gate_dependency->blocked =
++			dependency->active && gate_dependency->gated &&
++			!gate_dependency->satisfied;
++		gate_dependency->ready =
++			dependency->active &&
++			!gate_dependency->source_missing &&
++			gate_dependency->satisfied;
 +
-+		if (!dependency->active)
++		if (!gate_dependency->active)
 +			continue;
 +
-+		ret = poulsbo_sgx_dependency_observed_ticket_locked(
-+			dev_priv, submit, slot,
-+			&dependency->observed_complete_ticket,
-+			&dependency->source_missing);
-+		if (ret)
-+			return ret;
++		gate->active_dependency_count++;
++		if (gate_dependency->source_bound)
++			gate->source_bound_dependency_count++;
++		if (gate_dependency->gated)
++			gate->gated_dependency_count++;
++		if (gate_dependency->satisfied)
++			gate->satisfied_dependency_count++;
++		if (gate_dependency->blocked)
++			gate->blocked_dependency_count++;
++		if (gate_dependency->source_missing)
++			gate->missing_dependency_count++;
 +	}
 +
-+	list_for_each_entry(peer_submit, &dev_priv->sgx_lab_submit_list, head) {
-+		if (!peer_submit->owner_config_count)
-+			continue;
-+		if (peer_submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING)
-+			continue;
-+		runtime->coordination.running_owner_submit_count++;
-+		runtime->coordination.running_owner_submit_id =
-+			peer_submit->submit_id;
-+	}
++	gate->running_slot_busy =
++		runtime->coordination.active_running_valid &&
++		runtime->coordination.active_running_submit_id !=
++			submit->submit_id;
++	gate->can_enter_running =
++		!gate->running_slot_busy &&
++		!gate->blocked_dependency_count &&
++		!gate->missing_dependency_count;
 +
 +	return 0;
++}
++
++static int poulsbo_sgx_submit_sgx_ta_gate_status_locked(
++	const struct psb_sgx_lab_submit_sgx_ta_gate *gate)
++{
++	unsigned int slot;
++
++	if (!gate)
++		return -EINVAL;
++	if (gate->running_slot_busy)
++		return -EBUSY;
++
++	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
++		const struct psb_sgx_lab_submit_sgx_gate_slot *dependency;
++
++		dependency = &gate->dependencies[slot];
++		if (!dependency->active)
++			continue;
++		if (dependency->source_missing)
++			return -ENOENT;
++		if (dependency->blocked)
++			return -EAGAIN;
++	}
++
++	return gate->can_enter_running ? 0 : -EINVAL;
 +}
 +
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -8391,29 +8520,23 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_execution_locked(
- 		&execution->launch_kick, &execution->launch_submission);
+@@ -7423,47 +7544,6 @@ static int poulsbo_sgx_dependency_observed_ticket_locked(
+ 	return 0;
  }
  
--static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_timeline_locked(
- 	struct drm_psb_private *dev_priv,
- 	struct psb_sgx_lab_submit *submit,
- 	struct psb_sgx_lab_object *control_obj,
--	struct psb_sgx_lab_object *status_obj)
-+	struct psb_sgx_lab_object *status_obj,
-+	struct psb_sgx_lab_submit_sgx_ta_timeline *timeline)
- {
- 	struct psb_sgx_lab_submit_sgx_queued_ta_command *launch_submission_command;
--	struct psb_sgx_lab_submit_sgx_ta_timeline *timeline;
- 	int ret;
- 
--	timeline = kmalloc(sizeof(*timeline), GFP_KERNEL);
- 	if (!timeline)
--		return -ENOMEM;
+-static int poulsbo_sgx_dependency_gate_slot_locked(
+-	struct drm_psb_private *dev_priv,
+-	struct psb_sgx_lab_submit *submit,
+-	unsigned int slot)
+-{
+-	u32 *dependency_submit_id = poulsbo_sgx_dependency_submit_id_ptr(submit,
+-									 slot);
+-	u32 *dependency_snapshot_flags =
+-		poulsbo_sgx_dependency_snapshot_flags_ptr(submit, slot);
+-	u32 *dependency_config_count =
+-		poulsbo_sgx_dependency_config_count_ptr(submit, slot);
+-	u32 required_ticket =
+-		poulsbo_sgx_dependency_required_ticket(submit, slot);
+-	u32 observed_complete_ticket;
+-	bool source_missing;
+-	int ret;
 -
--	ret = poulsbo_sgx_build_submit_sgx_ta_timeline_locked(
--		dev_priv, submit, timeline);
+-	if (!poulsbo_sgx_dependency_slot_active(submit, slot))
+-		return 0;
+-	if (!dependency_submit_id || !dependency_snapshot_flags ||
+-	    !dependency_config_count)
+-		return -EINVAL;
+-
+-	ret = poulsbo_sgx_dependency_observed_ticket_locked(
+-		dev_priv, submit, slot, &observed_complete_ticket,
+-		&source_missing);
 -	if (ret)
--		goto out;
+-		return ret;
+-
+-	if (*dependency_submit_id && source_missing &&
+-	    (!*dependency_config_count ||
+-	     !(*dependency_snapshot_flags &
+-	       PSB_SGX_LAB_DEPENDENCY_FLAG_SOURCE_MISSING)))
+-		return -ENOENT;
+-	if (required_ticket &&
+-	    observed_complete_ticket < required_ticket)
+-		return -EAGAIN;
+-
+-	return 0;
+-}
+-
+ static int poulsbo_sgx_queue_progression(u32 read_offset, u32 queue_size,
+ 					 u32 queue_packet_size,
+ 					 u32 queue_packet_count,
+@@ -8619,6 +8699,110 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_timeline_locked(
+ 	return 0;
+ }
+ 
++static int poulsbo_sgx_validate_built_submit_sgx_ta_gate_locked(
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_submit_sgx_ta_runtime *runtime,
++	const struct psb_sgx_lab_submit_sgx_ta_gate *gate)
++{
++	u32 active_dependency_count = 0;
++	u32 source_bound_dependency_count = 0;
++	u32 gated_dependency_count = 0;
++	u32 satisfied_dependency_count = 0;
++	u32 blocked_dependency_count = 0;
++	u32 missing_dependency_count = 0;
++	bool running_slot_busy;
++	bool can_enter_running;
++	unsigned int slot;
++
++	if (!submit || !runtime || !gate)
 +		return -EINVAL;
- 
- 	ret = poulsbo_sgx_validate_built_submit_sgx_ta_execution_locked(
- 		dev_priv, submit, control_obj, status_obj, &timeline->execution);
- 	if (ret)
--		goto out;
-+		return ret;
- 
- 	if (timeline->report_stage != poulsbo_sgx_submit_report_stage_locked(submit) ||
- 	    timeline->report_stage_count !=
-@@ -8433,48 +8556,42 @@ static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
- 	    !!timeline->have_launch_command != !!submit->launch_valid ||
- 	    !!timeline->have_dispatch_command != !!submit->dispatch_valid ||
- 	    !!timeline->have_retired_command != !!submit->retired_valid) {
--		ret = -EINVAL;
--		goto out;
-+		return -EINVAL;
- 	}
- 
--	if (timeline->have_retired_command && !timeline->have_dispatch_command) {
--		ret = -EINVAL;
--		goto out;
--	}
-+	if (timeline->have_retired_command && !timeline->have_dispatch_command)
-+		return -EINVAL;
- 
- 	if (timeline->have_launch_command) {
- 		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
- 			&timeline->launch_kick, &timeline->launch_command);
- 		if (ret)
--			goto out;
-+			return ret;
- 	}
- 	if (timeline->have_dispatch_command) {
- 		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
- 			&timeline->dispatch_kick, &timeline->dispatch_command);
- 		if (ret)
--			goto out;
-+			return ret;
- 		if (timeline->have_launch_command &&
- 		    !poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
- 			    &timeline->launch_command,
--			    &timeline->dispatch_command)) {
--			ret = -EINVAL;
--			goto out;
--		}
-+			    &timeline->dispatch_command))
++
++	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
++		const struct psb_sgx_lab_submit_sgx_dependency_state *dependency;
++		const struct psb_sgx_lab_submit_sgx_gate_slot *gate_dependency;
++		bool source_bound;
++		bool gated;
++		bool satisfied;
++		bool blocked;
++		bool ready;
++
++		dependency = &runtime->dependencies[slot];
++		gate_dependency = &gate->dependencies[slot];
++		source_bound = !!dependency->submit_id;
++		gated = !!dependency->required_ticket;
++		satisfied = dependency->active &&
++			    (!gated ||
++			     dependency->observed_complete_ticket >=
++				     dependency->required_ticket);
++		blocked = dependency->active && gated && !satisfied;
++		ready = dependency->active && !dependency->source_missing &&
++			satisfied;
++
++		if (gate_dependency->active != dependency->active ||
++		    gate_dependency->source_bound != source_bound ||
++		    gate_dependency->source_missing !=
++			    dependency->source_missing ||
++		    gate_dependency->gated != gated ||
++		    gate_dependency->satisfied != satisfied ||
++		    gate_dependency->blocked != blocked ||
++		    gate_dependency->ready != ready ||
++		    gate_dependency->submit_id != dependency->submit_id ||
++		    gate_dependency->required_ticket !=
++			    dependency->required_ticket ||
++		    gate_dependency->observed_complete_ticket !=
++			    dependency->observed_complete_ticket ||
++		    gate_dependency->flags != dependency->flags) {
 +			return -EINVAL;
- 	}
- 	if (timeline->have_retired_command) {
- 		ret = poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
- 			&timeline->retired_kick, &timeline->retired_command);
- 		if (ret)
--			goto out;
-+			return ret;
- 		if (!poulsbo_sgx_submit_sgx_queued_ta_command_identity_equal(
--			    &timeline->dispatch_command, &timeline->retired_command)) {
--			ret = -EINVAL;
--			goto out;
--		}
-+			    &timeline->dispatch_command,
-+			    &timeline->retired_command))
-+			return -EINVAL;
- 	}
- 
- 	if (!timeline->execution.have_launch_submission)
--		goto out_ok;
-+		return 0;
- 
- 	launch_submission_command =
- 		&timeline->execution.launch_submission.queued_ta_command;
-@@ -8496,15 +8613,193 @@ static int poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
- 	    launch_submission_command->queue_header.queue_tail_packet_count !=
- 		    timeline->launch_command.queue_header.queue_tail_packet_count ||
- 	    launch_submission_command->queue_header.queue_head_packet_count !=
--		    timeline->launch_command.queue_header.queue_head_packet_count) {
-+		    timeline->launch_command.queue_header.queue_head_packet_count)
++		}
++
++		if (!dependency->active)
++			continue;
++
++		active_dependency_count++;
++		if (source_bound)
++			source_bound_dependency_count++;
++		if (gated)
++			gated_dependency_count++;
++		if (satisfied)
++			satisfied_dependency_count++;
++		if (blocked)
++			blocked_dependency_count++;
++		if (dependency->source_missing)
++			missing_dependency_count++;
++	}
++
++	running_slot_busy =
++		runtime->coordination.active_running_valid &&
++		runtime->coordination.active_running_submit_id !=
++			submit->submit_id;
++	can_enter_running =
++		!running_slot_busy &&
++		!blocked_dependency_count &&
++		!missing_dependency_count;
++
++	if (gate->active_dependency_count != active_dependency_count ||
++	    gate->source_bound_dependency_count !=
++		    source_bound_dependency_count ||
++	    gate->gated_dependency_count != gated_dependency_count ||
++	    gate->satisfied_dependency_count != satisfied_dependency_count ||
++	    gate->blocked_dependency_count != blocked_dependency_count ||
++	    gate->missing_dependency_count != missing_dependency_count ||
++	    gate->running_slot_busy != running_slot_busy ||
++	    gate->can_enter_running != can_enter_running) {
 +		return -EINVAL;
++	}
++
++	if ((submit->issue_count || submit->transition_count ||
++	     submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING ||
++	     submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE) &&
++	    (gate->blocked_dependency_count ||
++	     gate->missing_dependency_count)) {
++		return -EINVAL;
++	}
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_object *status_obj)
-+{
-+	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime;
-+	bool any_dependency_active = false;
-+	bool any_dependency_required = false;
-+	unsigned int slot;
-+	int ret;
-+
-+	runtime = kmalloc(sizeof(*runtime), GFP_KERNEL);
-+	if (!runtime)
-+		return -ENOMEM;
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
-+		dev_priv, submit, runtime);
-+	if (ret)
-+		goto out;
-+
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_timeline_locked(
-+		dev_priv, submit, control_obj, status_obj, &runtime->timeline);
-+	if (ret)
-+		goto out;
-+
-+	if (runtime->coordination.issue_ticket !=
-+		    dev_priv->sgx_lab_global_issue_ticket ||
-+	    runtime->coordination.running_ticket !=
-+		    dev_priv->sgx_lab_global_running_ticket ||
-+	    runtime->coordination.complete_ticket !=
-+		    dev_priv->sgx_lab_global_complete_ticket ||
-+	    runtime->coordination.issue_submit_id !=
-+		    dev_priv->sgx_lab_global_issue_submit_id ||
-+	    runtime->coordination.running_submit_id !=
-+		    dev_priv->sgx_lab_global_running_submit_id ||
-+	    runtime->coordination.complete_submit_id !=
-+		    dev_priv->sgx_lab_global_complete_submit_id ||
-+	    runtime->coordination.active_running_valid !=
-+		    dev_priv->sgx_lab_running_active ||
-+	    runtime->coordination.active_running_submit_id !=
-+		    dev_priv->sgx_lab_active_running_submit_id) {
- 		ret = -EINVAL;
+ static int poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
+ 	struct drm_psb_private *dev_priv,
+ 	struct psb_sgx_lab_submit *submit,
+@@ -8626,6 +8810,7 @@ static int poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
+ 	struct psb_sgx_lab_object *status_obj)
+ {
+ 	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime;
++	struct psb_sgx_lab_submit_sgx_ta_gate gate;
+ 	bool any_dependency_active = false;
+ 	bool any_dependency_required = false;
+ 	unsigned int slot;
+@@ -8645,6 +8830,16 @@ static int poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
+ 	if (ret)
  		goto out;
- 	}
  
--out_ok:
-+	for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
-+		struct psb_sgx_lab_submit_sgx_dependency_state *dependency;
-+		u32 *dependency_submit_id;
-+		u32 *dependency_snapshot_flags;
++	ret = poulsbo_sgx_build_submit_sgx_ta_gate_locked(submit, runtime,
++							  &gate);
++	if (ret)
++		goto out;
 +
-+		dependency = &runtime->dependencies[slot];
-+		dependency_submit_id =
-+			poulsbo_sgx_dependency_submit_id_ptr(submit, slot);
-+		dependency_snapshot_flags =
-+			poulsbo_sgx_dependency_snapshot_flags_ptr(submit, slot);
-+		if (!dependency_submit_id || !dependency_snapshot_flags) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (*dependency_submit_id == submit->submit_id) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (dependency->active !=
-+		    poulsbo_sgx_dependency_slot_active(submit, slot) ||
-+		    dependency->submit_id != *dependency_submit_id ||
-+		    dependency->required_ticket !=
-+			    poulsbo_sgx_dependency_required_ticket(
-+				    submit, slot) ||
-+		    dependency->flags != *dependency_snapshot_flags) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (!dependency->active)
-+			continue;
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_gate_locked(
++		submit, runtime, &gate);
++	if (ret)
++		goto out;
 +
-+		any_dependency_active = true;
-+		if (dependency->required_ticket)
-+			any_dependency_required = true;
-+		/*
-+		 * Validation is allowed to observe a still-blocked dependency.
-+		 * The launch/issue path enforces the gate when execution tries
-+		 * to consume the submission.
-+		 */
-+		if (dependency->submit_id &&
-+		    dependency->source_missing &&
-+		    !(dependency->flags &
-+		      PSB_SGX_LAB_DEPENDENCY_FLAG_SOURCE_MISSING)) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
-+
-+	if (submit->sync_config_count) {
-+		if (any_dependency_active && !any_dependency_required) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (submit->sync_pending_seq < submit->sync_complete_seq ||
-+		    runtime->sync_outstanding_count !=
-+			    submit->sync_pending_seq -
-+				    submit->sync_complete_seq ||
-+		    runtime->sync_outstanding_count !=
-+			    submit->queue_packet_count ||
-+		    !!submit->issue_count != !!submit->global_issue_ticket ||
-+		    submit->global_issue_ticket >
-+			    runtime->coordination.issue_ticket) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
-+
-+	if (submit->owner_config_count) {
-+		if (submit->owner_issue_cookie < submit->owner_complete_cookie ||
-+		    runtime->owner_outstanding_count !=
-+			    submit->owner_issue_cookie -
-+				    submit->owner_complete_cookie ||
-+		    runtime->owner_outstanding_count !=
-+			    runtime->sync_outstanding_count ||
-+		    (!submit->transition_count &&
-+		     (submit->global_complete_ticket ||
-+		      submit->global_running_ticket)) ||
-+		    submit->global_running_ticket >
-+			    runtime->coordination.running_ticket ||
-+		    submit->global_complete_ticket >
-+			    runtime->coordination.complete_ticket) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+
-+		if (runtime->coordination.running_owner_submit_count > 1) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+		if (runtime->coordination.running_owner_submit_count) {
-+			if (!runtime->coordination.active_running_valid ||
-+			    runtime->coordination.active_running_submit_id !=
-+				    runtime->coordination.running_owner_submit_id) {
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+		} else if (runtime->coordination.active_running_valid) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+
-+		if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
-+			if (!submit->global_running_ticket ||
-+			    !runtime->coordination.active_running_valid ||
-+			    runtime->coordination.active_running_submit_id !=
-+				    submit->submit_id ||
-+			    runtime->coordination.running_ticket !=
-+				    submit->global_running_ticket) {
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+		} else if (runtime->coordination.active_running_valid &&
-+			   runtime->coordination.active_running_submit_id ==
-+				   submit->submit_id) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+
-+		if (!runtime->owner_outstanding_count) {
-+			if (submit->owner_state != PSB_SGX_LAB_OWNER_COMPLETE ||
-+			    !submit->global_complete_ticket) {
-+				ret = -EINVAL;
-+				goto out;
-+			}
-+		} else if (submit->owner_state ==
-+			   PSB_SGX_LAB_OWNER_COMPLETE) {
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+	}
-+
- 	ret = 0;
-+
- out:
--	kfree(timeline);
-+	kfree(runtime);
- 	return ret;
- }
- 
-@@ -8518,13 +8813,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 	u32 expected_roles[5];
- 	u32 expected_classes[5];
- 	u32 expected_gpu_uses[5];
--	u32 expected_sync_outstanding;
--	u32 expected_owner_outstanding;
--	u32 running_submit_count = 0;
--	u32 running_submit_id = 0;
--	u32 dependency_complete_ticket[PSB_SGX_LAB_DEPENDENCY_SLOTS] = { 0 };
- 	unsigned int i, slot;
--	bool dependency_source_missing[PSB_SGX_LAB_DEPENDENCY_SLOTS] = { false };
+ 	if (runtime->coordination.issue_ticket !=
+ 		    dev_priv->sgx_lab_global_issue_ticket ||
+ 	    runtime->coordination.running_ticket !=
+@@ -11526,6 +11721,8 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+ 	u32 new_global_running_ticket;
+ 	u32 new_global_complete_ticket;
+ 	bool entering_running;
++	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_gate gate;
  	int ret;
  
- 	if (submit->context == PSB_SGX_LAB_CONTEXT_AUTO)
-@@ -8537,15 +8826,6 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 
- 		if (!dependency_submit_id)
- 			return -EINVAL;
--		if (*dependency_submit_id == submit->submit_id)
--			return -EINVAL;
--		if (!poulsbo_sgx_dependency_slot_active(submit, slot))
--			continue;
--		ret = poulsbo_sgx_dependency_observed_ticket_locked(
--			dev_priv, submit, slot, &dependency_complete_ticket[slot],
--			&dependency_source_missing[slot]);
--		if (ret)
--			return ret;
- 	}
- 	if (submit->cmd_type != PSB_SGX_LAB_CMD_TA)
- 		return -EOPNOTSUPP;
-@@ -8622,18 +8902,6 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 	    submit->queue_size / submit->queue_packet_size)
- 		return -EINVAL;
- 	if (submit->sync_config_count) {
--		bool any_dependency_active = false;
--		bool any_dependency_required = false;
+ 	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
+@@ -11593,32 +11790,24 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+ 	new_global_running_ticket = submit->global_running_ticket;
+ 	if (owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
+ 		if (entering_running) {
+-			unsigned int dependency_slot;
+-			bool dependency_active = false;
 -
--		for (slot = 0; slot < PSB_SGX_LAB_DEPENDENCY_SLOTS; slot++) {
--			if (!poulsbo_sgx_dependency_slot_active(submit, slot))
--				continue;
--			any_dependency_active = true;
--			if (poulsbo_sgx_dependency_required_ticket(submit, slot))
--				any_dependency_required = true;
--		}
--		if (any_dependency_active && !any_dependency_required)
--			return -EINVAL;
- 		if (!(submit->sync_flags & PSB_SGX_LAB_SYNC_FLAG_READY))
- 			return -EINVAL;
- 		if (submit->sync_flags &
-@@ -8645,131 +8913,25 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 			return -EINVAL;
- 		if (submit->sync_pending_seq < submit->sync_complete_seq)
- 			return -EINVAL;
--		expected_sync_outstanding = submit->sync_pending_seq -
--					    submit->sync_complete_seq;
--		if (expected_sync_outstanding != submit->queue_packet_count)
--			return -EINVAL;
--		if (!!submit->issue_count != !!submit->global_issue_ticket)
--			return -EINVAL;
--		if (submit->global_issue_ticket >
--		    dev_priv->sgx_lab_global_issue_ticket)
--			return -EINVAL;
- 	}
- 	if (submit->owner_config_count) {
--		struct psb_sgx_lab_submit *peer_submit;
--
- 		if (!submit->sync_config_count)
- 			return -EINVAL;
- 		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
- 		    submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING &&
- 		    submit->owner_state != PSB_SGX_LAB_OWNER_COMPLETE)
- 			return -EINVAL;
--		if (submit->owner_issue_cookie < submit->owner_complete_cookie)
--			return -EINVAL;
--		expected_owner_outstanding = submit->owner_issue_cookie -
--					       submit->owner_complete_cookie;
--		if (expected_owner_outstanding != expected_sync_outstanding)
--			return -EINVAL;
--		if (!submit->transition_count &&
--		    submit->global_complete_ticket)
--			return -EINVAL;
--		if (!submit->transition_count &&
--		    submit->global_running_ticket)
--			return -EINVAL;
--		if (submit->global_running_ticket >
--		    dev_priv->sgx_lab_global_running_ticket)
--			return -EINVAL;
- 		if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING ||
- 		    submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
--			bool has_dependency = false;
--
- 			for (slot = 0;
- 			     slot < PSB_SGX_LAB_DEPENDENCY_SLOTS;
- 			     slot++) {
--				u32 *dependency_submit_id =
--					poulsbo_sgx_dependency_submit_id_ptr(
--						submit, slot);
--				u32 *dependency_snapshot_flags =
--					poulsbo_sgx_dependency_snapshot_flags_ptr(
--						submit, slot);
--
- 				if (!poulsbo_sgx_dependency_slot_active(
- 					    submit, slot))
- 					continue;
--				has_dependency = true;
--				if (!dependency_submit_id ||
--				    !dependency_snapshot_flags)
--					return -EINVAL;
--				if (dependency_complete_ticket[slot] <
--				    poulsbo_sgx_dependency_required_ticket(
--					    submit, slot))
--					return -EINVAL;
--				if (*dependency_submit_id &&
--				    dependency_source_missing[slot] &&
--				    !(*dependency_snapshot_flags &
--				      PSB_SGX_LAB_DEPENDENCY_FLAG_SOURCE_MISSING))
--					return -EINVAL;
--			}
--			if (!has_dependency) {
--				for (slot = 0;
--				     slot < PSB_SGX_LAB_DEPENDENCY_SLOTS;
--				     slot++) {
--					if (!poulsbo_sgx_dependency_required_ticket(
--						    submit, slot))
--						continue;
--					return -EINVAL;
--				}
-+				break;
+-			if (dev_priv->sgx_lab_running_active) {
+-				ret = -EBUSY;
++			runtime = kmalloc(sizeof(*runtime), GFP_KERNEL);
++			if (!runtime) {
++				ret = -ENOMEM;
+ 				goto out_unlock;
  			}
- 		}
--		if (submit->global_complete_ticket >
--		    dev_priv->sgx_lab_global_complete_ticket)
--			return -EINVAL;
--		list_for_each_entry(peer_submit, &dev_priv->sgx_lab_submit_list,
--				    head) {
--			if (!peer_submit->owner_config_count)
--				continue;
--			if (peer_submit->owner_state !=
--			    PSB_SGX_LAB_OWNER_RUNNING)
--				continue;
--			running_submit_count++;
--			running_submit_id = peer_submit->submit_id;
--		}
--		if (running_submit_count > 1)
--			return -EINVAL;
--		if (running_submit_count) {
--			if (!dev_priv->sgx_lab_running_active)
--				return -EINVAL;
--			if (dev_priv->sgx_lab_active_running_submit_id !=
--			    running_submit_id)
--				return -EINVAL;
--		} else if (dev_priv->sgx_lab_running_active) {
--			return -EINVAL;
--		}
--		if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
--			if (!submit->global_running_ticket)
--				return -EINVAL;
--			if (!dev_priv->sgx_lab_running_active)
--				return -EINVAL;
--			if (dev_priv->sgx_lab_active_running_submit_id !=
--			    submit->submit_id)
--				return -EINVAL;
--			if (dev_priv->sgx_lab_global_running_ticket !=
--			    submit->global_running_ticket)
--				return -EINVAL;
--		} else if (dev_priv->sgx_lab_running_active &&
--			   dev_priv->sgx_lab_active_running_submit_id ==
--			   submit->submit_id) {
--			return -EINVAL;
--		}
--		if (!expected_owner_outstanding) {
--			if (submit->owner_state != PSB_SGX_LAB_OWNER_COMPLETE)
--				return -EINVAL;
--			if (!submit->global_complete_ticket)
--				return -EINVAL;
--		} else if (submit->owner_state ==
--			   PSB_SGX_LAB_OWNER_COMPLETE) {
--			return -EINVAL;
--		}
- 	}
- 	if (submit->report_config_count) {
- 		if (!submit->status_object_id)
-@@ -8852,7 +9014,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 		submit, status_obj, NULL);
- 	if (ret)
- 		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_timeline_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
- 		dev_priv, submit, control_obj, status_obj);
- }
+-			for (dependency_slot = 0;
+-			     dependency_slot < PSB_SGX_LAB_DEPENDENCY_SLOTS;
+-			     dependency_slot++) {
+-				if (!poulsbo_sgx_dependency_slot_active(
+-					    submit, dependency_slot))
+-					continue;
+-				dependency_active = true;
+-				ret = poulsbo_sgx_dependency_gate_slot_locked(
+-					dev_priv, submit, dependency_slot);
+-				if (ret && ret != -ENOENT && ret != -EAGAIN)
+-					goto out_unlock;
+-				if (ret)
+-					goto out_unlock;
+-			}
+-			if (!dependency_active && submit->ta_dependency >
+-				    dev_priv->sgx_lab_global_complete_ticket) {
+-				ret = -EAGAIN;
++
++			ret = poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
++				dev_priv, submit, runtime);
++			if (ret)
++				goto out_unlock;
++			ret = poulsbo_sgx_build_submit_sgx_ta_gate_locked(
++				submit, runtime, &gate);
++			if (ret)
++				goto out_unlock;
++			ret = poulsbo_sgx_submit_sgx_ta_gate_status_locked(
++				&gate);
++			if (ret)
+ 				goto out_unlock;
+-			}
+ 			if (dev_priv->sgx_lab_global_running_ticket ==
+ 			    U32_MAX) {
+ 				ret = -EOVERFLOW;
+@@ -11826,6 +12015,7 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+ 	mutex_unlock(&dev_priv->gtt_mutex);
+ 	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
+ 	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
++	kfree(runtime);
  
+ 	if (!ret)
+ 		dev_info(dev->dev,
