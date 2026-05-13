@@ -1,73 +1,71 @@
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 04818af33..4019d382e 100644
+index 4019d382e..2d3d4c68a 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -124,6 +124,9 @@ enum psb_sgx_lab_cmd_type {
- #define PSB_SGX_LAB_CMDTA_CTRLFLAGS_READY 0x00000001
- #define PSB_SGX_LAB_MAX_STATUS_VALS 16
- #define PSB_SGX_LAB_MAX_DST_SYNC_OBJECTS 1
-+#define PSB_SGX_LAB_MAX_TA_SRC_SYNCS 1
-+#define PSB_SGX_LAB_MAX_TA_DST_SYNCS PSB_SGX_LAB_MAX_DST_SYNC_OBJECTS
-+#define PSB_SGX_LAB_MAX_3D_SRC_SYNCS 1
- #define PSB_SGX_LAB_SYNC_FLAG_READY 0x00000001
- #define PSB_SGX_LAB_SYNC_FLAG_WRAPPED 0x00000002
- #define PSB_SGX_LAB_QUEUE_HEADER_DWORDS 8
-@@ -1262,6 +1265,17 @@ struct psb_sgx_lab_submit_sgx_cmdta_shared {
- 	const struct psb_sgx_lab_submit_status_update *threed_status_info;
+@@ -1276,6 +1276,27 @@ struct psb_sgx_lab_submit_sgx_cmdta {
+ 		threed_src_syncs[PSB_SGX_LAB_MAX_3D_SRC_SYNCS];
  };
  
-+struct psb_sgx_lab_submit_sgx_cmdta {
++struct psb_sgx_lab_submit_sgx_command {
++	u32 service_address;
++	u32 cache_control;
++	u32 data0;
++	u32 data1;
++};
++
++struct psb_sgx_lab_submit_sgx_ta_kick {
 +	const struct psb_sgx_lab_submit_ccb_kick *kick;
-+	struct psb_sgx_lab_submit_sgx_cmdta_shared shared;
-+	struct psb_sgx_lab_submit_sgx_device_sync_object
-+		ta_src_syncs[PSB_SGX_LAB_MAX_TA_SRC_SYNCS];
-+	struct psb_sgx_lab_submit_sgx_device_sync_object
-+		ta_dst_syncs[PSB_SGX_LAB_MAX_TA_DST_SYNCS];
-+	struct psb_sgx_lab_submit_sgx_device_sync_object
-+		threed_src_syncs[PSB_SGX_LAB_MAX_3D_SRC_SYNCS];
++	struct psb_sgx_lab_submit_sgx_command command;
++	u32 control_gpu_va32;
++	u32 ccb_gpu_va32;
++	u32 cmdta_gpu_va32;
++	u32 queue_gpu_va32;
++	u32 sync_gpu_va32;
++	u32 owner_gpu_va32;
++	u32 ta_status_gpu_va32;
++	u32 status_3d_gpu_va32;
++	struct psb_sgx_lab_submit_sgx_cmdta cmdta;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  
  static const char *poulsbo_sgx_lab_role_name(u32 role)
-@@ -3032,6 +3046,44 @@ static int poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
+@@ -3084,6 +3105,42 @@ static int poulsbo_sgx_build_submit_sgx_cmdta_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_cmdta_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_kick_locked(
 +	struct psb_sgx_lab_submit *submit,
 +	const struct psb_sgx_lab_submit_ccb_kick *kick,
-+	struct psb_sgx_lab_submit_sgx_cmdta *cmdta)
++	struct psb_sgx_lab_submit_sgx_ta_kick *ta_kick)
 +{
 +	int ret;
 +
-+	if (!submit || !kick || !cmdta)
++	if (!submit || !kick || !ta_kick)
 +		return -EINVAL;
 +
-+	memset(cmdta, 0, sizeof(*cmdta));
++	memset(ta_kick, 0, sizeof(*ta_kick));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
-+		submit, kick, &cmdta->shared);
++	ret = poulsbo_sgx_build_submit_sgx_cmdta_locked(
++		submit, kick, &ta_kick->cmdta);
 +	if (ret)
 +		return ret;
 +
-+	cmdta->kick = kick;
-+
-+	if (cmdta->shared.num_ta_src_syncs)
-+		return -EINVAL;
-+	if (cmdta->shared.num_ta_dst_syncs > ARRAY_SIZE(cmdta->ta_dst_syncs))
-+		return -EINVAL;
-+	if (cmdta->shared.num_3d_src_syncs > ARRAY_SIZE(cmdta->threed_src_syncs))
-+		return -EINVAL;
-+
-+	if (cmdta->shared.num_ta_dst_syncs)
-+		memcpy(cmdta->ta_dst_syncs,
-+		       cmdta->shared.hwdevice_sync_list.sync_data,
-+		       cmdta->shared.num_ta_dst_syncs *
-+			       sizeof(cmdta->ta_dst_syncs[0]));
-+	if (cmdta->shared.num_3d_src_syncs)
-+		cmdta->threed_src_syncs[0] =
-+			cmdta->shared.ta3d_dependency_sync;
++	ta_kick->kick = kick;
++	ta_kick->command.service_address =
++		kick->cmdta.packet.command.service_address;
++	ta_kick->command.cache_control =
++		kick->cmdta.packet.command.cache_control;
++	ta_kick->command.data0 = kick->cmdta.packet.command.data0;
++	ta_kick->command.data1 = kick->cmdta.packet.command.data1;
++	ta_kick->control_gpu_va32 = kick->cmdta.packet.control_gpu_va32;
++	ta_kick->ccb_gpu_va32 = kick->cmdta.ccb_gpu_va32;
++	ta_kick->cmdta_gpu_va32 = kick->cmdta.ccb_gpu_va32;
++	ta_kick->queue_gpu_va32 = kick->cmdta.queue_gpu_va32;
++	ta_kick->sync_gpu_va32 = kick->cmdta.sync_gpu_va32;
++	ta_kick->owner_gpu_va32 = kick->cmdta.owner_gpu_va32;
++	ta_kick->ta_status_gpu_va32 = kick->cmdta.ta_status_gpu_va32;
++	ta_kick->status_3d_gpu_va32 = kick->cmdta.status_3d_gpu_va32;
 +
 +	return 0;
 +}
@@ -75,204 +73,248 @@ index 04818af33..4019d382e 100644
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -7392,13 +7444,13 @@ static int poulsbo_sgx_validate_submit_status_side_images_locked(
+@@ -7444,132 +7501,153 @@ static int poulsbo_sgx_validate_submit_status_side_images_locked(
  	return 0;
  }
  
--static int poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
-+static int poulsbo_sgx_validate_submit_sgx_cmdta_locked(
+-static int poulsbo_sgx_validate_submit_sgx_cmdta_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_kick_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
  	struct psb_sgx_lab_object *status_obj)
  {
  	struct psb_sgx_lab_submit_ccb_kick *ccb_kick;
--	struct psb_sgx_lab_submit_sgx_cmdta_shared cmdta_shared;
-+	struct psb_sgx_lab_submit_sgx_cmdta cmdta;
+-	struct psb_sgx_lab_submit_sgx_cmdta cmdta;
++	struct psb_sgx_lab_submit_sgx_ta_kick *ta_kick;
  	u32 index;
  	int ret;
  
-@@ -7411,83 +7463,113 @@ static int poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
+ 	ccb_kick = kmalloc(sizeof(*ccb_kick), GFP_KERNEL);
+ 	if (!ccb_kick)
+ 		return -ENOMEM;
++	ta_kick = kmalloc(sizeof(*ta_kick), GFP_KERNEL);
++	if (!ta_kick) {
++		ret = -ENOMEM;
++		goto out_free_ccb_kick;
++	}
+ 
+ 	ret = poulsbo_sgx_build_submit_ccb_kick_locked(
+ 		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, false,
  		ccb_kick);
  	if (ret)
  		goto out;
--	ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
--		submit, ccb_kick, &cmdta_shared);
-+	ret = poulsbo_sgx_build_submit_sgx_cmdta_locked(
-+		submit, ccb_kick, &cmdta);
+-	ret = poulsbo_sgx_build_submit_sgx_cmdta_locked(
+-		submit, ccb_kick, &cmdta);
++	ret = poulsbo_sgx_build_submit_sgx_ta_kick_locked(
++		submit, ccb_kick, ta_kick);
  	if (ret)
  		goto out;
--	if (cmdta_shared.kick != ccb_kick ||
--	    cmdta_shared.num_ta_status_vals != ccb_kick->num_ta_status_updates ||
--	    cmdta_shared.num_3d_status_vals !=
-+	if (cmdta.kick != ccb_kick || cmdta.shared.kick != ccb_kick ||
-+	    cmdta.shared.num_ta_status_vals !=
-+		    ccb_kick->num_ta_status_updates ||
-+	    cmdta.shared.num_3d_status_vals !=
+-	if (cmdta.kick != ccb_kick || cmdta.shared.kick != ccb_kick ||
+-	    cmdta.shared.num_ta_status_vals !=
++	if (ta_kick->kick != ccb_kick || ta_kick->cmdta.kick != ccb_kick ||
++	    ta_kick->cmdta.shared.kick != ccb_kick ||
++	    ta_kick->command.service_address !=
++		    ccb_kick->cmdta.packet.command.service_address ||
++	    ta_kick->command.cache_control !=
++		    ccb_kick->cmdta.packet.command.cache_control ||
++	    ta_kick->command.data0 != ccb_kick->cmdta.packet.command.data0 ||
++	    ta_kick->command.data1 != ccb_kick->cmdta.packet.command.data1 ||
++	    ta_kick->control_gpu_va32 != ccb_kick->cmdta.packet.control_gpu_va32 ||
++	    ta_kick->ccb_gpu_va32 != ccb_kick->cmdta.ccb_gpu_va32 ||
++	    ta_kick->cmdta_gpu_va32 != ccb_kick->cmdta.ccb_gpu_va32 ||
++	    ta_kick->queue_gpu_va32 != ccb_kick->cmdta.queue_gpu_va32 ||
++	    ta_kick->sync_gpu_va32 != ccb_kick->cmdta.sync_gpu_va32 ||
++	    ta_kick->owner_gpu_va32 != ccb_kick->cmdta.owner_gpu_va32 ||
++	    ta_kick->ta_status_gpu_va32 != ccb_kick->cmdta.ta_status_gpu_va32 ||
++	    ta_kick->status_3d_gpu_va32 != ccb_kick->cmdta.status_3d_gpu_va32 ||
++	    ta_kick->cmdta.shared.num_ta_status_vals !=
+ 		    ccb_kick->num_ta_status_updates ||
+-	    cmdta.shared.num_3d_status_vals !=
++	    ta_kick->cmdta.shared.num_3d_status_vals !=
  		    ccb_kick->num_3d_status_updates ||
--	    cmdta_shared.ccb_offset != ccb_kick->ccb_offset ||
--	    cmdta_shared.ta_dependency != ccb_kick->ta_dependency ||
--	    cmdta_shared.hwdevice_sync_list.num_sync_objects !=
--		    cmdta_shared.num_dst_sync_objects ||
--	    cmdta_shared.num_ta_dst_syncs >
--		    cmdta_shared.num_dst_sync_objects) {
-+	    cmdta.shared.ccb_offset != ccb_kick->ccb_offset ||
-+	    cmdta.shared.ta_dependency != ccb_kick->ta_dependency ||
-+	    cmdta.shared.hwdevice_sync_list.num_sync_objects !=
-+		    cmdta.shared.num_dst_sync_objects ||
-+	    cmdta.shared.num_ta_dst_syncs !=
-+		    cmdta.shared.num_dst_sync_objects) {
+-	    cmdta.shared.ccb_offset != ccb_kick->ccb_offset ||
+-	    cmdta.shared.ta_dependency != ccb_kick->ta_dependency ||
+-	    cmdta.shared.hwdevice_sync_list.num_sync_objects !=
+-		    cmdta.shared.num_dst_sync_objects ||
+-	    cmdta.shared.num_ta_dst_syncs !=
+-		    cmdta.shared.num_dst_sync_objects) {
++	    ta_kick->cmdta.shared.ccb_offset != ccb_kick->ccb_offset ||
++	    ta_kick->cmdta.shared.ta_dependency != ccb_kick->ta_dependency ||
++	    ta_kick->cmdta.shared.hwdevice_sync_list.num_sync_objects !=
++		    ta_kick->cmdta.shared.num_dst_sync_objects ||
++	    ta_kick->cmdta.shared.num_ta_dst_syncs !=
++		    ta_kick->cmdta.shared.num_dst_sync_objects) {
  		ret = -EINVAL;
  		goto out;
  	}
--	if (!cmdta_shared.num_dst_sync_objects &&
-+	if (!cmdta.shared.num_dst_sync_objects &&
+-	if (!cmdta.shared.num_dst_sync_objects &&
++	if (!ta_kick->cmdta.shared.num_dst_sync_objects &&
  	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &cmdta_shared.ta_tq_sync) ||
-+		     &cmdta.shared.ta_tq_sync) ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &cmdta.shared.threed_tq_sync) ||
-+	     cmdta.shared.hwdevice_sync_list.access_gpu_va32 ||
+-		     &cmdta.shared.ta_tq_sync) ||
++		     &ta_kick->cmdta.shared.ta_tq_sync) ||
  	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &cmdta_shared.threed_tq_sync) ||
--	     cmdta_shared.hwdevice_sync_list.access_gpu_va32 ||
-+		     &cmdta.shared.hwdevice_sync_list.sync_data[0]) ||
+-		     &cmdta.shared.threed_tq_sync) ||
+-	     cmdta.shared.hwdevice_sync_list.access_gpu_va32 ||
++		     &ta_kick->cmdta.shared.threed_tq_sync) ||
++	     ta_kick->cmdta.shared.hwdevice_sync_list.access_gpu_va32 ||
  	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &cmdta_shared.hwdevice_sync_list.sync_data[0]))) {
-+		     &cmdta.ta_dst_syncs[0]) ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		     &cmdta.threed_src_syncs[0]))) {
+-		     &cmdta.shared.hwdevice_sync_list.sync_data[0]) ||
++		     &ta_kick->cmdta.shared.hwdevice_sync_list.sync_data[0]) ||
+ 	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
+-		     &cmdta.ta_dst_syncs[0]) ||
++		     &ta_kick->cmdta.ta_dst_syncs[0]) ||
+ 	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
+-		     &cmdta.threed_src_syncs[0]))) {
++		     &ta_kick->cmdta.threed_src_syncs[0]))) {
  		ret = -EINVAL;
  		goto out;
  	}
--	if (cmdta_shared.num_3d_src_syncs &&
--	    (!cmdta_shared.ta3d_dependency.submit_id ||
--	     !cmdta_shared.ta3d_dependency.required_complete_ticket)) {
-+	if (cmdta.shared.num_3d_src_syncs &&
-+	    (!cmdta.shared.ta3d_dependency.submit_id ||
-+	     !cmdta.shared.ta3d_dependency.required_complete_ticket)) {
+-	if (cmdta.shared.num_3d_src_syncs &&
+-	    (!cmdta.shared.ta3d_dependency.submit_id ||
+-	     !cmdta.shared.ta3d_dependency.required_complete_ticket)) {
++	if (ta_kick->cmdta.shared.num_3d_src_syncs &&
++	    (!ta_kick->cmdta.shared.ta3d_dependency.submit_id ||
++	     !ta_kick->cmdta.shared.ta3d_dependency.required_complete_ticket)) {
  		ret = -EINVAL;
  		goto out;
  	}
--	if (!cmdta_shared.num_ta_dst_syncs &&
-+	if (!cmdta.shared.num_ta_dst_syncs &&
+-	if (!cmdta.shared.num_ta_dst_syncs &&
++	if (!ta_kick->cmdta.shared.num_ta_dst_syncs &&
  	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &cmdta_shared.ta_tq_sync) ||
-+		     &cmdta.shared.ta_tq_sync) ||
+-		     &cmdta.shared.ta_tq_sync) ||
++		     &ta_kick->cmdta.shared.ta_tq_sync) ||
  	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		     &cmdta_shared.threed_tq_sync))) {
-+		     &cmdta.shared.threed_tq_sync))) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	if (cmdta.shared.num_dst_sync_objects &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
-+		    &cmdta.shared.hwdevice_sync_list.sync_data[0],
-+		    &cmdta.shared.ta_tq_sync)) {
+-		     &cmdta.shared.threed_tq_sync))) {
++		     &ta_kick->cmdta.shared.threed_tq_sync))) {
  		ret = -EINVAL;
  		goto out;
  	}
--	if (cmdta_shared.num_dst_sync_objects &&
-+	if (cmdta.shared.num_ta_src_syncs) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	if (!cmdta.shared.num_ta_dst_syncs &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		    &cmdta.ta_dst_syncs[0])) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	if (cmdta.shared.num_ta_dst_syncs &&
+-	if (cmdta.shared.num_dst_sync_objects &&
++	if (ta_kick->cmdta.shared.num_dst_sync_objects &&
  	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
--		    &cmdta_shared.hwdevice_sync_list.sync_data[0],
--		    &cmdta_shared.ta_tq_sync)) {
-+		    &cmdta.ta_dst_syncs[0], &cmdta.shared.ta_tq_sync)) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	if (!cmdta.shared.num_3d_src_syncs &&
-+	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
-+		    &cmdta.shared.ta3d_dependency_sync)) {
+-		    &cmdta.shared.hwdevice_sync_list.sync_data[0],
+-		    &cmdta.shared.ta_tq_sync)) {
++		    &ta_kick->cmdta.shared.hwdevice_sync_list.sync_data[0],
++		    &ta_kick->cmdta.shared.ta_tq_sync)) {
  		ret = -EINVAL;
  		goto out;
  	}
--	if (!cmdta_shared.num_3d_src_syncs &&
-+	if (!cmdta.shared.num_3d_src_syncs &&
+-	if (cmdta.shared.num_ta_src_syncs) {
++	if (ta_kick->cmdta.shared.num_ta_src_syncs) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+-	if (!cmdta.shared.num_ta_dst_syncs &&
++	if (!ta_kick->cmdta.shared.num_ta_dst_syncs &&
  	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
--		    &cmdta_shared.ta3d_dependency_sync)) {
-+		    &cmdta.threed_src_syncs[0])) {
+-		    &cmdta.ta_dst_syncs[0])) {
++		    &ta_kick->cmdta.ta_dst_syncs[0])) {
  		ret = -EINVAL;
  		goto out;
  	}
--	if (cmdta_shared.num_3d_src_syncs &&
--	    !cmdta_shared.ta3d_dependency_sync.write_complete_gpu_va32) {
-+	if (cmdta.shared.num_3d_src_syncs &&
-+	    (!cmdta.shared.ta3d_dependency_sync.write_complete_gpu_va32 ||
-+	     !poulsbo_sgx_submit_sgx_device_sync_object_equal(
-+		     &cmdta.threed_src_syncs[0],
-+		     &cmdta.shared.ta3d_dependency_sync))) {
+-	if (cmdta.shared.num_ta_dst_syncs &&
++	if (ta_kick->cmdta.shared.num_ta_dst_syncs &&
+ 	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
+-		    &cmdta.ta_dst_syncs[0], &cmdta.shared.ta_tq_sync)) {
++		    &ta_kick->cmdta.ta_dst_syncs[0],
++		    &ta_kick->cmdta.shared.ta_tq_sync)) {
  		ret = -EINVAL;
  		goto out;
  	}
--	for (index = 0; index < cmdta_shared.num_ta_status_vals; index++) {
--		if (cmdta_shared.ta_status_info[index].value_offset !=
-+	for (index = 0; index < cmdta.shared.num_ta_status_vals; index++) {
-+		if (cmdta.shared.ta_status_info[index].value_offset !=
+-	if (!cmdta.shared.num_3d_src_syncs &&
++	if (!ta_kick->cmdta.shared.num_3d_src_syncs &&
+ 	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
+-		    &cmdta.shared.ta3d_dependency_sync)) {
++		    &ta_kick->cmdta.shared.ta3d_dependency_sync)) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+-	if (!cmdta.shared.num_3d_src_syncs &&
++	if (!ta_kick->cmdta.shared.num_3d_src_syncs &&
+ 	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
+-		    &cmdta.threed_src_syncs[0])) {
++		    &ta_kick->cmdta.threed_src_syncs[0])) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+-	if (cmdta.shared.num_3d_src_syncs &&
+-	    (!cmdta.shared.ta3d_dependency_sync.write_complete_gpu_va32 ||
++	if (ta_kick->cmdta.shared.num_3d_src_syncs &&
++	    (!ta_kick->cmdta.shared.ta3d_dependency_sync.write_complete_gpu_va32 ||
+ 	     !poulsbo_sgx_submit_sgx_device_sync_object_equal(
+-		     &cmdta.threed_src_syncs[0],
+-		     &cmdta.shared.ta3d_dependency_sync))) {
++		     &ta_kick->cmdta.threed_src_syncs[0],
++		     &ta_kick->cmdta.shared.ta3d_dependency_sync))) {
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+-	for (index = 0; index < cmdta.shared.num_ta_status_vals; index++) {
+-		if (cmdta.shared.ta_status_info[index].value_offset !=
++	for (index = 0; index < ta_kick->cmdta.shared.num_ta_status_vals; index++) {
++		if (ta_kick->cmdta.shared.ta_status_info[index].value_offset !=
  			    ccb_kick->ta_status_updates[index].value_offset ||
--		    cmdta_shared.ta_status_info[index].value_gpu_va32 !=
-+		    cmdta.shared.ta_status_info[index].value_gpu_va32 !=
+-		    cmdta.shared.ta_status_info[index].value_gpu_va32 !=
++		    ta_kick->cmdta.shared.ta_status_info[index].value_gpu_va32 !=
  			    ccb_kick->ta_status_updates[index].value_gpu_va32 ||
--		    cmdta_shared.ta_status_info[index].value !=
-+		    cmdta.shared.ta_status_info[index].value !=
+-		    cmdta.shared.ta_status_info[index].value !=
++		    ta_kick->cmdta.shared.ta_status_info[index].value !=
  			    ccb_kick->ta_status_updates[index].value) {
  			ret = -EINVAL;
  			goto out;
  		}
  	}
--	for (index = 0; index < cmdta_shared.num_3d_status_vals; index++) {
--		if (cmdta_shared.threed_status_info[index].value_offset !=
-+	for (index = 0; index < cmdta.shared.num_3d_status_vals; index++) {
-+		if (cmdta.shared.threed_status_info[index].value_offset !=
+-	for (index = 0; index < cmdta.shared.num_3d_status_vals; index++) {
+-		if (cmdta.shared.threed_status_info[index].value_offset !=
++	for (index = 0; index < ta_kick->cmdta.shared.num_3d_status_vals; index++) {
++		if (ta_kick->cmdta.shared.threed_status_info[index].value_offset !=
  			    ccb_kick->threed_status_updates[index].value_offset ||
--		    cmdta_shared.threed_status_info[index].value_gpu_va32 !=
-+		    cmdta.shared.threed_status_info[index].value_gpu_va32 !=
+-		    cmdta.shared.threed_status_info[index].value_gpu_va32 !=
++		    ta_kick->cmdta.shared.threed_status_info[index].value_gpu_va32 !=
  			    ccb_kick->threed_status_updates[index].value_gpu_va32 ||
--		    cmdta_shared.threed_status_info[index].value !=
-+		    cmdta.shared.threed_status_info[index].value !=
+-		    cmdta.shared.threed_status_info[index].value !=
++		    ta_kick->cmdta.shared.threed_status_info[index].value !=
  			    ccb_kick->threed_status_updates[index].value) {
  			ret = -EINVAL;
  			goto out;
-@@ -7495,7 +7577,7 @@ static int poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
+@@ -7577,7 +7655,7 @@ static int poulsbo_sgx_validate_submit_sgx_cmdta_locked(
  	}
  
  	ret = poulsbo_sgx_validate_submit_status_side_images_locked(
--		dev_priv, submit, status_obj, &cmdta_shared);
-+		dev_priv, submit, status_obj, &cmdta.shared);
+-		dev_priv, submit, status_obj, &cmdta.shared);
++		dev_priv, submit, status_obj, &ta_kick->cmdta.shared);
  	if (ret)
  		goto out;
  
-@@ -7506,12 +7588,11 @@ static int poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
+@@ -7588,17 +7666,19 @@ static int poulsbo_sgx_validate_submit_sgx_cmdta_locked(
  			true, ccb_kick);
  		if (ret)
  			goto out;
--		ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
--			submit, ccb_kick, &cmdta_shared);
-+		ret = poulsbo_sgx_build_submit_sgx_cmdta_locked(
-+			submit, ccb_kick, &cmdta);
+-		ret = poulsbo_sgx_build_submit_sgx_cmdta_locked(
+-			submit, ccb_kick, &cmdta);
++		ret = poulsbo_sgx_build_submit_sgx_ta_kick_locked(
++			submit, ccb_kick, ta_kick);
  		if (ret)
  			goto out;
--		if (!cmdta_shared.kick ||
--		    !cmdta_shared.kick->cmdta.have_issue_plan) {
-+		if (!cmdta.kick || !cmdta.kick->cmdta.have_issue_plan) {
+-		if (!cmdta.kick || !cmdta.kick->cmdta.have_issue_plan) {
++		if (!ta_kick->kick || !ta_kick->kick->cmdta.have_issue_plan) {
  			ret = -EINVAL;
  			goto out;
  		}
-@@ -7880,7 +7961,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+ 	}
+ 
+ out:
++	kfree(ta_kick);
++out_free_ccb_kick:
+ 	kfree(ccb_kick);
+ 	return ret;
+ }
+@@ -7961,7 +8041,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		status_obj);
  	if (ret)
  		return ret;
--	return poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
-+	return poulsbo_sgx_validate_submit_sgx_cmdta_locked(
+-	return poulsbo_sgx_validate_submit_sgx_cmdta_locked(
++	return poulsbo_sgx_validate_submit_sgx_ta_kick_locked(
  		dev_priv, submit, status_obj);
  }
  
