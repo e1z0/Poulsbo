@@ -219,12 +219,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-work-item` validation bundles as the active typed-submit
+- use the new `ta-ioctl-request` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260513-184011-sgx-submit-ta-work-item-live/summary.log`
+    `logs/vaio-ioctl/20260513-213452-sgx-submit-ta-ioctl-request-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260513-184054-sgx-multi-submit-ta-work-item-live/summary.log`
+    `logs/vaio-ioctl/20260513-213532-sgx-multi-submit-ta-ioctl-request-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -240,9 +240,10 @@ implementation if it materially changes scope.
 - next kernel-side goal:
   - build the first explicit SGX scheduler-facing queue item,
     microkernel-facing request packet, or real work-queue object above the
-    now-shared `psb_sgx_lab_submit_sgx_ta_request`, so the typed top layer
-    starts modeling a real SGX submit packet or scheduler work entry instead of
-    stopping at one public request boundary and execution-effect summary
+    now-shared `psb_sgx_lab_submit_sgx_ta_ioctl_request`, so the typed top
+    layer starts modeling a real SGX submit packet or scheduler work entry
+    instead of stopping at the public ioctl request seam and execution-effect
+    summary
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
   - `selected_child_phase_selection=request_only` is the child recovery
@@ -262,7 +263,7 @@ implementation if it materially changes scope.
   the current exact source row now points at the newest clean `complete` rerun:
   - `source_kind=plan_session`
   - `source_name=sgx-plan-session`
-  - `source_timestamp=20260513-042638`
+  - `source_timestamp=20260513-213332`
   - `source_row_requested=complete:profile[complete]`
   - `source_row_evidence_last_good=complete`
 - use the current live fixed module for continued no-redeploy exact reruns:
