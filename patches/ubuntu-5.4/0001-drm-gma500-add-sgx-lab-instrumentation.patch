@@ -1,480 +1,493 @@
-From a1c690fbaeb9f9a01b07a947ce90e2d6e747e0a7 Mon Sep 17 00:00:00 2001
+From 0507b833c2445c50aa809349138f27bae7005e2f Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Wed, 13 May 2026 15:46:16 +0300
-Subject: [PATCH] drm/gma500: add SGX TA control object
+Date: Wed, 13 May 2026 16:15:25 +0300
+Subject: [PATCH] drm/gma500: add SGX TA schedule object
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 355 +++++++++++++++++++++++++++----
- 1 file changed, 311 insertions(+), 44 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 425 +++++++++++++++++++++++--------
+ 1 file changed, 323 insertions(+), 102 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 8ac6de741..2cd64e96f 100644
+index 2cd64e96f..d4371ebbb 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1418,6 +1418,29 @@ struct psb_sgx_lab_submit_sgx_ta_gate {
- 	bool can_enter_running;
+@@ -1441,6 +1441,36 @@ struct psb_sgx_lab_submit_sgx_ta_control {
+ 	struct psb_sgx_lab_submit_sgx_issue_request issue_request;
  };
  
-+struct psb_sgx_lab_submit_sgx_issue_request {
++struct psb_sgx_lab_submit_sgx_transition_request {
 +	bool active;
-+	bool issue_to_running;
-+	bool plan_buildable;
-+	bool plan_matches_launch;
-+	bool gate_ready;
-+	bool can_issue;
++	bool entering_running;
++	bool entering_complete;
++	bool can_transition;
 +	u32 owner_state;
-+	u32 issued_packets;
-+	struct psb_sgx_lab_issue_plan plan;
++	u32 completed_packets;
++	u32 new_packet_count;
++	u32 new_read_offset;
++	u32 new_write_offset;
++	u32 new_tail_packets;
++	u32 new_head_packets;
++	u32 new_ccb_offset;
++	u32 new_sync_complete_seq;
++	u32 new_sync_flags;
++	u32 new_owner_complete_cookie;
++	u32 new_global_running_ticket;
++	u32 new_global_complete_ticket;
 +};
 +
-+struct psb_sgx_lab_submit_sgx_ta_control {
-+	struct psb_sgx_lab_submit_sgx_ta_runtime runtime;
-+	struct psb_sgx_lab_submit_sgx_ta_gate gate;
-+	bool emit_matches_live;
-+	bool have_launch_snapshot;
-+	bool launch_consumed;
-+	bool launch_ready;
-+	bool running_owned_by_self;
-+	struct psb_sgx_lab_submit_sgx_issue_request issue_request;
++struct psb_sgx_lab_submit_sgx_ta_schedule {
++	struct psb_sgx_lab_submit_sgx_ta_control control;
++	bool can_issue_queued;
++	bool can_issue_running;
++	bool can_enter_running;
++	bool can_stay_running;
++	bool can_complete;
++	struct psb_sgx_lab_submit_sgx_transition_request transition_request;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_fill_submit_ccb_record_words_from_packet(
  	const struct psb_sgx_lab_submit_exec_packet *packet,
-@@ -1454,6 +1477,15 @@ static int poulsbo_sgx_dependency_observed_ticket_locked(
- 	unsigned int slot,
- 	u32 *observed_complete_ticket_out,
- 	bool *source_missing_out);
-+static bool poulsbo_sgx_submit_emit_matches_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit);
-+static bool poulsbo_sgx_submit_launch_base_matches_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit);
-+static bool poulsbo_sgx_submit_issue_plan_matches_launch_locked(
-+	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_issue_plan *plan);
- 
- static const char *poulsbo_sgx_lab_role_name(u32 role)
- {
-@@ -3730,6 +3762,112 @@ static int poulsbo_sgx_submit_sgx_ta_gate_status_locked(
- 	return gate->can_enter_running ? 0 : -EINVAL;
+@@ -3868,6 +3898,179 @@ static int poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(
+ 	return issue_request->can_issue ? 0 : -EINVAL;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_control_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	bool have_issue_request,
-+	u32 issue_owner_state,
-+	u32 issued_packets,
-+	struct psb_sgx_lab_submit_sgx_ta_control *control)
++	bool have_transition_request,
++	u32 transition_owner_state,
++	u32 completed_packets,
++	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule)
 +{
-+	struct psb_sgx_lab_submit_sgx_issue_request *issue_request;
++	struct psb_sgx_lab_submit_sgx_transition_request *transition_request;
++	u64 read_advance;
++	u32 read_advance_mod;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !control)
++	if (!dev_priv || !submit || !schedule)
 +		return -EINVAL;
 +
-+	memset(control, 0, sizeof(*control));
++	memset(schedule, 0, sizeof(*schedule));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
-+		dev_priv, submit, &control->runtime);
-+	if (ret)
-+		return ret;
-+	ret = poulsbo_sgx_build_submit_sgx_ta_gate_locked(
-+		submit, &control->runtime, &control->gate);
++	ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
++		dev_priv, submit, false, 0, 0, &schedule->control);
 +	if (ret)
 +		return ret;
 +
-+	control->emit_matches_live =
-+		submit->emit_valid &&
-+		poulsbo_sgx_submit_emit_matches_locked(dev_priv, submit);
-+	control->have_launch_snapshot = submit->launch_valid;
-+	control->launch_consumed = submit->launch_consumed;
-+	control->launch_ready =
-+		poulsbo_sgx_submit_launch_base_matches_locked(dev_priv, submit);
-+	control->running_owned_by_self =
-+		control->runtime.coordination.active_running_valid &&
-+		control->runtime.coordination.active_running_submit_id ==
-+			submit->submit_id;
++	schedule->can_issue_queued =
++		schedule->control.launch_ready &&
++		!schedule->control.launch_consumed &&
++		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED;
++	schedule->can_issue_running =
++		schedule->control.launch_ready &&
++		!schedule->control.launch_consumed &&
++		schedule->control.running_owned_by_self &&
++		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING;
++	schedule->can_enter_running =
++		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED &&
++		submit->queue_packet_count &&
++		schedule->control.gate.can_enter_running;
++	schedule->can_stay_running =
++		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
++		submit->global_running_ticket &&
++		submit->queue_packet_count;
++	schedule->can_complete =
++		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
++		submit->queue_packet_count;
 +
-+	if (!have_issue_request)
++	if (!have_transition_request)
 +		return 0;
 +
-+	issue_request = &control->issue_request;
-+	issue_request->active = true;
-+	issue_request->owner_state = issue_owner_state;
-+	issue_request->issued_packets = issued_packets;
-+	issue_request->issue_to_running =
-+		issue_owner_state == PSB_SGX_LAB_OWNER_RUNNING;
-+	issue_request->gate_ready =
-+		!issue_request->issue_to_running ||
-+		control->gate.can_enter_running;
-+	if (control->launch_ready) {
-+		issue_request->plan_buildable =
-+			poulsbo_sgx_build_issue_plan_locked(
-+				dev_priv, submit, issue_owner_state,
-+				issued_packets, &issue_request->plan);
++	transition_request = &schedule->transition_request;
++	transition_request->active = true;
++	transition_request->owner_state = transition_owner_state;
++	transition_request->completed_packets = completed_packets;
++
++	if (transition_owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
++	    transition_owner_state != PSB_SGX_LAB_OWNER_RUNNING &&
++	    transition_owner_state != PSB_SGX_LAB_OWNER_COMPLETE)
++		return -EINVAL;
++	if (completed_packets > submit->queue_packet_count)
++		return -EINVAL;
++	if (submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE)
++		return -EINVAL;
++
++	if (transition_owner_state == PSB_SGX_LAB_OWNER_QUEUED) {
++		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED ||
++		    completed_packets)
++			return -EINVAL;
++	} else if (transition_owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
++		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
++		    submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING)
++			return -EINVAL;
++		if (submit->queue_packet_count == completed_packets)
++			return -EINVAL;
++	} else if (transition_owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
++		if (submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING ||
++		    completed_packets != submit->queue_packet_count)
++			return -EINVAL;
 +	}
-+	if (issue_request->plan_buildable) {
-+		issue_request->plan_matches_launch =
-+			poulsbo_sgx_submit_issue_plan_matches_launch_locked(
-+				submit, &issue_request->plan);
++
++	if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
++	    (!dev_priv->sgx_lab_running_active ||
++	     dev_priv->sgx_lab_active_running_submit_id != submit->submit_id))
++		return -EINVAL;
++
++	transition_request->entering_running =
++		transition_owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
++		submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING;
++	transition_request->entering_complete =
++		transition_owner_state == PSB_SGX_LAB_OWNER_COMPLETE;
++
++	if (transition_request->entering_running) {
++		ret = poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
++			&schedule->control);
++		if (ret)
++			return ret;
++		if (dev_priv->sgx_lab_global_running_ticket == U32_MAX)
++			return -EOVERFLOW;
++		transition_request->new_global_running_ticket =
++			dev_priv->sgx_lab_global_running_ticket + 1;
++		transition_request->can_transition = true;
++	} else if (transition_owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
++		if (!submit->global_running_ticket)
++			return -EINVAL;
++		transition_request->new_global_running_ticket =
++			submit->global_running_ticket;
++		transition_request->can_transition = true;
++	} else {
++		transition_request->new_global_running_ticket =
++			submit->global_running_ticket;
++		transition_request->can_transition =
++			transition_owner_state == PSB_SGX_LAB_OWNER_COMPLETE ||
++			transition_owner_state == PSB_SGX_LAB_OWNER_QUEUED;
 +	}
-+	issue_request->can_issue =
-+		issue_request->plan_matches_launch &&
-+		issue_request->gate_ready;
++
++	transition_request->new_packet_count =
++		submit->queue_packet_count - completed_packets;
++	transition_request->new_read_offset = submit->ccb_read_offset;
++	if (completed_packets) {
++		read_advance = (u64)completed_packets * submit->queue_packet_size;
++		div_u64_rem(read_advance, submit->queue_size,
++			    &read_advance_mod);
++		transition_request->new_read_offset =
++			(submit->ccb_read_offset + read_advance_mod) %
++			submit->queue_size;
++	}
++
++	ret = poulsbo_sgx_queue_progression(
++		transition_request->new_read_offset, submit->queue_size,
++		submit->queue_packet_size, transition_request->new_packet_count,
++		&transition_request->new_tail_packets,
++		&transition_request->new_head_packets,
++		&transition_request->new_write_offset);
++	if (ret)
++		return ret;
++
++	transition_request->new_ccb_offset =
++		submit->queue_base_offset +
++		transition_request->new_read_offset;
++	transition_request->new_sync_complete_seq =
++		submit->sync_complete_seq + completed_packets;
++	transition_request->new_owner_complete_cookie =
++		submit->owner_complete_cookie + completed_packets;
++	transition_request->new_global_complete_ticket =
++		submit->global_complete_ticket;
++	if (transition_request->entering_complete) {
++		if (dev_priv->sgx_lab_global_complete_ticket == U32_MAX)
++			return -EOVERFLOW;
++		transition_request->new_global_complete_ticket =
++			dev_priv->sgx_lab_global_complete_ticket + 1;
++	}
++
++	transition_request->new_sync_flags = PSB_SGX_LAB_SYNC_FLAG_READY;
++	if (transition_request->new_head_packets) {
++		transition_request->new_sync_flags |=
++			PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
++	}
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
-+	const struct psb_sgx_lab_submit_sgx_ta_control *control)
++static int poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
++	const struct psb_sgx_lab_submit_sgx_ta_schedule *schedule)
 +{
-+	if (!control)
++	const struct psb_sgx_lab_submit_sgx_transition_request *transition_request;
++
++	if (!schedule)
 +		return -EINVAL;
 +
-+	return poulsbo_sgx_submit_sgx_ta_gate_status_locked(&control->gate);
-+}
-+
-+static int poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(
-+	const struct psb_sgx_lab_submit_sgx_ta_control *control)
-+{
-+	const struct psb_sgx_lab_submit_sgx_issue_request *issue_request;
-+	int ret;
-+
-+	if (!control)
++	transition_request = &schedule->transition_request;
++	if (!transition_request->active)
 +		return -EINVAL;
 +
-+	issue_request = &control->issue_request;
-+	if (!issue_request->active)
-+		return -EINVAL;
-+	if (!control->have_launch_snapshot || control->launch_consumed)
-+		return -EINVAL;
-+	if (!control->launch_ready)
-+		return -ESTALE;
-+	if (issue_request->issue_to_running) {
-+		ret = poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
-+			control);
-+		if (ret)
-+			return ret;
-+	}
-+	if (!issue_request->plan_buildable)
-+		return -EINVAL;
-+	if (!issue_request->plan_matches_launch)
-+		return -ESTALE;
-+
-+	return issue_request->can_issue ? 0 : -EINVAL;
++	return transition_request->can_transition ? 0 : -EINVAL;
 +}
 +
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -6008,13 +6146,10 @@ poulsbo_sgx_submit_emit_matches_locked(struct drm_psb_private *dev_priv,
+@@ -9262,6 +9465,89 @@ out:
+ 	return ret;
  }
  
- static bool
--poulsbo_sgx_submit_launch_matches_locked(struct drm_psb_private *dev_priv,
--					 struct psb_sgx_lab_submit *submit,
--					 u32 owner_state,
--					 u32 issued_packets)
-+poulsbo_sgx_submit_launch_base_matches_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit)
- {
--	struct psb_sgx_lab_issue_plan plan;
--
- 	if (!submit->launch_valid || submit->launch_consumed)
- 		return false;
- 	if (!submit->emit_valid ||
-@@ -6065,23 +6200,28 @@ poulsbo_sgx_submit_launch_matches_locked(struct drm_psb_private *dev_priv,
- 	    submit->launch_status_gpu_va != submit->emit_status_gpu_va)
- 		return false;
- 
--	if (!poulsbo_sgx_build_issue_plan_locked(dev_priv, submit, owner_state,
--						 issued_packets, &plan))
--		return false;
-+	return true;
-+}
- 
--	if (submit->launch_owner_state != plan.owner_state ||
--	    submit->launch_issued_packets != plan.issued_packets ||
-+static bool poulsbo_sgx_submit_issue_plan_matches_launch_locked(
-+	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_issue_plan *plan)
-+{
-+	if (!submit || !plan)
-+		return false;
-+	if (submit->launch_owner_state != plan->owner_state ||
-+	    submit->launch_issued_packets != plan->issued_packets ||
- 	    submit->launch_refilled_from_complete !=
--		    (plan.refilled_from_complete ? 1 : 0) ||
--	    submit->launch_new_write_offset != plan.new_write_offset ||
--	    submit->launch_queue_packet_count != plan.new_packet_count ||
--	    submit->launch_queue_tail_packet_count != plan.new_tail_packets ||
--	    submit->launch_queue_head_packet_count != plan.new_head_packets ||
--	    submit->launch_sync_pending_seq != plan.new_sync_pending_seq ||
--	    submit->launch_sync_flags != plan.new_sync_flags ||
--	    submit->launch_owner_issue_cookie != plan.new_owner_issue_cookie ||
--	    submit->launch_queue_epoch != plan.new_queue_epoch ||
--	    submit->launch_global_issue_ticket != plan.new_global_issue_ticket ||
-+		    (plan->refilled_from_complete ? 1 : 0) ||
-+	    submit->launch_new_write_offset != plan->new_write_offset ||
-+	    submit->launch_queue_packet_count != plan->new_packet_count ||
-+	    submit->launch_queue_tail_packet_count != plan->new_tail_packets ||
-+	    submit->launch_queue_head_packet_count != plan->new_head_packets ||
-+	    submit->launch_sync_pending_seq != plan->new_sync_pending_seq ||
-+	    submit->launch_sync_flags != plan->new_sync_flags ||
-+	    submit->launch_owner_issue_cookie != plan->new_owner_issue_cookie ||
-+	    submit->launch_queue_epoch != plan->new_queue_epoch ||
-+	    submit->launch_global_issue_ticket != plan->new_global_issue_ticket ||
- 	    submit->launch_dependency_active_count !=
- 		    submit->emit_dependency_active_count)
- 		return false;
-@@ -8803,6 +8943,99 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_gate_locked(
- 	return 0;
- }
- 
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_control_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_schedule_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_control *control)
++	const struct psb_sgx_lab_submit_sgx_ta_schedule *schedule)
 +{
-+	const struct psb_sgx_lab_submit_sgx_issue_request *issue_request;
-+	struct psb_sgx_lab_issue_plan plan;
-+	bool emit_matches_live;
-+	bool launch_ready;
-+	bool running_owned_by_self;
-+	bool plan_buildable = false;
-+	bool plan_matches_launch = false;
-+	bool gate_ready;
 +	int ret;
++	bool can_issue_queued;
++	bool can_issue_running;
++	bool can_enter_running;
++	bool can_stay_running;
++	bool can_complete;
 +
-+	if (!dev_priv || !submit || !control)
++	if (!dev_priv || !submit || !schedule)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_gate_locked(
-+		submit, &control->runtime, &control->gate);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_control_locked(
++		dev_priv, submit, &schedule->control);
 +	if (ret)
 +		return ret;
 +
-+	emit_matches_live =
-+		submit->emit_valid &&
-+		poulsbo_sgx_submit_emit_matches_locked(dev_priv, submit);
-+	launch_ready =
-+		poulsbo_sgx_submit_launch_base_matches_locked(dev_priv, submit);
-+	running_owned_by_self =
-+		control->runtime.coordination.active_running_valid &&
-+		control->runtime.coordination.active_running_submit_id ==
-+			submit->submit_id;
-+	if (control->emit_matches_live != emit_matches_live ||
-+	    control->have_launch_snapshot != submit->launch_valid ||
-+	    control->launch_consumed != submit->launch_consumed ||
-+	    control->launch_ready != launch_ready ||
-+	    control->running_owned_by_self != running_owned_by_self) {
-+		return -EINVAL;
-+	}
++	can_issue_queued =
++		schedule->control.launch_ready &&
++		!schedule->control.launch_consumed &&
++		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED;
++	can_issue_running =
++		schedule->control.launch_ready &&
++		!schedule->control.launch_consumed &&
++		schedule->control.running_owned_by_self &&
++		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING;
++	can_enter_running =
++		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED &&
++		submit->queue_packet_count &&
++		schedule->control.gate.can_enter_running;
++	can_stay_running =
++		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
++		submit->global_running_ticket &&
++		submit->queue_packet_count;
++	can_complete =
++		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
++		submit->queue_packet_count;
 +
-+	issue_request = &control->issue_request;
-+	if (!issue_request->active)
-+		return 0;
-+
-+	gate_ready =
-+		!issue_request->issue_to_running ||
-+		control->gate.can_enter_running;
-+	if (issue_request->issue_to_running !=
-+		    (issue_request->owner_state ==
-+		     PSB_SGX_LAB_OWNER_RUNNING) ||
-+	    issue_request->gate_ready != gate_ready) {
-+		return -EINVAL;
-+	}
-+	if (launch_ready) {
-+		plan_buildable = poulsbo_sgx_build_issue_plan_locked(
-+			dev_priv, submit, issue_request->owner_state,
-+			issue_request->issued_packets, &plan);
-+	}
-+	if (plan_buildable) {
-+		plan_matches_launch =
-+			poulsbo_sgx_submit_issue_plan_matches_launch_locked(
-+				submit, &plan);
-+	}
-+	if (issue_request->plan_buildable != plan_buildable ||
-+	    issue_request->plan_matches_launch != plan_matches_launch ||
-+	    issue_request->can_issue !=
-+		    (plan_matches_launch && gate_ready)) {
-+		return -EINVAL;
-+	}
-+	if (!plan_buildable)
-+		return 0;
-+	if (issue_request->plan.owner_state != plan.owner_state ||
-+	    issue_request->plan.issued_packets != plan.issued_packets ||
-+	    issue_request->plan.refilled_from_complete !=
-+		    plan.refilled_from_complete ||
-+	    issue_request->plan.new_queue_epoch != plan.new_queue_epoch ||
-+	    issue_request->plan.new_packet_count != plan.new_packet_count ||
-+	    issue_request->plan.new_tail_packets != plan.new_tail_packets ||
-+	    issue_request->plan.new_head_packets != plan.new_head_packets ||
-+	    issue_request->plan.new_write_offset != plan.new_write_offset ||
-+	    issue_request->plan.new_sync_pending_seq !=
-+		    plan.new_sync_pending_seq ||
-+	    issue_request->plan.new_owner_issue_cookie !=
-+		    plan.new_owner_issue_cookie ||
-+	    issue_request->plan.new_global_issue_ticket !=
-+		    plan.new_global_issue_ticket ||
-+	    issue_request->plan.new_sync_flags != plan.new_sync_flags) {
++	if (schedule->can_issue_queued != can_issue_queued ||
++	    schedule->can_issue_running != can_issue_running ||
++	    schedule->can_enter_running != can_enter_running ||
++	    schedule->can_stay_running != can_stay_running ||
++	    schedule->can_complete != can_complete) {
 +		return -EINVAL;
 +	}
 +
 +	return 0;
 +}
 +
- static int poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
- 	struct drm_psb_private *dev_priv,
- 	struct psb_sgx_lab_submit *submit,
-@@ -8998,6 +9231,37 @@ out:
- 	return ret;
- }
- 
-+static int poulsbo_sgx_validate_submit_sgx_ta_control_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_schedule_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *control_obj,
 +	struct psb_sgx_lab_object *status_obj)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_control *control;
++	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule;
 +	int ret;
 +
-+	control = kmalloc(sizeof(*control), GFP_KERNEL);
-+	if (!control)
++	schedule = kmalloc(sizeof(*schedule), GFP_KERNEL);
++	if (!schedule)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
++	ret = poulsbo_sgx_validate_submit_sgx_ta_control_locked(
 +		dev_priv, submit, control_obj, status_obj);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
-+		dev_priv, submit, false, 0, 0, control);
++	ret = poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
++		dev_priv, submit, false, 0, 0, schedule);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_control_locked(
-+		dev_priv, submit, control);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_schedule_locked(
++		dev_priv, submit, schedule);
 +
 +out:
-+	kfree(control);
++	kfree(schedule);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  					      struct psb_sgx_lab_submit *submit)
  {
-@@ -9209,7 +9473,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -9473,7 +9759,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		submit, status_obj, NULL);
  	if (ret)
  		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_runtime_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_control_locked(
+-	return poulsbo_sgx_validate_submit_sgx_ta_control_locked(
++	return poulsbo_sgx_validate_submit_sgx_ta_schedule_locked(
  		dev_priv, submit, control_obj, status_obj);
  }
  
-@@ -11721,8 +11985,7 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -11985,7 +12271,7 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
  	u32 new_global_running_ticket;
  	u32 new_global_complete_ticket;
  	bool entering_running;
--	struct psb_sgx_lab_submit_sgx_ta_runtime *runtime = NULL;
--	struct psb_sgx_lab_submit_sgx_ta_gate gate;
-+	struct psb_sgx_lab_submit_sgx_ta_control *control = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_control *control = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule = NULL;
  	int ret;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -11790,22 +12053,18 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
- 	new_global_running_ticket = submit->global_running_ticket;
- 	if (owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
- 		if (entering_running) {
--			runtime = kmalloc(sizeof(*runtime), GFP_KERNEL);
--			if (!runtime) {
-+			control = kmalloc(sizeof(*control), GFP_KERNEL);
-+			if (!control) {
- 				ret = -ENOMEM;
- 				goto out_unlock;
- 			}
- 
--			ret = poulsbo_sgx_build_submit_sgx_ta_runtime_locked(
--				dev_priv, submit, runtime);
--			if (ret)
--				goto out_unlock;
--			ret = poulsbo_sgx_build_submit_sgx_ta_gate_locked(
--				submit, runtime, &gate);
-+			ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
-+				dev_priv, submit, false, 0, 0, control);
- 			if (ret)
- 				goto out_unlock;
--			ret = poulsbo_sgx_submit_sgx_ta_gate_status_locked(
--				&gate);
-+			ret = poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
-+				control);
- 			if (ret)
- 				goto out_unlock;
- 			if (dev_priv->sgx_lab_global_running_ticket ==
-@@ -12015,7 +12274,7 @@ out_unlock:
- 	mutex_unlock(&dev_priv->gtt_mutex);
- 	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
- 	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
--	kfree(runtime);
-+	kfree(control);
- 
- 	if (!ret)
- 		dev_info(dev->dev,
-@@ -12035,6 +12294,7 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
- {
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 	struct psb_sgx_lab_submit *submit;
-+	struct psb_sgx_lab_submit_sgx_ta_control *control = NULL;
- 	struct psb_sgx_lab_object *control_obj;
- 	struct psb_sgx_lab_object *pds_obj;
- 	struct psb_sgx_lab_object *use_obj;
-@@ -12089,20 +12349,26 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
- 		ret = -EINVAL;
+@@ -12014,111 +12300,46 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
  		goto out_unlock;
  	}
--	if (!submit->launch_valid) {
+ 
+-	if (submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
 -		ret = -EINVAL;
-+	ret = poulsbo_sgx_validate_submit_locked(dev_priv, submit);
-+	if (ret) {
-+		poulsbo_sgx_disarm_submit_locked(submit);
- 		goto out_unlock;
- 	}
--	if (!poulsbo_sgx_submit_launch_matches_locked(dev_priv, submit,
--						      owner_state,
--						      issued_packets)) {
--		poulsbo_sgx_disarm_submit_locked(submit);
--		ret = -ESTALE;
-+
-+	control = kmalloc(sizeof(*control), GFP_KERNEL);
-+	if (!control) {
++	schedule = kmalloc(sizeof(*schedule), GFP_KERNEL);
++	if (!schedule) {
 +		ret = -ENOMEM;
  		goto out_unlock;
  	}
--	ret = poulsbo_sgx_validate_submit_locked(dev_priv, submit);
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
-+		dev_priv, submit, true, owner_state, issued_packets, control);
+-	if (owner_state == PSB_SGX_LAB_OWNER_QUEUED) {
+-		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED ||
+-		    completed_packets) {
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-	} else if (owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
+-		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
+-		    submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING) {
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-		if (submit->queue_packet_count == completed_packets) {
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-	} else if (owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
+-		if (submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING ||
+-		    completed_packets != submit->queue_packet_count) {
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-	}
+-	if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
+-		if (!dev_priv->sgx_lab_running_active ||
+-		    dev_priv->sgx_lab_active_running_submit_id != submit_id) {
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-	}
+-	entering_running = owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
+-			   submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING;
+-	new_global_running_ticket = submit->global_running_ticket;
+-	if (owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
+-		if (entering_running) {
+-			control = kmalloc(sizeof(*control), GFP_KERNEL);
+-			if (!control) {
+-				ret = -ENOMEM;
+-				goto out_unlock;
+-			}
+-
+-			ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
+-				dev_priv, submit, false, 0, 0, control);
+-			if (ret)
+-				goto out_unlock;
+-			ret = poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
+-				control);
+-			if (ret)
+-				goto out_unlock;
+-			if (dev_priv->sgx_lab_global_running_ticket ==
+-			    U32_MAX) {
+-				ret = -EOVERFLOW;
+-				goto out_unlock;
+-			}
+-			new_global_running_ticket =
+-				dev_priv->sgx_lab_global_running_ticket + 1;
+-		} else if (!submit->global_running_ticket) {
+-			ret = -EINVAL;
+-			goto out_unlock;
+-		}
+-	}
+ 
+-	new_packet_count = submit->queue_packet_count - completed_packets;
+-	new_read_offset = submit->ccb_read_offset;
+-	if (completed_packets) {
+-		u64 read_advance;
+-		u32 read_advance_mod;
+-
+-		read_advance = (u64)completed_packets * submit->queue_packet_size;
+-		div_u64_rem(read_advance, submit->queue_size, &read_advance_mod);
+-		new_read_offset = (submit->ccb_read_offset +
+-				   read_advance_mod) %
+-				  submit->queue_size;
+-	}
+-
+-	ret = poulsbo_sgx_queue_progression(new_read_offset,
+-					    submit->queue_size,
+-					    submit->queue_packet_size,
+-					    new_packet_count,
+-					    &new_tail_packets,
+-					    &new_head_packets,
+-					    &new_write_offset);
++	ret = poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
++		dev_priv, submit, true, owner_state, completed_packets,
++		schedule);
 +	if (ret)
 +		goto out_unlock;
-+	ret = poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(control);
- 	if (ret) {
--		poulsbo_sgx_disarm_submit_locked(submit);
-+		if (ret == -ESTALE)
-+			poulsbo_sgx_disarm_submit_locked(submit);
++	ret = poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
++		schedule);
+ 	if (ret)
  		goto out_unlock;
- 	}
- 	launch_new_write_offset = submit->launch_new_write_offset;
-@@ -12261,6 +12527,7 @@ out_unlock:
+ 
+-	new_ccb_offset = submit->queue_base_offset + new_read_offset;
+-	new_sync_complete_seq = submit->sync_complete_seq + completed_packets;
+-	new_owner_complete_cookie = submit->owner_complete_cookie +
+-				    completed_packets;
+-	new_global_complete_ticket = submit->global_complete_ticket;
+-	if (owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
+-		if (dev_priv->sgx_lab_global_complete_ticket == U32_MAX) {
+-			ret = -EOVERFLOW;
+-			goto out_unlock;
+-		}
+-		new_global_complete_ticket =
+-			dev_priv->sgx_lab_global_complete_ticket + 1;
+-	}
+-	new_sync_flags = PSB_SGX_LAB_SYNC_FLAG_READY;
+-	if (new_head_packets)
+-		new_sync_flags |= PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
++	entering_running =
++		schedule->transition_request.entering_running;
++	new_global_running_ticket =
++		schedule->transition_request.new_global_running_ticket;
++	new_packet_count =
++		schedule->transition_request.new_packet_count;
++	new_read_offset =
++		schedule->transition_request.new_read_offset;
++	new_write_offset =
++		schedule->transition_request.new_write_offset;
++	new_tail_packets =
++		schedule->transition_request.new_tail_packets;
++	new_head_packets =
++		schedule->transition_request.new_head_packets;
++	new_ccb_offset =
++		schedule->transition_request.new_ccb_offset;
++	new_sync_complete_seq =
++		schedule->transition_request.new_sync_complete_seq;
++	new_owner_complete_cookie =
++		schedule->transition_request.new_owner_complete_cookie;
++	new_global_complete_ticket =
++		schedule->transition_request.new_global_complete_ticket;
++	new_sync_flags =
++		schedule->transition_request.new_sync_flags;
+ 
+ 	ret = poulsbo_sgx_queue_region_end(submit->queue_base_offset,
+ 					   submit->queue_size,
+@@ -12274,7 +12495,7 @@ out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
  	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
-+	kfree(control);
+-	kfree(control);
++	kfree(schedule);
  
  	if (!ret)
  		dev_info(dev->dev,

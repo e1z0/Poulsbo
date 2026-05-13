@@ -1209,6 +1209,7 @@ See:
 - [docs/180-sgx-submit-ta-runtime-object.md](/root/Poulsbo/docs/180-sgx-submit-ta-runtime-object.md)
 - [docs/181-sgx-submit-ta-gate-object.md](/root/Poulsbo/docs/181-sgx-submit-ta-gate-object.md)
 - [docs/182-sgx-submit-ta-control-object.md](/root/Poulsbo/docs/182-sgx-submit-ta-control-object.md)
+- [docs/183-sgx-submit-ta-schedule-object.md](/root/Poulsbo/docs/183-sgx-submit-ta-schedule-object.md)
 
 Recent VAIO panic-capture validation is now in place too:
 
@@ -1239,6 +1240,7 @@ The current SGX-shaped kernel-internal execution stack is now:
 - `psb_sgx_lab_submit_sgx_ta_runtime`
 - `psb_sgx_lab_submit_sgx_ta_gate`
 - `psb_sgx_lab_submit_sgx_ta_control`
+- `psb_sgx_lab_submit_sgx_ta_schedule`
 
 The shared SGX layer now explicitly models device-sync objects and the
 hardware destination-sync list through:
@@ -1263,3 +1265,4 @@ The newest validated hardware batch for that line is:
 - [docs/180-sgx-submit-ta-runtime-object.md](/root/Poulsbo/docs/180-sgx-submit-ta-runtime-object.md)
 - [docs/181-sgx-submit-ta-gate-object.md](/root/Poulsbo/docs/181-sgx-submit-ta-gate-object.md)
 - [docs/182-sgx-submit-ta-control-object.md](/root/Poulsbo/docs/182-sgx-submit-ta-control-object.md)
+- [docs/183-sgx-submit-ta-schedule-object.md](/root/Poulsbo/docs/183-sgx-submit-ta-schedule-object.md)
