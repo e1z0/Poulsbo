@@ -4,7 +4,7 @@ This project is now targeting Ubuntu 18.04 LTS user space for the first reproduc
 
 The current real hardware target is a Sony VAIO VGN-P11Z running Ubuntu 18.04.5 with a `5.4.0-150-generic` `i686` kernel and Intel US15W/Poulsbo graphics.
 
-Current live note on May 13, 2026:
+Current live note on May 14, 2026:
 
 - the old clean top-level `plan` session on `srcversion 2BE09D0DC1CCBDB51D2328E`
   still records the historical `sync / submit_op_kick_focus` blocker only
@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-235006-sgx-ta-request-packet-rerun-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-235006-sgx-ta-request-packet-rerun-deploy)
+  [logs/vaio-deploy/20260514-001931-sgx-ta-request-sequence-deploy](/root/Poulsbo/logs/vaio-deploy/20260514-001931-sgx-ta-request-sequence-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=3FA57ECCFB162117FD52520`
-  - `override_module_size=480168`
+  - `driver_srcversion=92CB8FBC111248DC82C2825`
+  - `override_module_size=481200`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,17 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-235155-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-235155-sgx-plan-session)
+  - [logs/vaio-plan-session/20260514-002126-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-002126-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=3FA57ECCFB162117FD52520`
-- the new internal `psb_sgx_lab_submit_sgx_ta_request_packet` batch is also
+  - `final_driver_srcversion=92CB8FBC111248DC82C2825`
+- the new internal `psb_sgx_lab_submit_sgx_ta_request_sequence` batch is also
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-235155-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-235155-sgx-plan-session)
+    [logs/vaio-plan-session/20260514-002126-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-002126-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-235251-sgx-submit-ta-request-packet-rerun-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-235251-sgx-submit-ta-request-packet-rerun-live/summary.log)
+    [logs/vaio-ioctl/20260514-002243-sgx-submit-ta-request-sequence-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-002243-sgx-submit-ta-request-sequence-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-235347-sgx-multi-submit-ta-request-packet-rerun-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-235347-sgx-multi-submit-ta-request-packet-rerun-live/summary.log)
+    [logs/vaio-ioctl/20260514-002324-sgx-multi-submit-ta-request-sequence-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-002324-sgx-multi-submit-ta-request-sequence-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -68,7 +68,7 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
-- the shared kernel execution model now has thirty-six explicit internal layers:
+- the shared kernel execution model now has thirty-seven explicit internal layers:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
   - `psb_sgx_lab_submit_cmdta_kick`
@@ -105,13 +105,14 @@ Current live note on May 13, 2026:
   - `psb_sgx_lab_submit_sgx_ta_queue_stream`
   - `psb_sgx_lab_submit_sgx_ta_queue_packet`
   - `psb_sgx_lab_submit_sgx_ta_request_packet`
+  - `psb_sgx_lab_submit_sgx_ta_request_sequence`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-235155`
-  - `source_row_module_srcversion=3FA57ECCFB162117FD52520`
+  - `source_timestamp=20260514-002126`
+  - `source_row_module_srcversion=92CB8FBC111248DC82C2825`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -131,18 +132,18 @@ Current live note on May 13, 2026:
 - the next engineering step is no longer more exact ladder narrowing; it is
   the next SGX execution-side change on top of the new shared
   `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command -> sgx_queued_ta_command -> sgx_ta_submission -> sgx_ta_execution -> sgx_ta_timeline -> sgx_ta_runtime -> sgx_ta_gate -> sgx_ta_control -> sgx_ta_schedule -> sgx_ta_dispatch -> sgx_ta_path -> sgx_ta_commit -> sgx_ta_event -> sgx_ta_work_item -> sgx_ta_op -> sgx_ta_scheduler -> sgx_ta_sequence -> sgx_ta_work_queue`
-  -> sgx_ta_job -> sgx_ta_request -> sgx_ta_ioctl_request -> sgx_ta_submit_op_request -> sgx_ta_queue_item -> sgx_ta_queue_command -> sgx_ta_scheduler_entry -> sgx_ta_queue_stream -> sgx_ta_queue_packet -> sgx_ta_request_packet` kernel model, with both live mutation entrypoints now routed through the shared
-  `sgx_ta_request_packet` top layer that now owns the public request boundary
-  plus the selected packet-side read/write/CCB/ticket summary together, above
-  the selected packet-effect vector, copied public submit-op packet, final
-  resolved-submit seam, issue-versus-transition request split, full typed
-  submit contract, dependency summary, typed request boundary, public ioctl
-  seam, pre-apply scheduler snapshot, full live operation sequence,
-  queue/CCB/sync/owner write plan, next-submit-state apply image, live
-  event-side accounting plan, request execution rules, driver-global
-  issue/running/complete coordination image, submit-id/active-running
-  coordination image, count advance image, timestamp-touch image, and
-  refresh-views decision, on top of the validated
+  -> sgx_ta_job -> sgx_ta_request -> sgx_ta_ioctl_request -> sgx_ta_submit_op_request -> sgx_ta_queue_item -> sgx_ta_queue_command -> sgx_ta_scheduler_entry -> sgx_ta_queue_stream -> sgx_ta_queue_packet -> sgx_ta_request_packet -> sgx_ta_request_sequence` kernel model, with both live mutation entrypoints now routed through the shared
+  `sgx_ta_request_sequence` top layer that now owns the public request
+  boundary, selected packet-side read/write/CCB/ticket summary, and
+  request-level refresh/count/ticket progression together, above the selected
+  packet-effect vector, copied public submit-op packet, final resolved-submit
+  seam, issue-versus-transition request split, full typed submit contract,
+  dependency summary, typed request boundary, public ioctl seam, pre-apply
+  scheduler snapshot, full live operation sequence, queue/CCB/sync/owner
+  write plan, next-submit-state apply image, live event-side accounting plan,
+  request execution rules, driver-global issue/running/complete coordination
+  image, submit-id/active-running coordination image, count advance image,
+  timestamp-touch image, and refresh-views decision, on top of the validated
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
   model
 

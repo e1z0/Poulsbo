@@ -3,6 +3,89 @@
 This file is the dated execution log for the repo. It records what was changed,
 what was validated, and what conclusion was established at each step.
 
+## 2026-05-14
+
+### SGX submit TA request-sequence object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped top object:
+  - `psb_sgx_lab_submit_sgx_ta_request_sequence`
+- The top validator now moves from `sgx_ta_request_packet` to
+  `sgx_ta_request_sequence`.
+- The live top-layer execution boundary is now unified too:
+  - the submit-op ioctl path builds and applies `sgx_ta_request_sequence`
+  - `issue_submit()` compatibility flow builds and applies
+    `sgx_ta_request_sequence`
+  - `transition_submit()` compatibility flow builds and applies
+    `sgx_ta_request_sequence`
+- The new shared top object now owns:
+  - the existing `sgx_ta_request_packet`
+  - the request-side refresh and counter-update intent
+  - the next issue / transition counts
+  - the next scheduler-state vector
+  - the issue / running / complete advancement summary
+- The live kernel traces now also emit that sequence-side top summary:
+  - `issue` now logs `refresh_views`, `next_issue_count`,
+    `issue_advanced`, `next_issue_ticket`, and `next_issue_submit_id`
+  - `transition` now logs `refresh_views`, `next_transition_count`,
+    `running_advanced`, `complete_advanced`, `next_running_ticket`,
+    `next_complete_ticket`, and `active_running_changed`
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260514-001931-sgx-ta-request-sequence-deploy`
+  - final live override:
+    - `driver_srcversion=92CB8FBC111248DC82C2825`
+    - `override_module_size=481200`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on that module still passed:
+  - `logs/vaio-plan-session/20260514-002126-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=92CB8FBC111248DC82C2825`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260514-002243-sgx-submit-ta-request-sequence-live/summary.log`
+  - final focused proof:
+    - `submit_resolved_id=2`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260514-002324-sgx-multi-submit-ta-request-sequence-live/summary.log`
+  - final typed run proved:
+    - submit A final:
+      - `submit_resolved_id=3`
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_resolved_id=4`
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=5`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260514-002126`
+- Documented in:
+  - `docs/204-sgx-submit-ta-request-sequence-object.md`
+
 ## 2026-05-13
 
 ### SGX submit TA request-packet object
