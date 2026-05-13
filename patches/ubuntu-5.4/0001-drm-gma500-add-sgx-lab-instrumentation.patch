@@ -2285,7 +2285,7 @@ index 000000000..cfee864f9
 +
 +#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..2ed175f35 100644
+index d414525ec..b79e65c8f 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -2305,7 +2305,7 @@ index d414525ec..2ed175f35 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,14774 @@
+@@ -37,6 +40,14885 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -3436,6 +3436,18 @@ index d414525ec..2ed175f35 100644
 +	u32 new_owner_issue_cookie;
 +	u32 new_global_issue_ticket;
 +	u32 new_sync_flags;
++};
++
++struct psb_sgx_lab_submit_cmdta_kick {
++	struct psb_sgx_lab_submit_exec_packet packet;
++	bool have_issue_plan;
++	struct psb_sgx_lab_issue_plan issue_plan;
++	u32 queue_gpu_va32;
++	u32 ccb_gpu_va32;
++	u32 sync_gpu_va32;
++	u32 owner_gpu_va32;
++	u32 ta_status_gpu_va32;
++	u32 status_3d_gpu_va32;
 +};
 +
 +static const char *poulsbo_sgx_lab_role_name(u32 role)
@@ -4883,6 +4895,87 @@ index d414525ec..2ed175f35 100644
 +
 +	return poulsbo_sgx_fill_submit_exec_packet_from_record_locked(
 +		&record, packet);
++}
++
++static int poulsbo_sgx_gpu_va32_add_offset(u32 base, u32 offset, u32 *out)
++{
++	if (!out)
++		return -EINVAL;
++
++	if (!base) {
++		*out = 0;
++		return 0;
++	}
++	if (U32_MAX - base < offset)
++		return -EINVAL;
++
++	*out = base + offset;
++	return 0;
++}
++
++static int poulsbo_sgx_build_submit_cmdta_kick_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	enum psb_sgx_lab_exec_source source,
++	bool with_issue_plan,
++	struct psb_sgx_lab_submit_cmdta_kick *kick)
++{
++	int ret;
++
++	if (!kick)
++		return -EINVAL;
++
++	memset(kick, 0, sizeof(*kick));
++
++	ret = poulsbo_sgx_build_submit_exec_packet_locked(dev_priv, submit, source,
++							      &kick->packet);
++	if (ret)
++		return ret;
++	if (kick->packet.cmd_type != PSB_SGX_LAB_CMD_TA)
++		return -EOPNOTSUPP;
++
++	ret = poulsbo_sgx_gpu_va32_add_offset(kick->packet.control_gpu_va32,
++					      kick->packet.queue_base_offset,
++					      &kick->queue_gpu_va32);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_gpu_va32_add_offset(kick->packet.control_gpu_va32,
++					      kick->packet.ccb_offset,
++					      &kick->ccb_gpu_va32);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_gpu_va32_add_offset(kick->packet.status_gpu_va32,
++					      kick->packet.ta_shared.sync_offset,
++					      &kick->sync_gpu_va32);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_gpu_va32_add_offset(kick->packet.status_gpu_va32,
++					      kick->packet.ta_shared.owner_offset,
++					      &kick->owner_gpu_va32);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_gpu_va32_add_offset(
++		kick->packet.status_gpu_va32,
++		kick->packet.ta_shared.status_ta_offset,
++		&kick->ta_status_gpu_va32);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_gpu_va32_add_offset(
++		kick->packet.status_gpu_va32,
++		kick->packet.ta_shared.status_3d_offset,
++		&kick->status_3d_gpu_va32);
++	if (ret)
++		return ret;
++
++	if (!with_issue_plan)
++		return 0;
++	if (!poulsbo_sgx_build_issue_plan_locked(
++		    dev_priv, submit, submit->issue_plan_owner_state,
++		    submit->issue_plan_packet_count, &kick->issue_plan))
++		return -EINVAL;
++
++	kick->have_issue_plan = true;
++	return 0;
 +}
 +
 +static int poulsbo_sgx_collect_submit_view_records_locked(
@@ -6436,8 +6529,7 @@ index d414525ec..2ed175f35 100644
 +	struct psb_sgx_lab_issue_plan_words *issue_plan)
 +{
 +	struct psb_sgx_lab_submit_exec_packet live_packet;
-+	struct psb_sgx_lab_submit_exec_packet launch_packet;
-+	struct psb_sgx_lab_issue_plan plan;
++	struct psb_sgx_lab_submit_cmdta_kick launch_kick;
 +	int ret;
 +
 +	if (!issue_plan)
@@ -6457,59 +6549,64 @@ index d414525ec..2ed175f35 100644
 +	    !submit->issue_plan_packet_count)
 +		return 0;
 +
-+	ret = poulsbo_sgx_build_submit_exec_packet_locked(
-+		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LAUNCH,
-+		&launch_packet);
++	ret = poulsbo_sgx_build_submit_cmdta_kick_locked(
++		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LAUNCH, true,
++		&launch_kick);
 +	if (ret)
 +		return ret;
 +
-+	if (!poulsbo_sgx_build_issue_plan_locked(
-+		    dev_priv, submit, submit->issue_plan_owner_state,
-+		    submit->issue_plan_packet_count, &plan))
-+		return 0;
-+
 +	issue_plan->valid = 1;
-+	issue_plan->owner_state = plan.owner_state;
-+	issue_plan->issued_packets = plan.issued_packets;
++	issue_plan->owner_state = launch_kick.issue_plan.owner_state;
++	issue_plan->issued_packets = launch_kick.issue_plan.issued_packets;
 +	issue_plan->refilled_from_complete =
-+		plan.refilled_from_complete ? 1 : 0;
-+	issue_plan->queue_epoch = plan.new_queue_epoch;
-+	issue_plan->queue_base_offset = launch_packet.queue_base_offset;
-+	issue_plan->queue_size = launch_packet.queue_size;
-+	issue_plan->queue_packet_size = launch_packet.queue_packet_size;
-+	issue_plan->queue_packet_count = plan.new_packet_count;
-+	issue_plan->queue_tail_packet_count = plan.new_tail_packets;
-+	issue_plan->queue_head_packet_count = plan.new_head_packets;
-+	issue_plan->ccb_offset = launch_packet.ccb_offset;
-+	issue_plan->ccb_write_offset = plan.new_write_offset;
-+	issue_plan->ccb_read_offset = launch_packet.ccb_read_offset;
-+	issue_plan->sync_offset = launch_packet.ta_shared.sync_offset;
++		launch_kick.issue_plan.refilled_from_complete ? 1 : 0;
++	issue_plan->queue_epoch = launch_kick.issue_plan.new_queue_epoch;
++	issue_plan->queue_base_offset = launch_kick.packet.queue_base_offset;
++	issue_plan->queue_size = launch_kick.packet.queue_size;
++	issue_plan->queue_packet_size =
++		launch_kick.packet.queue_packet_size;
++	issue_plan->queue_packet_count =
++		launch_kick.issue_plan.new_packet_count;
++	issue_plan->queue_tail_packet_count =
++		launch_kick.issue_plan.new_tail_packets;
++	issue_plan->queue_head_packet_count =
++		launch_kick.issue_plan.new_head_packets;
++	issue_plan->ccb_offset = launch_kick.packet.ccb_offset;
++	issue_plan->ccb_write_offset =
++		launch_kick.issue_plan.new_write_offset;
++	issue_plan->ccb_read_offset = launch_kick.packet.ccb_read_offset;
++	issue_plan->sync_offset = launch_kick.packet.ta_shared.sync_offset;
 +	issue_plan->sync_complete_seq =
-+		launch_packet.ta_shared.sync_complete_seq;
-+	issue_plan->sync_pending_seq = plan.new_sync_pending_seq;
-+	issue_plan->sync_flags = plan.new_sync_flags;
-+	issue_plan->owner_offset = launch_packet.ta_shared.owner_offset;
-+	issue_plan->owner_issue_cookie = plan.new_owner_issue_cookie;
++		launch_kick.packet.ta_shared.sync_complete_seq;
++	issue_plan->sync_pending_seq =
++		launch_kick.issue_plan.new_sync_pending_seq;
++	issue_plan->sync_flags = launch_kick.issue_plan.new_sync_flags;
++	issue_plan->owner_offset = launch_kick.packet.ta_shared.owner_offset;
++	issue_plan->owner_issue_cookie =
++		launch_kick.issue_plan.new_owner_issue_cookie;
 +	issue_plan->owner_complete_cookie =
-+		launch_packet.ta_shared.owner_complete_cookie;
-+	issue_plan->global_issue_ticket = plan.new_global_issue_ticket;
++		launch_kick.packet.ta_shared.owner_complete_cookie;
++	issue_plan->global_issue_ticket =
++		launch_kick.issue_plan.new_global_issue_ticket;
 +	issue_plan->global_running_ticket =
-+		launch_packet.ta_shared.global_running_ticket;
++		launch_kick.packet.ta_shared.global_running_ticket;
 +	issue_plan->global_complete_ticket =
-+		launch_packet.ta_shared.global_complete_ticket;
++		launch_kick.packet.ta_shared.global_complete_ticket;
 +	issue_plan->dependency_active_count =
-+		launch_packet.ta_shared.dependency_active_count;
-+	issue_plan->ccb_service_address = launch_packet.command.service_address;
-+	issue_plan->ccb_cache_control = launch_packet.command.cache_control;
-+	issue_plan->ccb_data0 = launch_packet.command.data0;
-+	issue_plan->ccb_data1 = launch_packet.command.data1;
-+	issue_plan->control_object_id = launch_packet.control_object_id;
-+	issue_plan->status_object_id = launch_packet.status_object_id;
-+	issue_plan->control_gpu_va32 = launch_packet.control_gpu_va32;
-+	issue_plan->pds_gpu_va32 = launch_packet.pds_gpu_va32;
-+	issue_plan->use_gpu_va32 = launch_packet.use_gpu_va32;
-+	issue_plan->target_gpu_va32 = launch_packet.target_gpu_va32;
-+	issue_plan->status_gpu_va32 = launch_packet.status_gpu_va32;
++		launch_kick.packet.ta_shared.dependency_active_count;
++	issue_plan->ccb_service_address =
++		launch_kick.packet.command.service_address;
++	issue_plan->ccb_cache_control =
++		launch_kick.packet.command.cache_control;
++	issue_plan->ccb_data0 = launch_kick.packet.command.data0;
++	issue_plan->ccb_data1 = launch_kick.packet.command.data1;
++	issue_plan->control_object_id = launch_kick.packet.control_object_id;
++	issue_plan->status_object_id = launch_kick.packet.status_object_id;
++	issue_plan->control_gpu_va32 = launch_kick.packet.control_gpu_va32;
++	issue_plan->pds_gpu_va32 = launch_kick.packet.pds_gpu_va32;
++	issue_plan->use_gpu_va32 = launch_kick.packet.use_gpu_va32;
++	issue_plan->target_gpu_va32 = launch_kick.packet.target_gpu_va32;
++	issue_plan->status_gpu_va32 = launch_kick.packet.status_gpu_va32;
 +	return 0;
 +}
 +
@@ -9271,6 +9368,7 @@ index d414525ec..2ed175f35 100644
 +	u32 running_submit_count = 0;
 +	u32 running_submit_id = 0;
 +	u32 dependency_complete_ticket[PSB_SGX_LAB_DEPENDENCY_SLOTS] = { 0 };
++	struct psb_sgx_lab_submit_cmdta_kick cmdta_kick;
 +	unsigned int i, slot;
 +	bool dependency_source_missing[PSB_SGX_LAB_DEPENDENCY_SLOTS] = { false };
 +	int ret;
@@ -9611,6 +9709,19 @@ index d414525ec..2ed175f35 100644
 +		status_obj);
 +	if (ret)
 +		return ret;
++	ret = poulsbo_sgx_build_submit_cmdta_kick_locked(
++		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, false,
++		&cmdta_kick);
++	if (ret)
++		return ret;
++	if (submit->launch_valid && !submit->launch_consumed &&
++	    submit->issue_plan_packet_count) {
++		ret = poulsbo_sgx_build_submit_cmdta_kick_locked(
++			dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LAUNCH,
++			true, &cmdta_kick);
++		if (ret)
++			return ret;
++	}
 +
 +	return poulsbo_sgx_validate_submit_status_side_images_locked(
 +		dev_priv, submit, status_obj);
@@ -17080,7 +17191,7 @@ index d414525ec..2ed175f35 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +14873,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +14984,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -17103,7 +17214,7 @@ index d414525ec..2ed175f35 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +14911,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +15022,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -17111,7 +17222,7 @@ index d414525ec..2ed175f35 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +14939,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +15050,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -17131,7 +17242,7 @@ index d414525ec..2ed175f35 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +15026,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +15137,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -17144,7 +17255,7 @@ index d414525ec..2ed175f35 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +15176,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +15287,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);

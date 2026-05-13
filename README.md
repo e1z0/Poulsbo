@@ -1194,6 +1194,7 @@ See:
 - [docs/165-sgx-lab-submit-live-op-ioctl.md](/root/Poulsbo/docs/165-sgx-lab-submit-live-op-ioctl.md)
 - [docs/166-sgx-lab-submit-issue-plan-op-ioctl.md](/root/Poulsbo/docs/166-sgx-lab-submit-issue-plan-op-ioctl.md)
 - [docs/167-sgx-submit-exec-packet-structure.md](/root/Poulsbo/docs/167-sgx-submit-exec-packet-structure.md)
+- [docs/168-sgx-submit-cmdta-kick-object.md](/root/Poulsbo/docs/168-sgx-submit-cmdta-kick-object.md)
 
 Recent VAIO panic-capture validation is now in place too:
 
@@ -1205,3 +1206,13 @@ Recent VAIO panic-capture validation is now in place too:
 - Ubuntu kdump on this target writes the saved crash as
   `dump.<timestamp>` plus `dmesg.<timestamp>` under `/var/crash/<timestamp>/`,
   and the collector/fetch/state path now recognizes that layout directly
+
+The current SGX-shaped kernel-internal execution stack is now:
+
+- `psb_sgx_lab_submit_exec_record`
+- `psb_sgx_lab_submit_exec_packet`
+- `psb_sgx_lab_submit_cmdta_kick`
+
+The newest validated hardware batch for that line is:
+
+- [docs/168-sgx-submit-cmdta-kick-object.md](/root/Poulsbo/docs/168-sgx-submit-cmdta-kick-object.md)

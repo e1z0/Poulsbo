@@ -10523,3 +10523,94 @@ Conclusion:
   - `source_timestamp=20260513-024621`
 - Documented in:
   - `docs/166-sgx-lab-submit-issue-plan-op-ioctl.md`
+
+### SGX submit CMDTA kick object
+
+- Added one new kernel-internal TA-specific execution object:
+  - `psb_sgx_lab_submit_cmdta_kick`
+- Added one shared GPU-VA32 offset helper:
+  - `poulsbo_sgx_gpu_va32_add_offset()`
+- Kernel-side changes in:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- The new `cmdta_kick` object now wraps one `exec_packet` and derives:
+  - queue GPU VA
+  - CCB GPU VA
+  - sync GPU VA
+  - owner GPU VA
+  - TA status GPU VA
+  - 3D status GPU VA
+- The typed `issue-plan` builder now uses a launch-source `cmdta_kick`
+  directly, and the central validator now prebuilds:
+  - one live-source `cmdta_kick`
+  - one launch-source `cmdta_kick` when a predicted post-issue plan exists
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-032841-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=C1CC8033D0035B46726BAB0`
+    - `override_module_size=447532`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-033102-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=C1CC8033D0035B46726BAB0`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-033202-sgx-submit-cmdta-kick-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_live_stage=6`
+    - `submit_result_stage=6`
+    - `submit_manifest_stage=6`
+    - `submit_descriptor_stage=6`
+    - `submit_plan_stage=6`
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_stage_count=1`
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-033241-sgx-multi-submit-cmdta-kick-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=3`
+    - `SUBMIT_B_ID=4`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_issue_plan_stage_name=retired`
+      - `submit_issue_plan_stage_count=3`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_issue_plan_stage_name=retired`
+      - `submit_issue_plan_stage_count=2`
+    - the dependent submit still showed the intended live path in dmesg:
+      - `lab submit emit submit_id=4 ... dependency_active_count=1`
+      - `lab submit launch submit_id=4 ... dependency_active_count=1`
+      - `lab submit issue submit_id=4 ... refill=1`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-033102`
+- Documented in:
+  - `docs/168-sgx-submit-cmdta-kick-object.md`
