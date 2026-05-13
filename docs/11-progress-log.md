@@ -5,6 +5,101 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### SGX submit TA submission object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new kernel-internal SGX-shaped execution object:
+  - `psb_sgx_lab_submit_sgx_ta_submission`
+- The new `sgx_ta_submission` object now wraps:
+  - `sgx_queued_ta_command`
+  - typed `live`
+  - typed `manifest`
+  - typed `descriptor`
+  - typed `plan`
+  - optional typed `issue-plan`
+- The control-side image validators can now validate against already-built
+  typed images from that submission object, so one checked SGX layer now spans
+  the queued TA command and the control-backed memory views that describe the
+  same submission.
+- The first live validator draft was too strict in two places:
+  - it treated `issue-plan` as if it always mirrored current live queue state
+  - it treated `plan` as if it always mirrored current live queue state
+- Live debugging proved both assumptions wrong:
+  - `issue` validation runs on the `launched` state before the issue mutation
+  - `plan` is source-switched by stage for `launch`, `dispatch`, and `retired`
+- Hardware validation therefore advanced in three steps:
+  - first guarded deploy:
+    - `logs/vaio-deploy/20260513-075745-guarded-deploy`
+    - live override `srcversion 0AD6D850315762A2E4F6E45`
+    - exact proof failed at `issue` in
+      `logs/vaio-plan-session/20260513-080115-sgx-plan-session`
+  - second guarded deploy after relaxing the `issue-plan` cross-check:
+    - `logs/vaio-deploy/20260513-080356-guarded-deploy`
+    - live override `srcversion 9172ED422A56E8DA614C79D`
+    - exact proof still failed at `issue` in
+      `logs/vaio-plan-session/20260513-080540-sgx-plan-session`
+  - final guarded deploy after relaxing the stage-switched `plan` cross-check:
+    - `logs/vaio-deploy/20260513-080856-guarded-deploy`
+    - final live override:
+      - `driver_srcversion=329853678DD9A992924BB5C`
+      - `override_module_size=453508`
+      - `overall=remote_usable`
+      - `lightdm_active=inactive`
+      - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the final module passed again:
+  - `logs/vaio-plan-session/20260513-081039-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=329853678DD9A992924BB5C`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+    - final cleanup:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=6`
+    - `SUBMIT_B_ID=7`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_dependency_active_count=1`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-081039`
+- Documented in:
+  - `docs/177-sgx-submit-ta-submission-object.md`
+
 ### SGX submit TA command object
 
 - Updated:

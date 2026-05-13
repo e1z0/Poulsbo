@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 61850CF09DE3C6531E06127`
-  - `override_module_size=451152`
+  - `srcversion 329853678DD9A992924BB5C`
+  - `override_module_size=453508`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260513-061050-guarded-deploy`
+  - `logs/vaio-deploy/20260513-080856-guarded-deploy`
 - exact live reruns on the fixed module now all complete cleanly:
   - `plan_query_offset`
   - `plan_query_config`
@@ -60,22 +60,22 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260513-061236-sgx-plan-session`
-- the newest internal `ta-command` batch is now hardware-validated:
+  - `logs/vaio-plan-session/20260513-081039-sgx-plan-session`
+- the newest internal `ta-submission` batch is now hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260513-061236-sgx-plan-session`
+    - `logs/vaio-plan-session/20260513-081039-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260513-061337-sgx-submit-ta-command-live/summary.log`
+    - `logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260513-061416-sgx-multi-submit-ta-command-live/summary.log`
+    - `logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-061236`
-  - `source_row_module_srcversion=61850CF09DE3C6531E06127`
+  - `source_timestamp=20260513-081039`
+  - `source_row_module_srcversion=329853678DD9A992924BB5C`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -181,7 +181,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 61850CF09DE3C6531E06127`
+  `srcversion 329853678DD9A992924BB5C`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -194,23 +194,25 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_cmdta`
   - `psb_sgx_lab_submit_sgx_ta_kick`
   - `psb_sgx_lab_submit_sgx_ta_command`
+  - `psb_sgx_lab_submit_sgx_queued_ta_command`
+  - `psb_sgx_lab_submit_sgx_ta_submission`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `61850CF09DE3C6531E06127` as the
+- keep the current guarded-deploy override `329853678DD9A992924BB5C` as the
   active headless, panic-safe validation base
 - treat the exact single-submit ladder as closed for the current module:
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-command` validation bundles as the active typed-submit
+- use the new `ta-submission` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260513-061337-sgx-submit-ta-command-live/summary.log`
+    `logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260513-061416-sgx-multi-submit-ta-command-live/summary.log`
+    `logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -800,8 +802,8 @@ implementation if it materially changes scope.
 - [ ] Use the now-clean exact single-submit `plan` ladder as the baseline for
   the next kernel-side SGX change
   - the fixed module now clears terminal `complete`
-  - the shared typed submit image now already has ten validated internal
-    layers on override `2C7400755C1D450933F7344`:
+  - the shared typed submit image now already has eleven validated internal
+    layers on override `329853678DD9A992924BB5C`:
     - `exec_record`
     - `exec_packet`
     - `cmdta_kick`
@@ -812,11 +814,12 @@ implementation if it materially changes scope.
     - `sgx_ta_kick`
     - `sgx_ta_command`
     - `sgx_queued_ta_command`
+    - `sgx_ta_submission`
   - the top SGX layers now also have explicit sync helpers for:
     - `sgx_device_sync_object`
     - `sgx_hwdevice_sync_list`
   - the next useful work is the next real microkernel-facing SGX control
-    object above that `sgx_queued_ta_command` layer, not another no-code
+    object above that `sgx_ta_submission` layer, not another no-code
     rerun of the same ladder
 
 - [ ] If a no-code regression retest of the fixed module is needed, keep the

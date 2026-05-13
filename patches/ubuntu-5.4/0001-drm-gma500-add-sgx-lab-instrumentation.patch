@@ -2285,7 +2285,7 @@ index 000000000..cfee864f9
 +
 +#endif
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d414525ec..81a046d58 100644
+index d414525ec..e6e0f1f4c 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
 @@ -8,6 +8,8 @@
@@ -2305,7 +2305,7 @@ index d414525ec..81a046d58 100644
  #include "psb_drv.h"
  #include "psb_intel_reg.h"
  #include "psb_reg.h"
-@@ -37,6 +40,15636 @@
+@@ -37,6 +40,15905 @@
  static struct drm_driver driver;
  static int psb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
  
@@ -3580,10 +3580,45 @@ index d414525ec..81a046d58 100644
 +	struct psb_sgx_lab_issue_plan issue_plan;
 +};
 +
++struct psb_sgx_lab_submit_sgx_ta_submission {
++	const struct psb_sgx_lab_submit_ccb_kick *kick;
++	struct psb_sgx_lab_submit_sgx_queued_ta_command queued_ta_command;
++	bool have_live;
++	bool have_manifest;
++	bool have_descriptor;
++	bool have_plan;
++	bool have_issue_plan_view;
++	struct psb_sgx_lab_live_words live;
++	struct psb_sgx_lab_manifest_words manifest;
++	struct psb_sgx_lab_descriptor_words descriptor;
++	struct psb_sgx_lab_plan_words plan;
++	struct psb_sgx_lab_issue_plan_words issue_plan;
++};
++
 +static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
 +static int poulsbo_sgx_fill_submit_ccb_record_words_from_packet(
 +	const struct psb_sgx_lab_submit_exec_packet *packet,
 +	struct psb_sgx_lab_ccb_record_words *ccb_record);
++static int poulsbo_sgx_build_submit_live_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_live_words *live);
++static int poulsbo_sgx_build_submit_manifest_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_manifest_words *manifest);
++static int poulsbo_sgx_build_submit_descriptor_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_descriptor_words *descriptor);
++static int poulsbo_sgx_build_submit_plan_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_plan_words *plan);
++static int poulsbo_sgx_build_submit_issue_plan_view_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_issue_plan_words *issue_plan);
 +
 +static const char *poulsbo_sgx_lab_role_name(u32 role)
 +{
@@ -5488,6 +5523,69 @@ index d414525ec..81a046d58 100644
 +
 +	queued_ta_command->have_issue_plan = true;
 +	queued_ta_command->issue_plan = kick->cmdta.issue_plan;
++	return 0;
++}
++
++static int poulsbo_sgx_build_submit_sgx_ta_submission_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_submit_ccb_kick *kick,
++	struct psb_sgx_lab_submit_sgx_ta_submission *ta_submission)
++{
++	int ret;
++
++	if (!dev_priv || !submit || !kick || !ta_submission)
++		return -EINVAL;
++
++	memset(ta_submission, 0, sizeof(*ta_submission));
++
++	ret = poulsbo_sgx_build_submit_sgx_queued_ta_command_locked(
++		submit, kick, &ta_submission->queued_ta_command);
++	if (ret)
++		return ret;
++
++	ta_submission->kick = kick;
++
++	if (submit->live_config_count) {
++		ret = poulsbo_sgx_build_submit_live_locked(
++			dev_priv, submit, &ta_submission->live);
++		if (ret)
++			return ret;
++		ta_submission->have_live = true;
++	}
++
++	if (submit->manifest_config_count) {
++		ret = poulsbo_sgx_build_submit_manifest_locked(
++			dev_priv, submit, &ta_submission->manifest);
++		if (ret)
++			return ret;
++		ta_submission->have_manifest = true;
++	}
++
++	if (submit->descriptor_config_count) {
++		ret = poulsbo_sgx_build_submit_descriptor_locked(
++			dev_priv, submit, &ta_submission->descriptor);
++		if (ret)
++			return ret;
++		ta_submission->have_descriptor = true;
++	}
++
++	if (submit->plan_config_count) {
++		ret = poulsbo_sgx_build_submit_plan_locked(
++			dev_priv, submit, &ta_submission->plan);
++		if (ret)
++			return ret;
++		ta_submission->have_plan = true;
++	}
++
++	if (submit->issue_plan_config_count) {
++		ret = poulsbo_sgx_build_submit_issue_plan_view_locked(
++			dev_priv, submit, &ta_submission->issue_plan);
++		if (ret)
++			return ret;
++		ta_submission->have_issue_plan_view = true;
++	}
++
 +	return 0;
 +}
 +
@@ -9397,22 +9495,28 @@ index d414525ec..81a046d58 100644
 +
 +static int poulsbo_sgx_validate_submit_queue_header_image_locked(
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_queue_header_words *expected_queue_header)
 +{
-+	struct psb_sgx_lab_queue_header_words expected_queue_header;
++	struct psb_sgx_lab_queue_header_words built_queue_header;
 +	struct psb_sgx_lab_queue_header_words ctl_queue_header;
++	const struct psb_sgx_lab_queue_header_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_queue_header_locked(control_obj, 0,
 +						   &ctl_queue_header);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_queue_header_locked(
-+		submit, &expected_queue_header);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_queue_header, &expected_queue_header,
-+		   sizeof(expected_queue_header)) != 0)
++	if (expected_queue_header) {
++		expected = expected_queue_header;
++	} else {
++		ret = poulsbo_sgx_build_submit_queue_header_locked(
++			submit, &built_queue_header);
++		if (ret)
++			return ret;
++		expected = &built_queue_header;
++	}
++	if (memcmp(&ctl_queue_header, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9421,10 +9525,12 @@ index d414525ec..81a046d58 100644
 +static int poulsbo_sgx_validate_submit_ccb_record_image_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_ccb_record_words *expected_ccb_record)
 +{
-+	struct psb_sgx_lab_ccb_record_words expected_ccb_record;
++	struct psb_sgx_lab_ccb_record_words built_ccb_record;
 +	struct psb_sgx_lab_ccb_record_words ctl_ccb_record;
++	const struct psb_sgx_lab_ccb_record_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_submit_ccb_record_locked(control_obj,
@@ -9432,12 +9538,16 @@ index d414525ec..81a046d58 100644
 +							&ctl_ccb_record);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_ccb_record_locked(dev_priv, submit,
-+							 &expected_ccb_record);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_ccb_record, &expected_ccb_record,
-+		   sizeof(expected_ccb_record)) != 0)
++	if (expected_ccb_record) {
++		expected = expected_ccb_record;
++	} else {
++		ret = poulsbo_sgx_build_submit_ccb_record_locked(
++			dev_priv, submit, &built_ccb_record);
++		if (ret)
++			return ret;
++		expected = &built_ccb_record;
++	}
++	if (memcmp(&ctl_ccb_record, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9446,10 +9556,12 @@ index d414525ec..81a046d58 100644
 +static int poulsbo_sgx_validate_submit_manifest_image_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_manifest_words *expected_manifest)
 +{
-+	struct psb_sgx_lab_manifest_words expected_manifest;
++	struct psb_sgx_lab_manifest_words built_manifest;
 +	struct psb_sgx_lab_manifest_words ctl_manifest;
++	const struct psb_sgx_lab_manifest_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_submit_manifest_locked(control_obj,
@@ -9457,12 +9569,16 @@ index d414525ec..81a046d58 100644
 +						      &ctl_manifest);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_manifest_locked(dev_priv, submit,
-+						       &expected_manifest);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_manifest, &expected_manifest,
-+		   sizeof(expected_manifest)) != 0)
++	if (expected_manifest) {
++		expected = expected_manifest;
++	} else {
++		ret = poulsbo_sgx_build_submit_manifest_locked(
++			dev_priv, submit, &built_manifest);
++		if (ret)
++			return ret;
++		expected = &built_manifest;
++	}
++	if (memcmp(&ctl_manifest, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9471,10 +9587,12 @@ index d414525ec..81a046d58 100644
 +static int poulsbo_sgx_validate_submit_live_image_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_live_words *expected_live)
 +{
-+	struct psb_sgx_lab_live_words expected_live;
++	struct psb_sgx_lab_live_words built_live;
 +	struct psb_sgx_lab_live_words ctl_live;
++	const struct psb_sgx_lab_live_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_submit_live_locked(control_obj,
@@ -9482,11 +9600,16 @@ index d414525ec..81a046d58 100644
 +						  &ctl_live);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_live_locked(dev_priv, submit,
-+						   &expected_live);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_live, &expected_live, sizeof(expected_live)) != 0)
++	if (expected_live) {
++		expected = expected_live;
++	} else {
++		ret = poulsbo_sgx_build_submit_live_locked(
++			dev_priv, submit, &built_live);
++		if (ret)
++			return ret;
++		expected = &built_live;
++	}
++	if (memcmp(&ctl_live, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9495,10 +9618,12 @@ index d414525ec..81a046d58 100644
 +static int poulsbo_sgx_validate_submit_descriptor_image_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_descriptor_words *expected_descriptor)
 +{
-+	struct psb_sgx_lab_descriptor_words expected_descriptor;
++	struct psb_sgx_lab_descriptor_words built_descriptor;
 +	struct psb_sgx_lab_descriptor_words ctl_descriptor;
++	const struct psb_sgx_lab_descriptor_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_submit_descriptor_locked(control_obj,
@@ -9506,12 +9631,16 @@ index d414525ec..81a046d58 100644
 +							&ctl_descriptor);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_descriptor_locked(
-+		dev_priv, submit, &expected_descriptor);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_descriptor, &expected_descriptor,
-+		   sizeof(expected_descriptor)) != 0)
++	if (expected_descriptor) {
++		expected = expected_descriptor;
++	} else {
++		ret = poulsbo_sgx_build_submit_descriptor_locked(
++			dev_priv, submit, &built_descriptor);
++		if (ret)
++			return ret;
++		expected = &built_descriptor;
++	}
++	if (memcmp(&ctl_descriptor, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9520,10 +9649,12 @@ index d414525ec..81a046d58 100644
 +static int poulsbo_sgx_validate_submit_plan_image_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_plan_words *expected_plan)
 +{
-+	struct psb_sgx_lab_plan_words expected_plan;
++	struct psb_sgx_lab_plan_words built_plan;
 +	struct psb_sgx_lab_plan_words ctl_plan;
++	const struct psb_sgx_lab_plan_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_submit_plan_locked(control_obj,
@@ -9531,12 +9662,16 @@ index d414525ec..81a046d58 100644
 +						  &ctl_plan);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_plan_locked(dev_priv, submit,
-+						   &expected_plan);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_plan, &expected_plan,
-+		   sizeof(expected_plan)) != 0)
++	if (expected_plan) {
++		expected = expected_plan;
++	} else {
++		ret = poulsbo_sgx_build_submit_plan_locked(
++			dev_priv, submit, &built_plan);
++		if (ret)
++			return ret;
++		expected = &built_plan;
++	}
++	if (memcmp(&ctl_plan, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9545,22 +9680,28 @@ index d414525ec..81a046d58 100644
 +static int poulsbo_sgx_validate_submit_issue_plan_image_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_submit *submit)
++	struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_issue_plan_words *expected_issue_plan)
 +{
-+	struct psb_sgx_lab_issue_plan_words expected_issue_plan;
++	struct psb_sgx_lab_issue_plan_words built_issue_plan;
 +	struct psb_sgx_lab_issue_plan_words ctl_issue_plan;
++	const struct psb_sgx_lab_issue_plan_words *expected;
 +	int ret;
 +
 +	ret = poulsbo_sgx_read_submit_issue_plan_locked(
 +		control_obj, submit->issue_plan_offset, &ctl_issue_plan);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_build_submit_issue_plan_view_locked(
-+		dev_priv, submit, &expected_issue_plan);
-+	if (ret)
-+		return ret;
-+	if (memcmp(&ctl_issue_plan, &expected_issue_plan,
-+		   sizeof(expected_issue_plan)) != 0)
++	if (expected_issue_plan) {
++		expected = expected_issue_plan;
++	} else {
++		ret = poulsbo_sgx_build_submit_issue_plan_view_locked(
++			dev_priv, submit, &built_issue_plan);
++		if (ret)
++			return ret;
++		expected = &built_issue_plan;
++	}
++	if (memcmp(&ctl_issue_plan, expected, sizeof(*expected)) != 0)
 +		return -EINVAL;
 +
 +	return 0;
@@ -9655,25 +9796,26 @@ index d414525ec..81a046d58 100644
 +}
 +
 +static int poulsbo_sgx_validate_submit_control_side_images_locked(
-+	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *control_obj,
-+	struct psb_sgx_lab_object *pds_obj,
-+	struct psb_sgx_lab_object *use_obj,
-+	struct psb_sgx_lab_object *target_obj,
-+	struct psb_sgx_lab_object *status_obj)
++	const struct psb_sgx_lab_submit_sgx_ta_submission *ta_submission)
 +{
 +	u32 expected_write_offset;
 +	u32 expected_tail_packets;
 +	u32 expected_head_packets;
 +	int ret;
 +
-+	ret = poulsbo_sgx_validate_submit_queue_header_image_locked(control_obj,
-+								     submit);
++	if (!submit || !control_obj || !ta_submission)
++		return -EINVAL;
++
++	ret = poulsbo_sgx_validate_submit_queue_header_image_locked(
++		control_obj, submit,
++		&ta_submission->queued_ta_command.queue_header);
 +	if (ret)
 +		return ret;
 +	ret = poulsbo_sgx_validate_submit_ccb_record_image_locked(
-+		dev_priv, control_obj, submit);
++		NULL, control_obj, submit,
++		&ta_submission->queued_ta_command.ta_command.ccb_record);
 +	if (ret)
 +		return ret;
 +
@@ -9718,35 +9860,35 @@ index d414525ec..81a046d58 100644
 +
 +	if (submit->manifest_config_count) {
 +		ret = poulsbo_sgx_validate_submit_manifest_image_locked(
-+			dev_priv, control_obj, submit);
++			NULL, control_obj, submit, &ta_submission->manifest);
 +		if (ret)
 +			return ret;
 +	}
 +
 +	if (submit->live_config_count) {
 +		ret = poulsbo_sgx_validate_submit_live_image_locked(
-+			dev_priv, control_obj, submit);
++			NULL, control_obj, submit, &ta_submission->live);
 +		if (ret)
 +			return ret;
 +	}
 +
 +	if (submit->descriptor_config_count) {
 +		ret = poulsbo_sgx_validate_submit_descriptor_image_locked(
-+			dev_priv, control_obj, submit);
++			NULL, control_obj, submit, &ta_submission->descriptor);
 +		if (ret)
 +			return ret;
 +	}
 +
 +	if (submit->plan_config_count) {
 +		ret = poulsbo_sgx_validate_submit_plan_image_locked(
-+			dev_priv, control_obj, submit);
++			NULL, control_obj, submit, &ta_submission->plan);
 +		if (ret)
 +			return ret;
 +	}
 +
 +	if (submit->issue_plan_config_count) {
 +		ret = poulsbo_sgx_validate_submit_issue_plan_image_locked(
-+			dev_priv, control_obj, submit);
++			NULL, control_obj, submit, &ta_submission->issue_plan);
 +		if (ret)
 +			return ret;
 +	}
@@ -9851,12 +9993,14 @@ index d414525ec..81a046d58 100644
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_submission_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
++	struct psb_sgx_lab_object *control_obj,
 +	struct psb_sgx_lab_object *status_obj)
 +{
 +	struct psb_sgx_lab_submit_ccb_kick *ccb_kick;
++	struct psb_sgx_lab_submit_sgx_ta_submission *ta_submission;
 +	struct psb_sgx_lab_submit_sgx_queued_ta_command *queued_ta_command;
 +	struct psb_sgx_lab_submit_sgx_ta_command *ta_command;
 +	struct psb_sgx_lab_submit_sgx_ta_kick *ta_kick;
@@ -9866,8 +10010,8 @@ index d414525ec..81a046d58 100644
 +	ccb_kick = kmalloc(sizeof(*ccb_kick), GFP_KERNEL);
 +	if (!ccb_kick)
 +		return -ENOMEM;
-+	queued_ta_command = kmalloc(sizeof(*queued_ta_command), GFP_KERNEL);
-+	if (!queued_ta_command) {
++	ta_submission = kmalloc(sizeof(*ta_submission), GFP_KERNEL);
++	if (!ta_submission) {
 +		ret = -ENOMEM;
 +		goto out_free_ccb_kick;
 +	}
@@ -9877,13 +10021,15 @@ index d414525ec..81a046d58 100644
 +		ccb_kick);
 +	if (ret)
 +		goto out;
-+	ret = poulsbo_sgx_build_submit_sgx_queued_ta_command_locked(
-+		submit, ccb_kick, queued_ta_command);
++	ret = poulsbo_sgx_build_submit_sgx_ta_submission_locked(
++		dev_priv, submit, ccb_kick, ta_submission);
 +	if (ret)
 +		goto out;
++	queued_ta_command = &ta_submission->queued_ta_command;
 +	ta_command = &queued_ta_command->ta_command;
 +	ta_kick = &ta_command->ta_kick;
-+	if (queued_ta_command->kick != ccb_kick ||
++	if (ta_submission->kick != ccb_kick ||
++	    queued_ta_command->kick != ccb_kick ||
 +	    ta_command->kick != ccb_kick || ta_kick->kick != ccb_kick ||
 +	    ta_kick->cmdta.kick != ccb_kick ||
 +	    ta_kick->cmdta.shared.kick != ccb_kick ||
@@ -9947,6 +10093,138 @@ index d414525ec..81a046d58 100644
 +	if (queued_ta_command->queue_header.queue_base_offset +
 +		    queued_ta_command->queue_header.read_offset !=
 +	    ccb_kick->cmdta.packet.ccb_offset) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (!!submit->live_config_count != !!ta_submission->have_live ||
++	    !!submit->manifest_config_count != !!ta_submission->have_manifest ||
++	    !!submit->descriptor_config_count !=
++		    !!ta_submission->have_descriptor ||
++	    !!submit->plan_config_count != !!ta_submission->have_plan ||
++	    !!submit->issue_plan_config_count !=
++		    !!ta_submission->have_issue_plan_view) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (ta_submission->have_live &&
++	    (ta_submission->live.queue_base_offset !=
++		     queued_ta_command->queue_header.queue_base_offset ||
++	     ta_submission->live.queue_size !=
++		     queued_ta_command->queue_header.queue_size ||
++	     ta_submission->live.queue_packet_size !=
++		     queued_ta_command->queue_header.queue_packet_size ||
++	     ta_submission->live.queue_packet_count !=
++		     queued_ta_command->queue_header.queue_packet_count ||
++	     ta_submission->live.ccb_offset !=
++		     queued_ta_command->queue_header.queue_base_offset +
++			     queued_ta_command->queue_header.read_offset ||
++	     ta_submission->live.ccb_write_offset !=
++		     queued_ta_command->queue_header.write_offset ||
++	     ta_submission->live.ccb_read_offset !=
++		     queued_ta_command->queue_header.read_offset ||
++	     ta_submission->live.ccb_service_address !=
++		     ta_command->ccb_record.service_address ||
++	     ta_submission->live.ccb_cache_control !=
++		     ta_command->ccb_record.cache_control ||
++	     ta_submission->live.ccb_data0 != ta_command->ccb_record.data0 ||
++	     ta_submission->live.ccb_data1 != ta_command->ccb_record.data1 ||
++	     ta_submission->live.pds_gpu_va32 !=
++		     ta_command->ccb_record.pds_gpu_va32 ||
++	     ta_submission->live.use_gpu_va32 !=
++		     ta_command->ccb_record.use_gpu_va32 ||
++	     ta_submission->live.target_gpu_va32 !=
++		     ta_command->ccb_record.target_gpu_va32 ||
++	     ta_submission->live.ccb_status_gpu_va32 !=
++		     ta_command->ccb_record.status_gpu_va32)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (ta_submission->have_manifest &&
++	    (ta_submission->manifest.queue_base_offset !=
++		     queued_ta_command->queue_header.queue_base_offset ||
++	     ta_submission->manifest.queue_size !=
++		     queued_ta_command->queue_header.queue_size ||
++	     ta_submission->manifest.queue_packet_size !=
++		     queued_ta_command->queue_header.queue_packet_size ||
++	     ta_submission->manifest.queue_packet_count !=
++		     queued_ta_command->queue_header.queue_packet_count ||
++	     ta_submission->manifest.ccb_offset !=
++		     queued_ta_command->queue_header.queue_base_offset +
++			     queued_ta_command->queue_header.read_offset ||
++	     ta_submission->manifest.ccb_write_offset !=
++		     queued_ta_command->queue_header.write_offset ||
++	     ta_submission->manifest.ccb_read_offset !=
++		     queued_ta_command->queue_header.read_offset ||
++	     ta_submission->manifest.pds_gpu_va32 !=
++		     ta_command->ccb_record.pds_gpu_va32 ||
++	     ta_submission->manifest.use_gpu_va32 !=
++		     ta_command->ccb_record.use_gpu_va32 ||
++	     ta_submission->manifest.target_gpu_va32 !=
++		     ta_command->ccb_record.target_gpu_va32 ||
++	     ta_submission->manifest.status_gpu_va32 !=
++		     ta_command->ccb_record.status_gpu_va32)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (ta_submission->have_descriptor &&
++	    (ta_submission->descriptor.queue_packet_count !=
++		     queued_ta_command->queue_header.queue_packet_count ||
++	     ta_submission->descriptor.queue_packet_size !=
++		     queued_ta_command->queue_header.queue_packet_size ||
++	     ta_submission->descriptor.ccb_offset !=
++		     queued_ta_command->queue_header.queue_base_offset +
++			     queued_ta_command->queue_header.read_offset ||
++	     ta_submission->descriptor.control_gpu_va32 !=
++		     ta_kick->control_gpu_va32 ||
++	     ta_submission->descriptor.pds_gpu_va32 !=
++		     ta_command->ccb_record.pds_gpu_va32 ||
++	     ta_submission->descriptor.use_gpu_va32 !=
++		     ta_command->ccb_record.use_gpu_va32 ||
++	     ta_submission->descriptor.target_gpu_va32 !=
++		     ta_command->ccb_record.target_gpu_va32 ||
++	     ta_submission->descriptor.status_gpu_va32 !=
++		     ta_command->ccb_record.status_gpu_va32)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (ta_submission->have_plan &&
++	    (ta_submission->plan.ccb_service_address !=
++		     ta_command->ccb_record.service_address ||
++	     ta_submission->plan.ccb_cache_control !=
++		     ta_command->ccb_record.cache_control ||
++	     ta_submission->plan.ccb_data0 != ta_command->ccb_record.data0 ||
++	     ta_submission->plan.ccb_data1 != ta_command->ccb_record.data1 ||
++	     ta_submission->plan.control_gpu_va32 !=
++		     ta_kick->control_gpu_va32 ||
++	     ta_submission->plan.pds_gpu_va32 !=
++		     ta_command->ccb_record.pds_gpu_va32 ||
++	     ta_submission->plan.use_gpu_va32 !=
++		     ta_command->ccb_record.use_gpu_va32 ||
++	     ta_submission->plan.target_gpu_va32 !=
++		     ta_command->ccb_record.target_gpu_va32 ||
++	     ta_submission->plan.status_gpu_va32 !=
++		     ta_command->ccb_record.status_gpu_va32)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (ta_submission->have_issue_plan_view &&
++	    ta_submission->issue_plan.valid &&
++	    (ta_submission->issue_plan.ccb_service_address !=
++		     ta_command->ccb_record.service_address ||
++	     ta_submission->issue_plan.ccb_cache_control !=
++		     ta_command->ccb_record.cache_control ||
++	     ta_submission->issue_plan.ccb_data0 != ta_command->ccb_record.data0 ||
++	     ta_submission->issue_plan.ccb_data1 != ta_command->ccb_record.data1 ||
++	     ta_submission->issue_plan.control_gpu_va32 !=
++		     ta_kick->control_gpu_va32 ||
++	     ta_submission->issue_plan.pds_gpu_va32 !=
++		     ta_command->ccb_record.pds_gpu_va32 ||
++	     ta_submission->issue_plan.use_gpu_va32 !=
++		     ta_command->ccb_record.use_gpu_va32 ||
++	     ta_submission->issue_plan.target_gpu_va32 !=
++		     ta_command->ccb_record.target_gpu_va32 ||
++	     ta_submission->issue_plan.status_gpu_va32 !=
++		     ta_command->ccb_record.status_gpu_va32)) {
 +		ret = -EINVAL;
 +		goto out;
 +	}
@@ -10083,6 +10361,11 @@ index d414525ec..81a046d58 100644
 +		}
 +	}
 +
++	ret = poulsbo_sgx_validate_submit_control_side_images_locked(
++		submit, control_obj, ta_submission);
++	if (ret)
++		goto out;
++
 +	ret = poulsbo_sgx_validate_submit_status_side_images_locked(
 +		dev_priv, submit, status_obj, &ta_kick->cmdta.shared);
 +	if (ret)
@@ -10110,7 +10393,7 @@ index d414525ec..81a046d58 100644
 +	}
 +
 +out:
-+	kfree(queued_ta_command);
++	kfree(ta_submission);
 +out_free_ccb_kick:
 +	kfree(ccb_kick);
 +	return ret;
@@ -10121,9 +10404,6 @@ index d414525ec..81a046d58 100644
 +{
 +	struct psb_sgx_lab_object *obj;
 +	struct psb_sgx_lab_object *control_obj = NULL;
-+	struct psb_sgx_lab_object *pds_obj = NULL;
-+	struct psb_sgx_lab_object *use_obj = NULL;
-+	struct psb_sgx_lab_object *target_obj = NULL;
 +	struct psb_sgx_lab_object *status_obj = NULL;
 +	u32 object_ids[5];
 +	u32 expected_roles[5];
@@ -10421,12 +10701,6 @@ index d414525ec..81a046d58 100644
 +			return -ENOENT;
 +		if (i == 0)
 +			control_obj = obj;
-+		if (i == 1)
-+			pds_obj = obj;
-+		if (i == 2)
-+			use_obj = obj;
-+		if (i == 3)
-+			target_obj = obj;
 +		if (i == 4)
 +			status_obj = obj;
 +		if (obj->role != expected_roles[i])
@@ -10469,13 +10743,8 @@ index d414525ec..81a046d58 100644
 +		submit, status_obj, NULL);
 +	if (ret)
 +		return ret;
-+	ret = poulsbo_sgx_validate_submit_control_side_images_locked(
-+		dev_priv, submit, control_obj, pds_obj, use_obj, target_obj,
-+		status_obj);
-+	if (ret)
-+		return ret;
-+	return poulsbo_sgx_validate_submit_sgx_queued_ta_command_locked(
-+		dev_priv, submit, status_obj);
++	return poulsbo_sgx_validate_submit_sgx_ta_submission_locked(
++		dev_priv, submit, control_obj, status_obj);
 +}
 +
 +static int poulsbo_sgx_prepare_queue_packets_locked(
@@ -17942,7 +18211,7 @@ index d414525ec..81a046d58 100644
  /*
   * The table below contains a mapping of the PCI vendor ID and the PCI Device ID
   * to the different groups of PowerVR 5-series chip designs
-@@ -102,6 +15735,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
+@@ -102,6 +16004,22 @@ MODULE_DEVICE_TABLE(pci, pciidlist);
   * Standard IOCTLs.
   */
  static const struct drm_ioctl_desc psb_ioctls[] = {
@@ -17965,7 +18234,7 @@ index d414525ec..81a046d58 100644
  };
  
  static int psb_do_init(struct drm_device *dev)
-@@ -124,6 +15773,7 @@ static int psb_do_init(struct drm_device *dev)
+@@ -124,6 +16042,7 @@ static int psb_do_init(struct drm_device *dev)
  	    (stolen_gtt << PAGE_SHIFT) * 1024;
  
  	spin_lock_init(&dev_priv->irqmask_lock);
@@ -17973,7 +18242,7 @@ index d414525ec..81a046d58 100644
  	spin_lock_init(&dev_priv->lock_2d);
  
  	PSB_WSGX32(0x00000000, PSB_CR_BIF_BANK0);
-@@ -151,6 +15801,19 @@ static void psb_driver_unload(struct drm_device *dev)
+@@ -151,6 +16070,19 @@ static void psb_driver_unload(struct drm_device *dev)
  	/* TODO: Kill vblank etc here */
  
  	if (dev_priv) {
@@ -17993,7 +18262,7 @@ index d414525ec..81a046d58 100644
  		if (dev_priv->backlight_device)
  			gma_backlight_exit(dev);
  		psb_modeset_cleanup(dev);
-@@ -225,6 +15888,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -225,6 +16157,12 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  	dev_priv->ops = (struct psb_ops *)flags;
  	dev_priv->dev = dev;
  	dev->dev_private = (void *) dev_priv;
@@ -18006,7 +18275,7 @@ index d414525ec..81a046d58 100644
  
  	pg = &dev_priv->gtt;
  
-@@ -369,6 +16038,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
+@@ -369,6 +16307,76 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
  
  	psb_modeset_init(dev);
  	psb_fbdev_init(dev);

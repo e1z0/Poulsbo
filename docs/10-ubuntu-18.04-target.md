@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-061050-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-061050-guarded-deploy)
+  [logs/vaio-deploy/20260513-080856-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-080856-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=61850CF09DE3C6531E06127`
-  - `override_module_size=451152`
+  - `driver_srcversion=329853678DD9A992924BB5C`
+  - `override_module_size=453508`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,17 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-061236-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-061236-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-081039-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-081039-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=61850CF09DE3C6531E06127`
-- the new internal `psb_sgx_lab_submit_sgx_ta_command` batch is also
+  - `final_driver_srcversion=329853678DD9A992924BB5C`
+- the new internal `psb_sgx_lab_submit_sgx_ta_submission` batch is also
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-061236-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-061236-sgx-plan-session)
+    [logs/vaio-plan-session/20260513-081039-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-081039-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-061337-sgx-submit-ta-command-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-061337-sgx-submit-ta-command-live/summary.log)
+    [logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-061416-sgx-multi-submit-ta-command-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-061416-sgx-multi-submit-ta-command-live/summary.log)
+    [logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -68,7 +68,7 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
-- the shared kernel execution model now has nine explicit internal layers:
+- the shared kernel execution model now has eleven explicit internal layers:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
   - `psb_sgx_lab_submit_cmdta_kick`
@@ -78,13 +78,15 @@ Current live note on May 13, 2026:
   - `psb_sgx_lab_submit_sgx_cmdta`
   - `psb_sgx_lab_submit_sgx_ta_kick`
   - `psb_sgx_lab_submit_sgx_ta_command`
+  - `psb_sgx_lab_submit_sgx_queued_ta_command`
+  - `psb_sgx_lab_submit_sgx_ta_submission`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-061236`
-  - `source_row_module_srcversion=61850CF09DE3C6531E06127`
+  - `source_timestamp=20260513-081039`
+  - `source_row_module_srcversion=329853678DD9A992924BB5C`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -7335,49 +7337,58 @@ The saved current-boundary view therefore stays terminal on the new module:
 - `resolved_reason=latest_phase_evidence_terminal`
 - `source_timestamp=20260513-053956`
 
-## SGX submit queued TA command object
+## SGX submit TA submission object
 
 The next validated internal SGX-shaped execution layer is now:
 
-- `psb_sgx_lab_submit_sgx_queued_ta_command`
+- `psb_sgx_lab_submit_sgx_ta_submission`
 
-This layer sits above `psb_sgx_lab_submit_sgx_ta_command` and keeps one queued
-TA command image coherent as:
+This layer sits above `psb_sgx_lab_submit_sgx_queued_ta_command` and keeps one
+full TA submission coherent as:
 
-- validated TA command words
-- typed CCB payload
-- queue-header placement
-- optional launch-time typed `issue-plan` state
+- validated queued TA command
+- typed `live` image
+- typed `manifest` image
+- typed `descriptor` image
+- typed `plan` image
+- optional launch-time typed `issue-plan` image
 
-The first guarded deploy for this batch at
-[logs/vaio-deploy/20260513-062738-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-062738-guarded-deploy)
-missed the default rollback-confirmation window, but the candidate later proved
-remotely reachable on the pending-rollback boot. The successful rerun with a
-longer rollback grace is:
+This batch needed two live fixes before the exact ladder was green again:
 
-- [logs/vaio-deploy/20260513-070613-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-070613-guarded-deploy)
+- first guarded deploy:
+  - [logs/vaio-deploy/20260513-075745-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-075745-guarded-deploy)
+  - live override `srcversion 0AD6D850315762A2E4F6E45`
+  - exact proof then failed at `issue` in
+    [logs/vaio-plan-session/20260513-080115-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-080115-sgx-plan-session)
+- second guarded deploy after relaxing the `issue-plan` cross-check:
+  - [logs/vaio-deploy/20260513-080356-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-080356-guarded-deploy)
+  - live override `srcversion 9172ED422A56E8DA614C79D`
+  - exact proof still failed at `issue` in
+    [logs/vaio-plan-session/20260513-080540-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-080540-sgx-plan-session)
+- final guarded deploy after relaxing the stage-switched `plan` cross-check:
+  - [logs/vaio-deploy/20260513-080856-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-080856-guarded-deploy)
 
-Validated live module state on that rerun:
+Validated live module state on the final rerun:
 
-- `driver_srcversion=2C7400755C1D450933F7344`
-- `override_module_size=451936`
+- `driver_srcversion=329853678DD9A992924BB5C`
+- `override_module_size=453508`
 - `overall=remote_usable`
 - `lightdm_active=inactive`
 - `kdump_service_active=active`
 
 The exact no-redeploy `plan` proof on the same module is:
 
-- [logs/vaio-plan-session/20260513-070759-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-070759-sgx-plan-session)
+- [logs/vaio-plan-session/20260513-081039-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-081039-sgx-plan-session)
 
-That proof still cleared terminal `complete`:
+That proof cleared terminal `complete` again:
 
 - `session_outcome=completed`
 - `selected_phase_profile=complete`
-- `final_driver_srcversion=2C7400755C1D450933F7344`
+- `final_driver_srcversion=329853678DD9A992924BB5C`
 
 Focused typed submit validation is now saved in:
 
-- [logs/vaio-ioctl/20260513-070912-sgx-submit-queued-ta-command-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-070912-sgx-submit-queued-ta-command-live/summary.log)
+- [logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log)
 
 Final focused state:
 
@@ -7389,24 +7400,18 @@ Final focused state:
 - `submit_retired_count=1`
 - `submit_issue_count=1`
 - `submit_transition_count=2`
-- `submit_live_stage_name=retired`
-- `submit_result_stage_name=retired`
-- `submit_manifest_stage_name=retired`
-- `submit_descriptor_stage_name=retired`
-- `submit_plan_stage_name=retired`
-- `submit_issue_plan_stage_name=retired`
-- `submit_issue_plan_dependency_active_count=0`
+- `submit_dependency_active_count=0`
 - `coord_live_submit_count=0`
 - `gtt_state_range_sgx_object_count=0`
 
 Typed multi-submit validation is now saved in:
 
-- [logs/vaio-ioctl/20260513-070951-sgx-multi-submit-queued-ta-command-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-070951-sgx-multi-submit-queued-ta-command-live/summary.log)
+- [logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log)
 
 Final typed multi-submit state:
 
-- `SUBMIT_A_ID=3`
-- `SUBMIT_B_ID=4`
+- `SUBMIT_A_ID=6`
+- `SUBMIT_B_ID=7`
 - submit A final:
   - `submit_arm_count=3`
   - `submit_emit_count=3`
@@ -7424,10 +7429,6 @@ Final typed multi-submit state:
   - `submit_retired_count=2`
   - `submit_issue_count=2`
   - `submit_transition_count=4`
-  - `submit_result_dependency_active_count=1`
-  - `submit_manifest_dependency_active_count=1`
-  - `submit_descriptor_dependency_active_count=1`
-  - `submit_plan_dependency_active_count=1`
   - `submit_dependency_active_count=1`
 - final cleanup:
   - `coord_live_submit_count=0`
@@ -7437,4 +7438,4 @@ The saved current-boundary view therefore stays terminal on the new module:
 
 - `resolved_profile=complete`
 - `resolved_reason=latest_phase_evidence_terminal`
-- `source_timestamp=20260513-070759`
+- `source_timestamp=20260513-081039`
