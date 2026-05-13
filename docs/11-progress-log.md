@@ -11860,3 +11860,58 @@ for live owner-state transitions onto that shared typed schedule object.
     - `dependency[1]_observed_complete_ticket=5`
 - documented in:
   - `docs/183-sgx-submit-ta-schedule-object.md`
+
+2026-05-13: added `psb_sgx_lab_submit_sgx_ta_dispatch` above
+`psb_sgx_lab_submit_sgx_ta_schedule`, and moved the launch-side issue
+writeback image onto that shared typed dispatch object.
+
+- deploy:
+  - `logs/vaio-deploy/20260513-162106-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=AA6BEDA312078692D47D0A8`
+    - `override_module_size=462560`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- exact proof back to green:
+  - `logs/vaio-plan-session/20260513-162255-sgx-plan-session`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=AA6BEDA312078692D47D0A8`
+- focused typed submit passed:
+  - `logs/vaio-ioctl/20260513-162355-sgx-submit-ta-dispatch-live/summary.log`
+  - final focused state:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- typed multi-submit passed on the new dispatch object:
+  - `logs/vaio-ioctl/20260513-162434-sgx-multi-submit-ta-dispatch-live/summary.log`
+  - `SUBMIT_A_ID=3`
+  - `SUBMIT_B_ID=4`
+  - submit A final:
+    - `submit_arm_count=3`
+    - `submit_emit_count=3`
+    - `submit_launch_count=3`
+    - `submit_dispatch_count=3`
+    - `submit_retired_count=3`
+    - `submit_issue_count=3`
+    - `submit_transition_count=6`
+    - `submit_dependency_active_count=0`
+  - submit B final:
+    - `submit_arm_count=2`
+    - `submit_emit_count=2`
+    - `submit_launch_count=2`
+    - `submit_dispatch_count=2`
+    - `submit_retired_count=2`
+    - `submit_issue_count=2`
+    - `submit_transition_count=4`
+    - `submit_dependency_active_count=1`
+    - `dependency[1]_required_ticket=3`
+    - `dependency[1]_observed_complete_ticket=5`
+- documented in:
+  - `docs/184-sgx-submit-ta-dispatch-object.md`

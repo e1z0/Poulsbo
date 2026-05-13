@@ -1,93 +1,71 @@
-From 0507b833c2445c50aa809349138f27bae7005e2f Mon Sep 17 00:00:00 2001
+From 4ceb00614dca6cc66aa3fa9be32a397e7795ec9c Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Wed, 13 May 2026 16:15:25 +0300
-Subject: [PATCH] drm/gma500: add SGX TA schedule object
+Date: Wed, 13 May 2026 16:28:08 +0300
+Subject: [PATCH] drm/gma500: add SGX TA dispatch object
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 425 +++++++++++++++++++++++--------
- 1 file changed, 323 insertions(+), 102 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 490 ++++++++++++++++++++++---------
+ 1 file changed, 356 insertions(+), 134 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 2cd64e96f..d4371ebbb 100644
+index d4371ebbb..95d73acce 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1441,6 +1441,36 @@ struct psb_sgx_lab_submit_sgx_ta_control {
- 	struct psb_sgx_lab_submit_sgx_issue_request issue_request;
+@@ -1471,7 +1471,29 @@ struct psb_sgx_lab_submit_sgx_ta_schedule {
+ 	struct psb_sgx_lab_submit_sgx_transition_request transition_request;
  };
  
-+struct psb_sgx_lab_submit_sgx_transition_request {
++struct psb_sgx_lab_submit_sgx_issue_image {
 +	bool active;
-+	bool entering_running;
-+	bool entering_complete;
-+	bool can_transition;
-+	u32 owner_state;
-+	u32 completed_packets;
-+	u32 new_packet_count;
-+	u32 new_read_offset;
-+	u32 new_write_offset;
-+	u32 new_tail_packets;
-+	u32 new_head_packets;
-+	u32 new_ccb_offset;
-+	u32 new_sync_complete_seq;
-+	u32 new_sync_flags;
-+	u32 new_owner_complete_cookie;
-+	u32 new_global_running_ticket;
-+	u32 new_global_complete_ticket;
++	u32 issue_write_offset;
++	u32 final_write_offset;
++	u32 queue_region_end;
++	u32 sync_region_end;
++	u32 owner_region_end;
++	struct psb_sgx_lab_queue_header_words queue_header;
++	struct psb_sgx_lab_ccb_record_words ccb_record;
++	struct psb_sgx_lab_sync_words sync;
++	struct psb_sgx_lab_owner_words owner;
 +};
 +
-+struct psb_sgx_lab_submit_sgx_ta_schedule {
-+	struct psb_sgx_lab_submit_sgx_ta_control control;
-+	bool can_issue_queued;
-+	bool can_issue_running;
-+	bool can_enter_running;
-+	bool can_stay_running;
-+	bool can_complete;
-+	struct psb_sgx_lab_submit_sgx_transition_request transition_request;
++struct psb_sgx_lab_submit_sgx_ta_dispatch {
++	struct psb_sgx_lab_submit_sgx_ta_schedule schedule;
++	struct psb_sgx_lab_submit_sgx_issue_image issue_image;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
++static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
++					u32 *end_out);
++static int poulsbo_sgx_sync_region_end(u32 base_offset, u32 *end_out);
++static int poulsbo_sgx_owner_region_end(u32 base_offset, u32 *end_out);
  static int poulsbo_sgx_fill_submit_ccb_record_words_from_packet(
  	const struct psb_sgx_lab_submit_exec_packet *packet,
-@@ -3868,6 +3898,179 @@ static int poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(
+ 	struct psb_sgx_lab_ccb_record_words *ccb_record);
+@@ -3898,6 +3920,36 @@ static int poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(
  	return issue_request->can_issue ? 0 : -EINVAL;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
-+	struct drm_psb_private *dev_priv,
-+	struct psb_sgx_lab_submit *submit,
-+	bool have_transition_request,
-+	u32 transition_owner_state,
-+	u32 completed_packets,
++static void poulsbo_sgx_fill_submit_sgx_ta_schedule_from_control_locked(
++	const struct psb_sgx_lab_submit *submit,
++	const struct psb_sgx_lab_submit_sgx_ta_control *control,
 +	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule)
 +{
-+	struct psb_sgx_lab_submit_sgx_transition_request *transition_request;
-+	u64 read_advance;
-+	u32 read_advance_mod;
-+	int ret;
-+
-+	if (!dev_priv || !submit || !schedule)
-+		return -EINVAL;
-+
-+	memset(schedule, 0, sizeof(*schedule));
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
-+		dev_priv, submit, false, 0, 0, &schedule->control);
-+	if (ret)
-+		return ret;
++	if (!submit || !control || !schedule)
++		return;
 +
 +	schedule->can_issue_queued =
-+		schedule->control.launch_ready &&
-+		!schedule->control.launch_consumed &&
++		control->launch_ready &&
++		!control->launch_consumed &&
 +		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED;
 +	schedule->can_issue_running =
-+		schedule->control.launch_ready &&
-+		!schedule->control.launch_consumed &&
-+		schedule->control.running_owned_by_self &&
++		control->launch_ready &&
++		!control->launch_consumed &&
++		control->running_owned_by_self &&
 +		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING;
 +	schedule->can_enter_running =
 +		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED &&
 +		submit->queue_packet_count &&
-+		schedule->control.gate.can_enter_running;
++		control->gate.can_enter_running;
 +	schedule->can_stay_running =
 +		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
 +		submit->global_running_ticket &&
@@ -95,402 +73,578 @@ index 2cd64e96f..d4371ebbb 100644
 +	schedule->can_complete =
 +		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
 +		submit->queue_packet_count;
++}
 +
-+	if (!have_transition_request)
-+		return 0;
+ static int poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
+ 	struct drm_psb_private *dev_priv,
+ 	struct psb_sgx_lab_submit *submit,
+@@ -3921,26 +3973,8 @@ static int poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
+ 	if (ret)
+ 		return ret;
+ 
+-	schedule->can_issue_queued =
+-		schedule->control.launch_ready &&
+-		!schedule->control.launch_consumed &&
+-		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED;
+-	schedule->can_issue_running =
+-		schedule->control.launch_ready &&
+-		!schedule->control.launch_consumed &&
+-		schedule->control.running_owned_by_self &&
+-		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING;
+-	schedule->can_enter_running =
+-		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED &&
+-		submit->queue_packet_count &&
+-		schedule->control.gate.can_enter_running;
+-	schedule->can_stay_running =
+-		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
+-		submit->global_running_ticket &&
+-		submit->queue_packet_count;
+-	schedule->can_complete =
+-		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
+-		submit->queue_packet_count;
++	poulsbo_sgx_fill_submit_sgx_ta_schedule_from_control_locked(
++		submit, &schedule->control, schedule);
+ 
+ 	if (!have_transition_request)
+ 		return 0;
+@@ -4071,6 +4105,119 @@ static int poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
+ 	return transition_request->can_transition ? 0 : -EINVAL;
+ }
+ 
++static int poulsbo_sgx_build_submit_sgx_ta_dispatch_locked(
++	struct drm_psb_private *dev_priv,
++	struct psb_sgx_lab_submit *submit,
++	bool have_issue_request,
++	u32 issue_owner_state,
++	u32 issued_packets,
++	struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch)
++{
++	struct psb_sgx_lab_submit_sgx_issue_image *issue_image;
++	int ret;
 +
-+	transition_request = &schedule->transition_request;
-+	transition_request->active = true;
-+	transition_request->owner_state = transition_owner_state;
-+	transition_request->completed_packets = completed_packets;
-+
-+	if (transition_owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
-+	    transition_owner_state != PSB_SGX_LAB_OWNER_RUNNING &&
-+	    transition_owner_state != PSB_SGX_LAB_OWNER_COMPLETE)
++	if (!dev_priv || !submit || !dispatch)
 +		return -EINVAL;
-+	if (completed_packets > submit->queue_packet_count)
-+		return -EINVAL;
-+	if (submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE)
-+		return -EINVAL;
 +
-+	if (transition_owner_state == PSB_SGX_LAB_OWNER_QUEUED) {
-+		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED ||
-+		    completed_packets)
-+			return -EINVAL;
-+	} else if (transition_owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
-+		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
-+		    submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING)
-+			return -EINVAL;
-+		if (submit->queue_packet_count == completed_packets)
-+			return -EINVAL;
-+	} else if (transition_owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
-+		if (submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING ||
-+		    completed_packets != submit->queue_packet_count)
-+			return -EINVAL;
-+	}
++	memset(dispatch, 0, sizeof(*dispatch));
 +
-+	if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
-+	    (!dev_priv->sgx_lab_running_active ||
-+	     dev_priv->sgx_lab_active_running_submit_id != submit->submit_id))
-+		return -EINVAL;
-+
-+	transition_request->entering_running =
-+		transition_owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
-+		submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING;
-+	transition_request->entering_complete =
-+		transition_owner_state == PSB_SGX_LAB_OWNER_COMPLETE;
-+
-+	if (transition_request->entering_running) {
-+		ret = poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
-+			&schedule->control);
-+		if (ret)
-+			return ret;
-+		if (dev_priv->sgx_lab_global_running_ticket == U32_MAX)
-+			return -EOVERFLOW;
-+		transition_request->new_global_running_ticket =
-+			dev_priv->sgx_lab_global_running_ticket + 1;
-+		transition_request->can_transition = true;
-+	} else if (transition_owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
-+		if (!submit->global_running_ticket)
-+			return -EINVAL;
-+		transition_request->new_global_running_ticket =
-+			submit->global_running_ticket;
-+		transition_request->can_transition = true;
-+	} else {
-+		transition_request->new_global_running_ticket =
-+			submit->global_running_ticket;
-+		transition_request->can_transition =
-+			transition_owner_state == PSB_SGX_LAB_OWNER_COMPLETE ||
-+			transition_owner_state == PSB_SGX_LAB_OWNER_QUEUED;
-+	}
-+
-+	transition_request->new_packet_count =
-+		submit->queue_packet_count - completed_packets;
-+	transition_request->new_read_offset = submit->ccb_read_offset;
-+	if (completed_packets) {
-+		read_advance = (u64)completed_packets * submit->queue_packet_size;
-+		div_u64_rem(read_advance, submit->queue_size,
-+			    &read_advance_mod);
-+		transition_request->new_read_offset =
-+			(submit->ccb_read_offset + read_advance_mod) %
-+			submit->queue_size;
-+	}
-+
-+	ret = poulsbo_sgx_queue_progression(
-+		transition_request->new_read_offset, submit->queue_size,
-+		submit->queue_packet_size, transition_request->new_packet_count,
-+		&transition_request->new_tail_packets,
-+		&transition_request->new_head_packets,
-+		&transition_request->new_write_offset);
++	ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
++		dev_priv, submit, have_issue_request, issue_owner_state,
++		issued_packets, &dispatch->schedule.control);
 +	if (ret)
 +		return ret;
 +
-+	transition_request->new_ccb_offset =
-+		submit->queue_base_offset +
-+		transition_request->new_read_offset;
-+	transition_request->new_sync_complete_seq =
-+		submit->sync_complete_seq + completed_packets;
-+	transition_request->new_owner_complete_cookie =
-+		submit->owner_complete_cookie + completed_packets;
-+	transition_request->new_global_complete_ticket =
-+		submit->global_complete_ticket;
-+	if (transition_request->entering_complete) {
-+		if (dev_priv->sgx_lab_global_complete_ticket == U32_MAX)
-+			return -EOVERFLOW;
-+		transition_request->new_global_complete_ticket =
-+			dev_priv->sgx_lab_global_complete_ticket + 1;
-+	}
++	poulsbo_sgx_fill_submit_sgx_ta_schedule_from_control_locked(
++		submit, &dispatch->schedule.control, &dispatch->schedule);
 +
-+	transition_request->new_sync_flags = PSB_SGX_LAB_SYNC_FLAG_READY;
-+	if (transition_request->new_head_packets) {
-+		transition_request->new_sync_flags |=
-+			PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
-+	}
++	issue_image = &dispatch->issue_image;
++	issue_image->active = submit->launch_valid;
++	if (!issue_image->active)
++		return 0;
++
++	ret = poulsbo_sgx_queue_region_end(submit->launch_queue_base_offset,
++					   submit->launch_queue_size,
++					   &issue_image->queue_region_end);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_sync_region_end(submit->launch_sync_offset,
++					  &issue_image->sync_region_end);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_owner_region_end(submit->launch_owner_offset,
++					   &issue_image->owner_region_end);
++	if (ret)
++		return ret;
++
++	issue_image->issue_write_offset = submit->launch_ccb_write_offset;
++	issue_image->final_write_offset = submit->launch_new_write_offset;
++
++	memset(&issue_image->queue_header, 0, sizeof(issue_image->queue_header));
++	issue_image->queue_header.write_offset = submit->launch_new_write_offset;
++	issue_image->queue_header.read_offset = submit->launch_ccb_read_offset;
++	issue_image->queue_header.queue_base_offset =
++		submit->launch_queue_base_offset;
++	issue_image->queue_header.queue_size = submit->launch_queue_size;
++	issue_image->queue_header.queue_packet_size =
++		submit->launch_queue_packet_size;
++	issue_image->queue_header.queue_packet_count =
++		submit->launch_queue_packet_count;
++	issue_image->queue_header.queue_tail_packet_count =
++		submit->launch_queue_tail_packet_count;
++	issue_image->queue_header.queue_head_packet_count =
++		submit->launch_queue_head_packet_count;
++
++	memset(&issue_image->ccb_record, 0, sizeof(issue_image->ccb_record));
++	issue_image->ccb_record.service_address =
++		submit->launch_ccb_service_address;
++	issue_image->ccb_record.cache_control =
++		submit->launch_ccb_cache_control;
++	issue_image->ccb_record.data0 = submit->launch_ccb_data0;
++	issue_image->ccb_record.data1 = submit->launch_ccb_data1;
++	issue_image->ccb_record.pds_gpu_va32 = (u32)submit->launch_pds_gpu_va;
++	issue_image->ccb_record.use_gpu_va32 = (u32)submit->launch_use_gpu_va;
++	issue_image->ccb_record.target_gpu_va32 =
++		(u32)submit->launch_target_gpu_va;
++	issue_image->ccb_record.status_gpu_va32 =
++		(u32)submit->launch_status_gpu_va;
++
++	memset(&issue_image->sync, 0, sizeof(issue_image->sync));
++	issue_image->sync.read_offset = submit->launch_ccb_read_offset;
++	issue_image->sync.write_offset = submit->launch_new_write_offset;
++	issue_image->sync.complete_seq = submit->launch_sync_complete_seq;
++	issue_image->sync.pending_seq = submit->launch_sync_pending_seq;
++	issue_image->sync.flags = submit->launch_sync_flags;
++	issue_image->sync.epoch = submit->launch_queue_epoch;
++	issue_image->sync.global_issue_ticket =
++		submit->launch_global_issue_ticket;
++
++	memset(&issue_image->owner, 0, sizeof(issue_image->owner));
++	issue_image->owner.owner_state = submit->launch_owner_state;
++	issue_image->owner.owner_issue_cookie =
++		submit->launch_owner_issue_cookie;
++	issue_image->owner.owner_complete_cookie =
++		submit->launch_owner_complete_cookie;
++	issue_image->owner.epoch = submit->launch_queue_epoch;
++	issue_image->owner.global_complete_ticket =
++		submit->launch_global_complete_ticket;
++	issue_image->owner.global_running_ticket =
++		submit->launch_global_running_ticket;
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
-+	const struct psb_sgx_lab_submit_sgx_ta_schedule *schedule)
++static int poulsbo_sgx_submit_sgx_ta_dispatch_issue_status_locked(
++	const struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch)
 +{
-+	const struct psb_sgx_lab_submit_sgx_transition_request *transition_request;
-+
-+	if (!schedule)
++	if (!dispatch)
++		return -EINVAL;
++	if (!dispatch->issue_image.active)
 +		return -EINVAL;
 +
-+	transition_request = &schedule->transition_request;
-+	if (!transition_request->active)
-+		return -EINVAL;
-+
-+	return transition_request->can_transition ? 0 : -EINVAL;
++	return poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(
++		&dispatch->schedule.control);
 +}
 +
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -9262,6 +9465,89 @@ out:
+@@ -9548,6 +9695,152 @@ out:
  	return ret;
  }
  
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_schedule_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_dispatch_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_schedule *schedule)
++	const struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch)
 +{
++	u32 queue_region_end;
++	u32 sync_region_end;
++	u32 owner_region_end;
 +	int ret;
-+	bool can_issue_queued;
-+	bool can_issue_running;
-+	bool can_enter_running;
-+	bool can_stay_running;
-+	bool can_complete;
 +
-+	if (!dev_priv || !submit || !schedule)
++	if (!dev_priv || !submit || !dispatch)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_control_locked(
-+		dev_priv, submit, &schedule->control);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_schedule_locked(
++		dev_priv, submit, &dispatch->schedule);
 +	if (ret)
 +		return ret;
 +
-+	can_issue_queued =
-+		schedule->control.launch_ready &&
-+		!schedule->control.launch_consumed &&
-+		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED;
-+	can_issue_running =
-+		schedule->control.launch_ready &&
-+		!schedule->control.launch_consumed &&
-+		schedule->control.running_owned_by_self &&
-+		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING;
-+	can_enter_running =
-+		submit->owner_state == PSB_SGX_LAB_OWNER_QUEUED &&
-+		submit->queue_packet_count &&
-+		schedule->control.gate.can_enter_running;
-+	can_stay_running =
-+		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
-+		submit->global_running_ticket &&
-+		submit->queue_packet_count;
-+	can_complete =
-+		submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
-+		submit->queue_packet_count;
-+
-+	if (schedule->can_issue_queued != can_issue_queued ||
-+	    schedule->can_issue_running != can_issue_running ||
-+	    schedule->can_enter_running != can_enter_running ||
-+	    schedule->can_stay_running != can_stay_running ||
-+	    schedule->can_complete != can_complete) {
++	if (dispatch->issue_image.active != !!submit->launch_valid)
 +		return -EINVAL;
-+	}
++	if (!dispatch->issue_image.active)
++		return 0;
++
++	ret = poulsbo_sgx_queue_region_end(submit->launch_queue_base_offset,
++					   submit->launch_queue_size,
++					   &queue_region_end);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_sync_region_end(submit->launch_sync_offset,
++					  &sync_region_end);
++	if (ret)
++		return ret;
++	ret = poulsbo_sgx_owner_region_end(submit->launch_owner_offset,
++					   &owner_region_end);
++	if (ret)
++		return ret;
++
++	if (dispatch->issue_image.issue_write_offset !=
++		    submit->launch_ccb_write_offset ||
++	    dispatch->issue_image.final_write_offset !=
++		    submit->launch_new_write_offset ||
++	    dispatch->issue_image.queue_region_end != queue_region_end ||
++	    dispatch->issue_image.sync_region_end != sync_region_end ||
++	    dispatch->issue_image.owner_region_end != owner_region_end)
++		return -EINVAL;
++
++	if (dispatch->issue_image.queue_header.write_offset !=
++		    submit->launch_new_write_offset ||
++	    dispatch->issue_image.queue_header.read_offset !=
++		    submit->launch_ccb_read_offset ||
++	    dispatch->issue_image.queue_header.queue_base_offset !=
++		    submit->launch_queue_base_offset ||
++	    dispatch->issue_image.queue_header.queue_size !=
++		    submit->launch_queue_size ||
++	    dispatch->issue_image.queue_header.queue_packet_size !=
++		    submit->launch_queue_packet_size ||
++	    dispatch->issue_image.queue_header.queue_packet_count !=
++		    submit->launch_queue_packet_count ||
++	    dispatch->issue_image.queue_header.queue_tail_packet_count !=
++		    submit->launch_queue_tail_packet_count ||
++	    dispatch->issue_image.queue_header.queue_head_packet_count !=
++		    submit->launch_queue_head_packet_count)
++		return -EINVAL;
++
++	if (dispatch->issue_image.ccb_record.service_address !=
++		    submit->launch_ccb_service_address ||
++	    dispatch->issue_image.ccb_record.cache_control !=
++		    submit->launch_ccb_cache_control ||
++	    dispatch->issue_image.ccb_record.data0 !=
++		    submit->launch_ccb_data0 ||
++	    dispatch->issue_image.ccb_record.data1 !=
++		    submit->launch_ccb_data1 ||
++	    dispatch->issue_image.ccb_record.pds_gpu_va32 !=
++		    (u32)submit->launch_pds_gpu_va ||
++	    dispatch->issue_image.ccb_record.use_gpu_va32 !=
++		    (u32)submit->launch_use_gpu_va ||
++	    dispatch->issue_image.ccb_record.target_gpu_va32 !=
++		    (u32)submit->launch_target_gpu_va ||
++	    dispatch->issue_image.ccb_record.status_gpu_va32 !=
++		    (u32)submit->launch_status_gpu_va)
++		return -EINVAL;
++
++	if (dispatch->issue_image.sync.read_offset !=
++		    submit->launch_ccb_read_offset ||
++	    dispatch->issue_image.sync.write_offset !=
++		    submit->launch_new_write_offset ||
++	    dispatch->issue_image.sync.complete_seq !=
++		    submit->launch_sync_complete_seq ||
++	    dispatch->issue_image.sync.pending_seq !=
++		    submit->launch_sync_pending_seq ||
++	    dispatch->issue_image.sync.flags !=
++		    submit->launch_sync_flags ||
++	    dispatch->issue_image.sync.epoch !=
++		    submit->launch_queue_epoch ||
++	    dispatch->issue_image.sync.global_issue_ticket !=
++		    submit->launch_global_issue_ticket)
++		return -EINVAL;
++
++	if (dispatch->issue_image.owner.owner_state !=
++		    submit->launch_owner_state ||
++	    dispatch->issue_image.owner.owner_issue_cookie !=
++		    submit->launch_owner_issue_cookie ||
++	    dispatch->issue_image.owner.owner_complete_cookie !=
++		    submit->launch_owner_complete_cookie ||
++	    dispatch->issue_image.owner.epoch !=
++		    submit->launch_queue_epoch ||
++	    dispatch->issue_image.owner.global_complete_ticket !=
++		    submit->launch_global_complete_ticket ||
++	    dispatch->issue_image.owner.global_running_ticket !=
++		    submit->launch_global_running_ticket)
++		return -EINVAL;
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_validate_submit_sgx_ta_schedule_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_dispatch_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *control_obj,
 +	struct psb_sgx_lab_object *status_obj)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule;
++	struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch;
 +	int ret;
 +
-+	schedule = kmalloc(sizeof(*schedule), GFP_KERNEL);
-+	if (!schedule)
++	dispatch = kmalloc(sizeof(*dispatch), GFP_KERNEL);
++	if (!dispatch)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_validate_submit_sgx_ta_control_locked(
++	ret = poulsbo_sgx_validate_submit_sgx_ta_schedule_locked(
 +		dev_priv, submit, control_obj, status_obj);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
-+		dev_priv, submit, false, 0, 0, schedule);
++	ret = poulsbo_sgx_build_submit_sgx_ta_dispatch_locked(
++		dev_priv, submit, false, 0, 0, dispatch);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_schedule_locked(
-+		dev_priv, submit, schedule);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_dispatch_locked(
++		dev_priv, submit, dispatch);
 +
 +out:
-+	kfree(schedule);
++	kfree(dispatch);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  					      struct psb_sgx_lab_submit *submit)
  {
-@@ -9473,7 +9759,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -9759,7 +10052,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		submit, status_obj, NULL);
  	if (ret)
  		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_control_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_schedule_locked(
+-	return poulsbo_sgx_validate_submit_sgx_ta_schedule_locked(
++	return poulsbo_sgx_validate_submit_sgx_ta_dispatch_locked(
  		dev_priv, submit, control_obj, status_obj);
  }
  
-@@ -11985,7 +12271,7 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
- 	u32 new_global_running_ticket;
- 	u32 new_global_complete_ticket;
- 	bool entering_running;
+@@ -12515,35 +12808,16 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+ {
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	struct psb_sgx_lab_submit *submit;
 -	struct psb_sgx_lab_submit_sgx_ta_control *control = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_schedule *schedule = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_dispatch *dispatch = NULL;
++	const struct psb_sgx_lab_submit_sgx_issue_image *issue_image;
+ 	struct psb_sgx_lab_object *control_obj;
+ 	struct psb_sgx_lab_object *pds_obj;
+ 	struct psb_sgx_lab_object *use_obj;
+ 	struct psb_sgx_lab_object *target_obj;
+ 	struct psb_sgx_lab_object *status_obj;
+-	struct psb_sgx_lab_queue_header_words queue_header;
+-	struct psb_sgx_lab_ccb_record_words ccb_record;
+-	struct psb_sgx_lab_sync_words sync;
+-	struct psb_sgx_lab_owner_words owner;
+-	u32 queue_region_end;
+-	u32 sync_region_end;
+-	u32 owner_region_end;
+ 	u32 issue_write_offset;
+ 	u32 slot_offset;
+ 	u32 index;
+-	u32 launch_new_write_offset;
+-	u32 launch_queue_packet_count;
+-	u32 launch_queue_tail_packet_count;
+-	u32 launch_queue_head_packet_count;
+-	u32 launch_sync_pending_seq;
+-	u32 launch_owner_issue_cookie;
+-	u32 launch_queue_epoch;
+-	u32 launch_global_issue_ticket;
+-	u32 launch_global_running_ticket;
+-	u32 launch_pds_gpu_va32;
+-	u32 launch_use_gpu_va32;
+-	u32 launch_target_gpu_va32;
+-	u32 launch_status_gpu_va32;
  	int ret;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -12014,111 +12300,46 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -12576,45 +12850,23 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  		goto out_unlock;
  	}
  
--	if (submit->owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
--		ret = -EINVAL;
-+	schedule = kmalloc(sizeof(*schedule), GFP_KERNEL);
-+	if (!schedule) {
-+		ret = -ENOMEM;
+-	control = kmalloc(sizeof(*control), GFP_KERNEL);
+-	if (!control) {
++	dispatch = kmalloc(sizeof(*dispatch), GFP_KERNEL);
++	if (!dispatch) {
+ 		ret = -ENOMEM;
  		goto out_unlock;
  	}
--	if (owner_state == PSB_SGX_LAB_OWNER_QUEUED) {
--		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED ||
--		    completed_packets) {
--			ret = -EINVAL;
--			goto out_unlock;
--		}
--	} else if (owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
--		if (submit->owner_state != PSB_SGX_LAB_OWNER_QUEUED &&
--		    submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING) {
--			ret = -EINVAL;
--			goto out_unlock;
--		}
--		if (submit->queue_packet_count == completed_packets) {
--			ret = -EINVAL;
--			goto out_unlock;
--		}
--	} else if (owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
--		if (submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING ||
--		    completed_packets != submit->queue_packet_count) {
--			ret = -EINVAL;
--			goto out_unlock;
--		}
--	}
--	if (submit->owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
--		if (!dev_priv->sgx_lab_running_active ||
--		    dev_priv->sgx_lab_active_running_submit_id != submit_id) {
--			ret = -EINVAL;
--			goto out_unlock;
--		}
--	}
--	entering_running = owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
--			   submit->owner_state != PSB_SGX_LAB_OWNER_RUNNING;
--	new_global_running_ticket = submit->global_running_ticket;
--	if (owner_state == PSB_SGX_LAB_OWNER_RUNNING) {
--		if (entering_running) {
--			control = kmalloc(sizeof(*control), GFP_KERNEL);
--			if (!control) {
--				ret = -ENOMEM;
--				goto out_unlock;
--			}
--
--			ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
--				dev_priv, submit, false, 0, 0, control);
--			if (ret)
--				goto out_unlock;
--			ret = poulsbo_sgx_submit_sgx_ta_control_running_status_locked(
--				control);
--			if (ret)
--				goto out_unlock;
--			if (dev_priv->sgx_lab_global_running_ticket ==
--			    U32_MAX) {
--				ret = -EOVERFLOW;
--				goto out_unlock;
--			}
--			new_global_running_ticket =
--				dev_priv->sgx_lab_global_running_ticket + 1;
--		} else if (!submit->global_running_ticket) {
--			ret = -EINVAL;
--			goto out_unlock;
--		}
--	}
  
--	new_packet_count = submit->queue_packet_count - completed_packets;
--	new_read_offset = submit->ccb_read_offset;
--	if (completed_packets) {
--		u64 read_advance;
--		u32 read_advance_mod;
+-	ret = poulsbo_sgx_build_submit_sgx_ta_control_locked(
+-		dev_priv, submit, true, owner_state, issued_packets, control);
++	ret = poulsbo_sgx_build_submit_sgx_ta_dispatch_locked(
++		dev_priv, submit, true, owner_state, issued_packets, dispatch);
+ 	if (ret)
+ 		goto out_unlock;
+-	ret = poulsbo_sgx_submit_sgx_ta_control_issue_status_locked(control);
++	ret = poulsbo_sgx_submit_sgx_ta_dispatch_issue_status_locked(dispatch);
+ 	if (ret) {
+ 		if (ret == -ESTALE)
+ 			poulsbo_sgx_disarm_submit_locked(submit);
+ 		goto out_unlock;
+ 	}
+-	launch_new_write_offset = submit->launch_new_write_offset;
+-	launch_queue_packet_count = submit->launch_queue_packet_count;
+-	launch_queue_tail_packet_count = submit->launch_queue_tail_packet_count;
+-	launch_queue_head_packet_count = submit->launch_queue_head_packet_count;
+-	launch_sync_pending_seq = submit->launch_sync_pending_seq;
+-	launch_owner_issue_cookie = submit->launch_owner_issue_cookie;
+-	launch_queue_epoch = submit->launch_queue_epoch;
+-	launch_global_issue_ticket = submit->launch_global_issue_ticket;
+-	launch_global_running_ticket = submit->launch_global_running_ticket;
 -
--		read_advance = (u64)completed_packets * submit->queue_packet_size;
--		div_u64_rem(read_advance, submit->queue_size, &read_advance_mod);
--		new_read_offset = (submit->ccb_read_offset +
--				   read_advance_mod) %
--				  submit->queue_size;
--	}
--
--	ret = poulsbo_sgx_queue_progression(new_read_offset,
--					    submit->queue_size,
--					    submit->queue_packet_size,
--					    new_packet_count,
--					    &new_tail_packets,
--					    &new_head_packets,
--					    &new_write_offset);
-+	ret = poulsbo_sgx_build_submit_sgx_ta_schedule_locked(
-+		dev_priv, submit, true, owner_state, completed_packets,
-+		schedule);
-+	if (ret)
-+		goto out_unlock;
-+	ret = poulsbo_sgx_submit_sgx_ta_schedule_transition_status_locked(
-+		schedule);
+-	ret = poulsbo_sgx_queue_region_end(submit->launch_queue_base_offset,
+-					   submit->launch_queue_size,
+-					   &queue_region_end);
+-	if (ret)
+-		goto out_unlock;
+-	ret = poulsbo_sgx_sync_region_end(submit->launch_sync_offset,
+-					  &sync_region_end);
+-	if (ret)
+-		goto out_unlock;
+-	ret = poulsbo_sgx_owner_region_end(submit->launch_owner_offset,
+-					   &owner_region_end);
+-	if (ret)
+-		goto out_unlock;
++	issue_image = &dispatch->issue_image;
+ 
+ 	control_obj = poulsbo_sgx_find_object_locked(dev_priv,
+ 						     submit->launch_control_object_id);
+@@ -12630,38 +12882,25 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+ 		ret = -ENOENT;
+ 		goto out_unlock;
+ 	}
+-	if (queue_region_end > control_obj->gt->gem.size) {
++	if (issue_image->queue_region_end > control_obj->gt->gem.size) {
+ 		ret = -EINVAL;
+ 		goto out_unlock;
+ 	}
+ 	ret = poulsbo_sgx_object_access_ok(control_obj, 0, 32);
+ 	if (ret)
+ 		goto out_unlock;
+-	launch_pds_gpu_va32 = (u32)submit->launch_pds_gpu_va;
+-	launch_use_gpu_va32 = (u32)submit->launch_use_gpu_va;
+-	launch_target_gpu_va32 = (u32)submit->launch_target_gpu_va;
+-	launch_status_gpu_va32 = (u32)submit->launch_status_gpu_va;
+ 	ret = poulsbo_sgx_object_access_ok(status_obj, submit->launch_sync_offset,
+-					   sync_region_end -
++					   issue_image->sync_region_end -
+ 					   submit->launch_sync_offset);
+ 	if (ret)
+ 		goto out_unlock;
+ 	ret = poulsbo_sgx_object_access_ok(status_obj, submit->launch_owner_offset,
+-					   owner_region_end -
++					   issue_image->owner_region_end -
+ 					   submit->launch_owner_offset);
  	if (ret)
  		goto out_unlock;
  
--	new_ccb_offset = submit->queue_base_offset + new_read_offset;
--	new_sync_complete_seq = submit->sync_complete_seq + completed_packets;
--	new_owner_complete_cookie = submit->owner_complete_cookie +
--				    completed_packets;
--	new_global_complete_ticket = submit->global_complete_ticket;
--	if (owner_state == PSB_SGX_LAB_OWNER_COMPLETE) {
--		if (dev_priv->sgx_lab_global_complete_ticket == U32_MAX) {
--			ret = -EOVERFLOW;
--			goto out_unlock;
--		}
--		new_global_complete_ticket =
--			dev_priv->sgx_lab_global_complete_ticket + 1;
--	}
--	new_sync_flags = PSB_SGX_LAB_SYNC_FLAG_READY;
--	if (new_head_packets)
--		new_sync_flags |= PSB_SGX_LAB_SYNC_FLAG_WRAPPED;
-+	entering_running =
-+		schedule->transition_request.entering_running;
-+	new_global_running_ticket =
-+		schedule->transition_request.new_global_running_ticket;
-+	new_packet_count =
-+		schedule->transition_request.new_packet_count;
-+	new_read_offset =
-+		schedule->transition_request.new_read_offset;
-+	new_write_offset =
-+		schedule->transition_request.new_write_offset;
-+	new_tail_packets =
-+		schedule->transition_request.new_tail_packets;
-+	new_head_packets =
-+		schedule->transition_request.new_head_packets;
-+	new_ccb_offset =
-+		schedule->transition_request.new_ccb_offset;
-+	new_sync_complete_seq =
-+		schedule->transition_request.new_sync_complete_seq;
-+	new_owner_complete_cookie =
-+		schedule->transition_request.new_owner_complete_cookie;
-+	new_global_complete_ticket =
-+		schedule->transition_request.new_global_complete_ticket;
-+	new_sync_flags =
-+		schedule->transition_request.new_sync_flags;
+-	issue_write_offset = submit->launch_ccb_write_offset;
+-	memset(&ccb_record, 0, sizeof(ccb_record));
+-	ccb_record.service_address = submit->launch_ccb_service_address;
+-	ccb_record.cache_control = submit->launch_ccb_cache_control;
+-	ccb_record.data0 = submit->launch_ccb_data0;
+-	ccb_record.data1 = submit->launch_ccb_data1;
+-	ccb_record.pds_gpu_va32 = launch_pds_gpu_va32;
+-	ccb_record.use_gpu_va32 = launch_use_gpu_va32;
+-	ccb_record.target_gpu_va32 = launch_target_gpu_va32;
+-	ccb_record.status_gpu_va32 = launch_status_gpu_va32;
++	issue_write_offset = issue_image->issue_write_offset;
+ 	for (index = 0; index < issued_packets; index++) {
+ 		slot_offset = submit->launch_queue_base_offset + issue_write_offset;
+ 		ret = poulsbo_sgx_object_access_ok(control_obj, slot_offset,
+@@ -12669,73 +12908,52 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+ 		if (ret)
+ 			goto out_unlock;
+ 		ret = poulsbo_sgx_write_submit_ccb_record_locked(
+-			control_obj, slot_offset, &ccb_record);
++			control_obj, slot_offset, &issue_image->ccb_record);
+ 		if (ret)
+ 			goto out_unlock;
+ 		issue_write_offset += submit->launch_queue_packet_size;
+ 		if (issue_write_offset >= submit->launch_queue_size)
+ 			issue_write_offset -= submit->launch_queue_size;
+ 	}
+-	if (issue_write_offset != launch_new_write_offset) {
++	if (issue_write_offset != issue_image->final_write_offset) {
+ 		ret = -EINVAL;
+ 		goto out_unlock;
+ 	}
  
- 	ret = poulsbo_sgx_queue_region_end(submit->queue_base_offset,
- 					   submit->queue_size,
-@@ -12274,7 +12495,7 @@ out_unlock:
+-	memset(&queue_header, 0, sizeof(queue_header));
+-	queue_header.write_offset = launch_new_write_offset;
+-	queue_header.read_offset = submit->launch_ccb_read_offset;
+-	queue_header.queue_base_offset = submit->launch_queue_base_offset;
+-	queue_header.queue_size = submit->launch_queue_size;
+-	queue_header.queue_packet_size = submit->launch_queue_packet_size;
+-	queue_header.queue_packet_count = launch_queue_packet_count;
+-	queue_header.queue_tail_packet_count = launch_queue_tail_packet_count;
+-	queue_header.queue_head_packet_count = launch_queue_head_packet_count;
+ 	ret = poulsbo_sgx_write_queue_header_locked(control_obj, 0,
+-						    &queue_header);
++						    &issue_image->queue_header);
+ 	if (ret)
+ 		goto out_unlock;
+ 
+-	memset(&sync, 0, sizeof(sync));
+-	sync.read_offset = submit->launch_ccb_read_offset;
+-	sync.write_offset = launch_new_write_offset;
+-	sync.complete_seq = submit->launch_sync_complete_seq;
+-	sync.pending_seq = launch_sync_pending_seq;
+-	sync.flags = submit->launch_sync_flags;
+-	sync.epoch = launch_queue_epoch;
+-	sync.global_issue_ticket = launch_global_issue_ticket;
+ 	ret = poulsbo_sgx_write_submit_sync_locked(status_obj,
+ 						   submit->launch_sync_offset,
+-						   &sync);
++						   &issue_image->sync);
+ 	if (ret)
+ 		goto out_unlock;
+ 
+-	memset(&owner, 0, sizeof(owner));
+-	owner.owner_state = submit->launch_owner_state;
+-	owner.owner_issue_cookie = launch_owner_issue_cookie;
+-	owner.owner_complete_cookie = submit->launch_owner_complete_cookie;
+-	owner.epoch = launch_queue_epoch;
+-	owner.global_complete_ticket = submit->launch_global_complete_ticket;
+-	owner.global_running_ticket = submit->launch_global_running_ticket;
+ 	ret = poulsbo_sgx_write_submit_owner_locked(status_obj,
+ 						    submit->launch_owner_offset,
+-						    &owner);
++						    &issue_image->owner);
+ 	if (ret)
+ 		goto out_unlock;
+ 
+-	submit->ccb_write_offset = launch_new_write_offset;
+-	submit->queue_packet_count = launch_queue_packet_count;
+-	submit->queue_tail_packet_count = launch_queue_tail_packet_count;
+-	submit->queue_head_packet_count = launch_queue_head_packet_count;
+-	submit->sync_pending_seq = launch_sync_pending_seq;
+-	submit->sync_flags = submit->launch_sync_flags;
+-	submit->owner_state = submit->launch_owner_state;
+-	submit->owner_issue_cookie = launch_owner_issue_cookie;
+-	submit->global_issue_ticket = launch_global_issue_ticket;
+-	submit->queue_epoch = launch_queue_epoch;
++	submit->ccb_write_offset = issue_image->queue_header.write_offset;
++	submit->queue_packet_count = issue_image->queue_header.queue_packet_count;
++	submit->queue_tail_packet_count =
++		issue_image->queue_header.queue_tail_packet_count;
++	submit->queue_head_packet_count =
++		issue_image->queue_header.queue_head_packet_count;
++	submit->sync_pending_seq = issue_image->sync.pending_seq;
++	submit->sync_flags = issue_image->sync.flags;
++	submit->owner_state = issue_image->owner.owner_state;
++	submit->owner_issue_cookie = issue_image->owner.owner_issue_cookie;
++	submit->global_issue_ticket = issue_image->sync.global_issue_ticket;
++	submit->queue_epoch = issue_image->sync.epoch;
+ 	poulsbo_sgx_record_dispatch_submit_locked(submit);
+ 	poulsbo_sgx_clear_preissue_submit_locked(submit);
+ 	submit->launch_consumed = true;
+-	dev_priv->sgx_lab_global_issue_ticket = launch_global_issue_ticket;
++	dev_priv->sgx_lab_global_issue_ticket =
++		issue_image->sync.global_issue_ticket;
+ 	dev_priv->sgx_lab_global_issue_submit_id = submit_id;
+ 	dev_priv->sgx_lab_global_issue_jiffies = jiffies;
+ 	submit->issue_count++;
+@@ -12748,18 +12966,22 @@ out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
  	mutex_unlock(&dev_priv->sgx_lab_object_mutex);
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
 -	kfree(control);
-+	kfree(schedule);
  
  	if (!ret)
  		dev_info(dev->dev,
+ 			 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u\n",
+ 			 submit_id, poulsbo_sgx_lab_owner_state_name(owner_state),
+-			 issued_packets, submit->launch_ccb_read_offset,
+-			 launch_new_write_offset, launch_queue_packet_count,
+-			 !!launch_queue_head_packet_count,
+-			 launch_sync_pending_seq, launch_owner_issue_cookie,
+-			 launch_queue_epoch, submit->launch_refilled_from_complete,
+-			 launch_global_issue_ticket, launch_global_running_ticket);
++			 issued_packets, issue_image->sync.read_offset,
++			 issue_image->queue_header.write_offset,
++			 issue_image->queue_header.queue_packet_count,
++			 !!issue_image->queue_header.queue_head_packet_count,
++			 issue_image->sync.pending_seq,
++			 issue_image->owner.owner_issue_cookie,
++			 issue_image->sync.epoch,
++			 submit->launch_refilled_from_complete,
++			 issue_image->sync.global_issue_ticket,
++			 issue_image->owner.global_running_ticket);
++	kfree(dispatch);
+ 	return ret;
+ }
+ 
 -- 
 2.34.1
 
