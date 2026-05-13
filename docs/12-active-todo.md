@@ -798,13 +798,16 @@ implementation if it materially changes scope.
   the next kernel-side SGX change
   - the fixed module now clears terminal `complete`
   - the shared typed submit image now already has six validated internal
-    layers on override `040B3A07BC156A1AAEE99D6`:
+    layers on override `41BF53B53E121CEEB0F3594`:
     - `exec_record`
     - `exec_packet`
     - `cmdta_kick`
     - `ccb_kick`
     - `sgx_ccb_kick`
     - `cmdta_shared`
+  - the top shared layer now also has explicit SGX-shaped sync helpers for:
+    - `sgx_device_sync_object`
+    - `sgx_hwdevice_sync_list`
   - the next useful work is the first real SGX execution object above that
     `sgx_cmdta_shared` layer, not another no-code rerun of the same ladder
 

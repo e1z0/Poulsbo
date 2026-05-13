@@ -7129,3 +7129,105 @@ The saved current-boundary view therefore stays terminal on the new module:
 - `resolved_profile=complete`
 - `resolved_reason=latest_phase_evidence_terminal`
 - `source_timestamp=20260513-034951`
+
+## 2026-05-13 SGX Submit Device Sync Objects
+
+The next kernel batch kept the same six-layer SGX-shaped execution stack, but
+normalized the top shared layer around explicit device-sync objects and the
+hardware destination-sync list:
+
+- `psb_sgx_lab_submit_sgx_device_sync_object`
+- `psb_sgx_lab_submit_sgx_hwdevice_sync_list`
+- updated `psb_sgx_lab_submit_sgx_cmdta_shared`
+
+That batch also removed the temporary validator stack-frame regression by
+moving the `ccb_kick` scratch object in
+`poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked()` off stack.
+
+Validated guarded deploy:
+
+- [logs/vaio-deploy/20260513-052151-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-052151-guarded-deploy)
+
+That deploy booted the VAIO back to:
+
+- `driver_srcversion=41BF53B53E121CEEB0F3594`
+- `override_module_size=449960`
+- `overall=remote_usable`
+- `lightdm_active=inactive`
+- `kdump_service_active=active`
+
+The exact no-redeploy `plan` regression proof on that same module is:
+
+- [logs/vaio-plan-session/20260513-052334-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-052334-sgx-plan-session)
+
+That proof still cleared terminal `complete`:
+
+- `session_outcome=completed`
+- `selected_phase_profile=complete`
+- `final_driver_srcversion=41BF53B53E121CEEB0F3594`
+
+Focused typed submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-052451-sgx-submit-device-sync-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-052451-sgx-submit-device-sync-live/summary.log)
+
+Final focused state:
+
+- `submit_prepare_count=1`
+- `submit_arm_count=1`
+- `submit_emit_count=1`
+- `submit_launch_count=1`
+- `submit_dispatch_count=1`
+- `submit_retired_count=1`
+- `submit_issue_count=1`
+- `submit_transition_count=2`
+- `submit_live_stage_name=retired`
+- `submit_result_stage_name=retired`
+- `submit_manifest_stage_name=retired`
+- `submit_descriptor_stage_name=retired`
+- `submit_plan_stage_name=retired`
+- `submit_issue_plan_stage_name=retired`
+- `submit_issue_plan_dependency_active_count=0`
+- `coord_live_submit_count=0`
+- `gtt_state_range_sgx_object_count=0`
+
+Typed multi-submit validation is now saved in:
+
+- [logs/vaio-ioctl/20260513-052529-sgx-multi-submit-device-sync-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-052529-sgx-multi-submit-device-sync-live/summary.log)
+
+Final typed multi-submit state:
+
+- `SUBMIT_A_ID=3`
+- `SUBMIT_B_ID=4`
+- submit A final:
+  - `submit_arm_count=3`
+  - `submit_emit_count=3`
+  - `submit_launch_count=3`
+  - `submit_dispatch_count=3`
+  - `submit_retired_count=3`
+  - `submit_issue_count=3`
+  - `submit_transition_count=6`
+  - `submit_issue_plan_stage_name=retired`
+  - `submit_dependency_active_count=0`
+- submit B final:
+  - `submit_arm_count=2`
+  - `submit_emit_count=2`
+  - `submit_launch_count=2`
+  - `submit_dispatch_count=2`
+  - `submit_retired_count=2`
+  - `submit_issue_count=2`
+  - `submit_transition_count=4`
+  - `submit_result_dependency_active_count=1`
+  - `submit_manifest_dependency_active_count=1`
+  - `submit_descriptor_dependency_active_count=1`
+  - `submit_plan_dependency_active_count=1`
+  - `submit_dependency_active_count=1`
+  - `submit_issue_plan_stage_name=retired`
+- final cleanup:
+  - `coord_live_submit_count=0`
+  - `gtt_state_range_sgx_object_count=0`
+
+The saved current-boundary view therefore stays terminal on the new module:
+
+- `resolved_profile=complete`
+- `resolved_reason=latest_phase_evidence_terminal`
+- `source_timestamp=20260513-052334`

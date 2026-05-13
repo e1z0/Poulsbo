@@ -1,268 +1,313 @@
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 8de2b9583..e6119d9cc 100644
+index e6119d9cc..04818af33 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1218,6 +1218,39 @@ struct psb_sgx_lab_submit_sgx_ccb_kick {
+@@ -123,6 +123,7 @@ enum psb_sgx_lab_cmd_type {
+ 
+ #define PSB_SGX_LAB_CMDTA_CTRLFLAGS_READY 0x00000001
+ #define PSB_SGX_LAB_MAX_STATUS_VALS 16
++#define PSB_SGX_LAB_MAX_DST_SYNC_OBJECTS 1
+ #define PSB_SGX_LAB_SYNC_FLAG_READY 0x00000001
+ #define PSB_SGX_LAB_SYNC_FLAG_WRAPPED 0x00000002
+ #define PSB_SGX_LAB_QUEUE_HEADER_DWORDS 8
+@@ -1218,10 +1219,18 @@ struct psb_sgx_lab_submit_sgx_ccb_kick {
  	u32 threed_sync_gpu_va32;
  };
  
-+struct psb_sgx_lab_submit_sgx_sync {
-+	u32 pending_seq;
-+	u32 complete_seq;
-+	u32 gpu_va32;
+-struct psb_sgx_lab_submit_sgx_sync {
+-	u32 pending_seq;
+-	u32 complete_seq;
+-	u32 gpu_va32;
++struct psb_sgx_lab_submit_sgx_device_sync_object {
++	u32 read_pending_val;
++	u32 read_complete_gpu_va32;
++	u32 write_pending_val;
++	u32 write_complete_gpu_va32;
 +};
 +
-+struct psb_sgx_lab_submit_sgx_ta3d_dependency {
-+	u32 submit_id;
-+	u32 required_complete_ticket;
-+	u32 observed_complete_ticket;
-+	u32 flags;
-+	u32 gpu_va32;
-+};
-+
-+struct psb_sgx_lab_submit_sgx_cmdta_shared {
-+	const struct psb_sgx_lab_submit_ccb_kick *kick;
-+	u32 ctrl_flags;
-+	u32 num_dst_sync_objects;
-+	u32 num_ta_status_vals;
-+	u32 num_3d_status_vals;
-+	bool first_kick_or_resume;
-+	u32 ccb_offset;
-+	bool ta_dependency;
-+	struct psb_sgx_lab_submit_sgx_sync ta_tq_sync;
-+	struct psb_sgx_lab_submit_sgx_sync threed_tq_sync;
-+	u32 num_ta_src_syncs;
-+	u32 num_ta_dst_syncs;
-+	u32 num_3d_src_syncs;
-+	struct psb_sgx_lab_submit_sgx_ta3d_dependency ta3d_dependency;
-+	const struct psb_sgx_lab_submit_status_update *ta_status_info;
-+	const struct psb_sgx_lab_submit_status_update *threed_status_info;
-+};
-+
- static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
++struct psb_sgx_lab_submit_sgx_hwdevice_sync_list {
++	u32 access_gpu_va32;
++	u32 num_sync_objects;
++	struct psb_sgx_lab_submit_sgx_device_sync_object
++		sync_data[PSB_SGX_LAB_MAX_DST_SYNC_OBJECTS];
+ };
  
- static const char *poulsbo_sgx_lab_role_name(u32 role)
-@@ -2873,6 +2906,59 @@ static int poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
+ struct psb_sgx_lab_submit_sgx_ta3d_dependency {
+@@ -1241,8 +1250,10 @@ struct psb_sgx_lab_submit_sgx_cmdta_shared {
+ 	bool first_kick_or_resume;
+ 	u32 ccb_offset;
+ 	bool ta_dependency;
+-	struct psb_sgx_lab_submit_sgx_sync ta_tq_sync;
+-	struct psb_sgx_lab_submit_sgx_sync threed_tq_sync;
++	struct psb_sgx_lab_submit_sgx_device_sync_object ta_tq_sync;
++	struct psb_sgx_lab_submit_sgx_device_sync_object threed_tq_sync;
++	struct psb_sgx_lab_submit_sgx_device_sync_object ta3d_dependency_sync;
++	struct psb_sgx_lab_submit_sgx_hwdevice_sync_list hwdevice_sync_list;
+ 	u32 num_ta_src_syncs;
+ 	u32 num_ta_dst_syncs;
+ 	u32 num_3d_src_syncs;
+@@ -2716,6 +2727,45 @@ static int poulsbo_sgx_gpu_va32_add_offset(u32 base, u32 offset, u32 *out)
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
-+	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_ccb_kick *kick,
-+	struct psb_sgx_lab_submit_sgx_cmdta_shared *shared)
++static void poulsbo_sgx_init_submit_sgx_device_sync_object(
++	struct psb_sgx_lab_submit_sgx_device_sync_object *sync, u32 read_pending,
++	u32 read_complete_gpu_va32, u32 write_pending,
++	u32 write_complete_gpu_va32)
 +{
-+	struct psb_sgx_lab_submit_sgx_ccb_kick sgx_kick;
-+	int ret;
++	if (!sync)
++		return;
 +
-+	if (!submit || !kick || !shared)
-+		return -EINVAL;
-+
-+	ret = poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
-+		submit, kick, &sgx_kick);
-+	if (ret)
-+		return ret;
-+
-+	memset(shared, 0, sizeof(*shared));
-+
-+	shared->kick = kick;
-+	shared->ctrl_flags = kick->cmdta.packet.ta_shared.ctrl_flags;
-+	shared->num_dst_sync_objects = sgx_kick.num_dst_sync_objects;
-+	shared->num_ta_status_vals = sgx_kick.num_ta_status_vals;
-+	shared->num_3d_status_vals = sgx_kick.num_3d_status_vals;
-+	shared->first_kick_or_resume = sgx_kick.first_kick_or_resume;
-+	shared->ccb_offset = sgx_kick.ccb_offset;
-+	shared->ta_dependency = sgx_kick.ta_dependency;
-+	shared->ta_tq_sync.pending_seq =
-+		kick->cmdta.packet.ta_shared.sync_pending_seq;
-+	shared->ta_tq_sync.complete_seq =
-+		kick->cmdta.packet.ta_shared.sync_complete_seq;
-+	shared->ta_tq_sync.gpu_va32 = sgx_kick.ta_sync_gpu_va32;
-+	shared->threed_tq_sync.pending_seq =
-+		kick->cmdta.packet.ta_shared.sync_pending_seq;
-+	shared->threed_tq_sync.complete_seq =
-+		kick->cmdta.packet.ta_shared.sync_complete_seq;
-+	shared->threed_tq_sync.gpu_va32 = sgx_kick.threed_sync_gpu_va32;
-+	shared->num_ta_src_syncs = sgx_kick.num_ta_src_syncs;
-+	shared->num_ta_dst_syncs = sgx_kick.num_ta_dst_syncs;
-+	shared->num_3d_src_syncs = sgx_kick.num_3d_src_syncs;
-+	shared->ta3d_dependency.submit_id =
-+		sgx_kick.ta3d_dependency_submit_id;
-+	shared->ta3d_dependency.required_complete_ticket =
-+		sgx_kick.ta3d_dependency_required_complete_ticket;
-+	shared->ta3d_dependency.observed_complete_ticket =
-+		sgx_kick.ta3d_dependency_observed_complete_ticket;
-+	shared->ta3d_dependency.flags = sgx_kick.ta3d_dependency_flags;
-+	shared->ta3d_dependency.gpu_va32 = sgx_kick.threed_sync_gpu_va32;
-+	shared->ta_status_info = kick->ta_status_updates;
-+	shared->threed_status_info = kick->threed_status_updates;
-+
-+	return 0;
++	memset(sync, 0, sizeof(*sync));
++	sync->read_pending_val = read_pending;
++	sync->read_complete_gpu_va32 = read_complete_gpu_va32;
++	sync->write_pending_val = write_pending;
++	sync->write_complete_gpu_va32 = write_complete_gpu_va32;
 +}
 +
- static int poulsbo_sgx_collect_submit_view_records_locked(
++static bool poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++	const struct psb_sgx_lab_submit_sgx_device_sync_object *sync)
++{
++	if (!sync)
++		return true;
++
++	return !sync->read_pending_val && !sync->read_complete_gpu_va32 &&
++	       !sync->write_pending_val && !sync->write_complete_gpu_va32;
++}
++
++static bool poulsbo_sgx_submit_sgx_device_sync_object_equal(
++	const struct psb_sgx_lab_submit_sgx_device_sync_object *left,
++	const struct psb_sgx_lab_submit_sgx_device_sync_object *right)
++{
++	if (!left || !right)
++		return false;
++
++	return left->read_pending_val == right->read_pending_val &&
++	       left->read_complete_gpu_va32 == right->read_complete_gpu_va32 &&
++	       left->write_pending_val == right->write_pending_val &&
++	       left->write_complete_gpu_va32 ==
++		       right->write_complete_gpu_va32;
++}
++
+ static int poulsbo_sgx_build_submit_cmdta_kick_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -7140,12 +7226,11 @@ static int poulsbo_sgx_validate_submit_status_side_images_locked(
- 	struct drm_psb_private *dev_priv,
- 	struct psb_sgx_lab_submit *submit,
- 	struct psb_sgx_lab_object *status_obj,
--	const struct psb_sgx_lab_submit_sgx_ccb_kick *live_sgx_ccb_kick)
-+	const struct psb_sgx_lab_submit_sgx_cmdta_shared *live_cmdta_shared)
- {
- 	struct psb_sgx_lab_dependency_words expected_dependency;
- 	struct psb_sgx_lab_dependency_words ctl_dependency;
--	const struct psb_sgx_lab_submit_status_update *update;
--	const struct psb_sgx_lab_submit_ccb_kick *live_ccb_kick;
-+	const struct psb_sgx_lab_submit_status_update *status_info;
- 	unsigned int slot;
- 	u32 index;
- 	int ret;
-@@ -7204,44 +7289,44 @@ static int poulsbo_sgx_validate_submit_status_side_images_locked(
- 			return -EINVAL;
- 	}
- 
--	if (!live_sgx_ccb_kick || !live_sgx_ccb_kick->kick)
-+	if (!live_cmdta_shared || !live_cmdta_shared->kick)
- 		return -EINVAL;
--	live_ccb_kick = live_sgx_ccb_kick->kick;
- 
--	for (index = 0; index < live_ccb_kick->num_ta_status_updates; index++) {
-+	for (index = 0; index < live_cmdta_shared->num_ta_status_vals; index++) {
- 		u32 value;
- 
--		update = &live_ccb_kick->ta_status_updates[index];
-+		status_info = &live_cmdta_shared->ta_status_info[index];
- 		ret = poulsbo_sgx_object_read_u32_locked(
--			status_obj, update->value_offset, &value);
-+			status_obj, status_info->value_offset, &value);
- 		if (ret)
- 			return ret;
--		if (value != update->value)
-+		if (value != status_info->value)
- 			return -EINVAL;
- 	}
- 
--	for (index = 0; index < live_ccb_kick->num_3d_status_updates; index++) {
-+	for (index = 0; index < live_cmdta_shared->num_3d_status_vals; index++) {
- 		u32 value;
- 
--		update = &live_ccb_kick->threed_status_updates[index];
-+		status_info = &live_cmdta_shared->threed_status_info[index];
- 		ret = poulsbo_sgx_object_read_u32_locked(
--			status_obj, update->value_offset, &value);
-+			status_obj, status_info->value_offset, &value);
- 		if (ret)
- 			return ret;
--		if (value != update->value)
-+		if (value != status_info->value)
- 			return -EINVAL;
- 	}
- 
- 	return 0;
- }
- 
--static int poulsbo_sgx_validate_submit_sgx_ccb_kick_locked(
-+static int poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
- 	struct drm_psb_private *dev_priv,
+@@ -2932,19 +2982,42 @@ static int poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
+ 	shared->first_kick_or_resume = sgx_kick.first_kick_or_resume;
+ 	shared->ccb_offset = sgx_kick.ccb_offset;
+ 	shared->ta_dependency = sgx_kick.ta_dependency;
+-	shared->ta_tq_sync.pending_seq =
+-		kick->cmdta.packet.ta_shared.sync_pending_seq;
+-	shared->ta_tq_sync.complete_seq =
+-		kick->cmdta.packet.ta_shared.sync_complete_seq;
+-	shared->ta_tq_sync.gpu_va32 = sgx_kick.ta_sync_gpu_va32;
+-	shared->threed_tq_sync.pending_seq =
+-		kick->cmdta.packet.ta_shared.sync_pending_seq;
+-	shared->threed_tq_sync.complete_seq =
+-		kick->cmdta.packet.ta_shared.sync_complete_seq;
+-	shared->threed_tq_sync.gpu_va32 = sgx_kick.threed_sync_gpu_va32;
++	poulsbo_sgx_init_submit_sgx_device_sync_object(
++		&shared->ta_tq_sync,
++		kick->cmdta.packet.ta_shared.sync_complete_seq,
++		sgx_kick.ta_sync_gpu_va32,
++		kick->cmdta.packet.ta_shared.sync_pending_seq,
++		sgx_kick.ta_sync_gpu_va32);
++	poulsbo_sgx_init_submit_sgx_device_sync_object(
++		&shared->threed_tq_sync,
++		kick->cmdta.packet.ta_shared.sync_complete_seq,
++		sgx_kick.threed_sync_gpu_va32,
++		kick->cmdta.packet.ta_shared.sync_pending_seq,
++		sgx_kick.threed_sync_gpu_va32);
++	shared->hwdevice_sync_list.access_gpu_va32 = kick->cmdta.sync_gpu_va32;
++	shared->hwdevice_sync_list.num_sync_objects =
++		sgx_kick.num_dst_sync_objects;
++	if (shared->hwdevice_sync_list.num_sync_objects >
++	    ARRAY_SIZE(shared->hwdevice_sync_list.sync_data))
++		return -EINVAL;
++	if (shared->hwdevice_sync_list.num_sync_objects) {
++		poulsbo_sgx_init_submit_sgx_device_sync_object(
++			&shared->hwdevice_sync_list.sync_data[0],
++			kick->cmdta.packet.ta_shared.sync_complete_seq,
++			sgx_kick.ta_sync_gpu_va32,
++			kick->cmdta.packet.ta_shared.sync_pending_seq,
++			sgx_kick.ta_sync_gpu_va32);
++	}
+ 	shared->num_ta_src_syncs = sgx_kick.num_ta_src_syncs;
+ 	shared->num_ta_dst_syncs = sgx_kick.num_ta_dst_syncs;
+ 	shared->num_3d_src_syncs = sgx_kick.num_3d_src_syncs;
++	if (shared->num_3d_src_syncs) {
++		poulsbo_sgx_init_submit_sgx_device_sync_object(
++			&shared->ta3d_dependency_sync,
++			0, 0,
++			sgx_kick.ta3d_dependency_observed_complete_ticket,
++			sgx_kick.threed_sync_gpu_va32);
++	}
+ 	shared->ta3d_dependency.submit_id =
+ 		sgx_kick.ta3d_dependency_submit_id;
+ 	shared->ta3d_dependency.required_complete_ticket =
+@@ -7324,81 +7397,129 @@ static int poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
  	struct psb_sgx_lab_submit *submit,
  	struct psb_sgx_lab_object *status_obj)
  {
- 	struct psb_sgx_lab_submit_ccb_kick ccb_kick;
--	struct psb_sgx_lab_submit_sgx_ccb_kick sgx_ccb_kick;
-+	struct psb_sgx_lab_submit_sgx_cmdta_shared cmdta_shared;
-+	u32 index;
+-	struct psb_sgx_lab_submit_ccb_kick ccb_kick;
++	struct psb_sgx_lab_submit_ccb_kick *ccb_kick;
+ 	struct psb_sgx_lab_submit_sgx_cmdta_shared cmdta_shared;
+ 	u32 index;
  	int ret;
  
++	ccb_kick = kmalloc(sizeof(*ccb_kick), GFP_KERNEL);
++	if (!ccb_kick)
++		return -ENOMEM;
++
  	ret = poulsbo_sgx_build_submit_ccb_kick_locked(
-@@ -7249,29 +7334,52 @@ static int poulsbo_sgx_validate_submit_sgx_ccb_kick_locked(
- 		&ccb_kick);
+ 		dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LIVE, false,
+-		&ccb_kick);
++		ccb_kick);
  	if (ret)
- 		return ret;
--	ret = poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
--		submit, &ccb_kick, &sgx_ccb_kick);
-+	ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
-+		submit, &ccb_kick, &cmdta_shared);
+-		return ret;
++		goto out;
+ 	ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
+-		submit, &ccb_kick, &cmdta_shared);
++		submit, ccb_kick, &cmdta_shared);
  	if (ret)
- 		return ret;
--	if (sgx_ccb_kick.kick != &ccb_kick ||
--	    sgx_ccb_kick.num_ta_status_vals != ccb_kick.num_ta_status_updates ||
--	    sgx_ccb_kick.num_3d_status_vals !=
-+	if (cmdta_shared.kick != &ccb_kick ||
-+	    cmdta_shared.num_ta_status_vals != ccb_kick.num_ta_status_updates ||
-+	    cmdta_shared.num_3d_status_vals !=
- 		    ccb_kick.num_3d_status_updates ||
--	    sgx_ccb_kick.ccb_offset != ccb_kick.ccb_offset ||
--	    sgx_ccb_kick.ta_dependency != ccb_kick.ta_dependency ||
--	    sgx_ccb_kick.num_ta_dst_syncs >
--		    sgx_ccb_kick.num_dst_sync_objects)
-+	    cmdta_shared.ccb_offset != ccb_kick.ccb_offset ||
-+	    cmdta_shared.ta_dependency != ccb_kick.ta_dependency ||
-+	    cmdta_shared.num_ta_dst_syncs >
-+		    cmdta_shared.num_dst_sync_objects)
- 		return -EINVAL;
--	if (!sgx_ccb_kick.num_dst_sync_objects &&
--	    (sgx_ccb_kick.ta_sync_gpu_va32 ||
--	     sgx_ccb_kick.threed_sync_gpu_va32))
-+	if (!cmdta_shared.num_dst_sync_objects &&
-+	    (cmdta_shared.ta_tq_sync.gpu_va32 ||
-+	     cmdta_shared.threed_tq_sync.gpu_va32))
- 		return -EINVAL;
--	if (sgx_ccb_kick.num_3d_src_syncs &&
--	    !sgx_ccb_kick.ta3d_dependency_submit_id)
+-		return ret;
+-	if (cmdta_shared.kick != &ccb_kick ||
+-	    cmdta_shared.num_ta_status_vals != ccb_kick.num_ta_status_updates ||
++		goto out;
++	if (cmdta_shared.kick != ccb_kick ||
++	    cmdta_shared.num_ta_status_vals != ccb_kick->num_ta_status_updates ||
+ 	    cmdta_shared.num_3d_status_vals !=
+-		    ccb_kick.num_3d_status_updates ||
+-	    cmdta_shared.ccb_offset != ccb_kick.ccb_offset ||
+-	    cmdta_shared.ta_dependency != ccb_kick.ta_dependency ||
++		    ccb_kick->num_3d_status_updates ||
++	    cmdta_shared.ccb_offset != ccb_kick->ccb_offset ||
++	    cmdta_shared.ta_dependency != ccb_kick->ta_dependency ||
++	    cmdta_shared.hwdevice_sync_list.num_sync_objects !=
++		    cmdta_shared.num_dst_sync_objects ||
+ 	    cmdta_shared.num_ta_dst_syncs >
+-		    cmdta_shared.num_dst_sync_objects)
+-		return -EINVAL;
++		    cmdta_shared.num_dst_sync_objects) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 	if (!cmdta_shared.num_dst_sync_objects &&
+-	    (cmdta_shared.ta_tq_sync.gpu_va32 ||
+-	     cmdta_shared.threed_tq_sync.gpu_va32))
+-		return -EINVAL;
++	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++		     &cmdta_shared.ta_tq_sync) ||
++	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++		     &cmdta_shared.threed_tq_sync) ||
++	     cmdta_shared.hwdevice_sync_list.access_gpu_va32 ||
++	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++		     &cmdta_shared.hwdevice_sync_list.sync_data[0]))) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 	if (cmdta_shared.num_3d_src_syncs &&
+ 	    (!cmdta_shared.ta3d_dependency.submit_id ||
+-	     !cmdta_shared.ta3d_dependency.required_complete_ticket))
+-		return -EINVAL;
++	     !cmdta_shared.ta3d_dependency.required_complete_ticket)) {
++		ret = -EINVAL;
++		goto out;
++	}
+ 	if (!cmdta_shared.num_ta_dst_syncs &&
+-	    (cmdta_shared.ta_tq_sync.gpu_va32 ||
+-	     cmdta_shared.threed_tq_sync.gpu_va32))
+-		return -EINVAL;
++	    (!poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++		     &cmdta_shared.ta_tq_sync) ||
++	     !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++		     &cmdta_shared.threed_tq_sync))) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (cmdta_shared.num_dst_sync_objects &&
++	    !poulsbo_sgx_submit_sgx_device_sync_object_equal(
++		    &cmdta_shared.hwdevice_sync_list.sync_data[0],
++		    &cmdta_shared.ta_tq_sync)) {
++		ret = -EINVAL;
++		goto out;
++	}
++	if (!cmdta_shared.num_3d_src_syncs &&
++	    !poulsbo_sgx_submit_sgx_device_sync_object_is_zero(
++		    &cmdta_shared.ta3d_dependency_sync)) {
++		ret = -EINVAL;
++		goto out;
++	}
 +	if (cmdta_shared.num_3d_src_syncs &&
-+	    (!cmdta_shared.ta3d_dependency.submit_id ||
-+	     !cmdta_shared.ta3d_dependency.required_complete_ticket))
- 		return -EINVAL;
-+	if (!cmdta_shared.num_ta_dst_syncs &&
-+	    (cmdta_shared.ta_tq_sync.gpu_va32 ||
-+	     cmdta_shared.threed_tq_sync.gpu_va32))
-+		return -EINVAL;
-+	for (index = 0; index < cmdta_shared.num_ta_status_vals; index++) {
-+		if (cmdta_shared.ta_status_info[index].value_offset !=
-+			    ccb_kick.ta_status_updates[index].value_offset ||
-+		    cmdta_shared.ta_status_info[index].value_gpu_va32 !=
-+			    ccb_kick.ta_status_updates[index].value_gpu_va32 ||
-+		    cmdta_shared.ta_status_info[index].value !=
-+			    ccb_kick.ta_status_updates[index].value)
-+			return -EINVAL;
++	    !cmdta_shared.ta3d_dependency_sync.write_complete_gpu_va32) {
++		ret = -EINVAL;
++		goto out;
 +	}
-+	for (index = 0; index < cmdta_shared.num_3d_status_vals; index++) {
-+		if (cmdta_shared.threed_status_info[index].value_offset !=
-+			    ccb_kick.threed_status_updates[index].value_offset ||
-+		    cmdta_shared.threed_status_info[index].value_gpu_va32 !=
-+			    ccb_kick.threed_status_updates[index].value_gpu_va32 ||
-+		    cmdta_shared.threed_status_info[index].value !=
-+			    ccb_kick.threed_status_updates[index].value)
-+			return -EINVAL;
-+	}
- 
- 	ret = poulsbo_sgx_validate_submit_status_side_images_locked(
--		dev_priv, submit, status_obj, &sgx_ccb_kick);
-+		dev_priv, submit, status_obj, &cmdta_shared);
- 	if (ret)
- 		return ret;
- 
-@@ -7282,11 +7390,11 @@ static int poulsbo_sgx_validate_submit_sgx_ccb_kick_locked(
- 			true, &ccb_kick);
- 		if (ret)
- 			return ret;
--		ret = poulsbo_sgx_build_submit_sgx_ccb_kick_locked(
--			submit, &ccb_kick, &sgx_ccb_kick);
-+		ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
-+			submit, &ccb_kick, &cmdta_shared);
- 		if (ret)
- 			return ret;
--		if (!sgx_ccb_kick.kick || !sgx_ccb_kick.kick->cmdta.have_issue_plan)
-+		if (!cmdta_shared.kick || !cmdta_shared.kick->cmdta.have_issue_plan)
- 			return -EINVAL;
+ 	for (index = 0; index < cmdta_shared.num_ta_status_vals; index++) {
+ 		if (cmdta_shared.ta_status_info[index].value_offset !=
+-			    ccb_kick.ta_status_updates[index].value_offset ||
++			    ccb_kick->ta_status_updates[index].value_offset ||
+ 		    cmdta_shared.ta_status_info[index].value_gpu_va32 !=
+-			    ccb_kick.ta_status_updates[index].value_gpu_va32 ||
++			    ccb_kick->ta_status_updates[index].value_gpu_va32 ||
+ 		    cmdta_shared.ta_status_info[index].value !=
+-			    ccb_kick.ta_status_updates[index].value)
+-			return -EINVAL;
++			    ccb_kick->ta_status_updates[index].value) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 	}
+ 	for (index = 0; index < cmdta_shared.num_3d_status_vals; index++) {
+ 		if (cmdta_shared.threed_status_info[index].value_offset !=
+-			    ccb_kick.threed_status_updates[index].value_offset ||
++			    ccb_kick->threed_status_updates[index].value_offset ||
+ 		    cmdta_shared.threed_status_info[index].value_gpu_va32 !=
+-			    ccb_kick.threed_status_updates[index].value_gpu_va32 ||
++			    ccb_kick->threed_status_updates[index].value_gpu_va32 ||
+ 		    cmdta_shared.threed_status_info[index].value !=
+-			    ccb_kick.threed_status_updates[index].value)
+-			return -EINVAL;
++			    ccb_kick->threed_status_updates[index].value) {
++			ret = -EINVAL;
++			goto out;
++		}
  	}
  
-@@ -7651,7 +7759,7 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
- 		status_obj);
+ 	ret = poulsbo_sgx_validate_submit_status_side_images_locked(
+ 		dev_priv, submit, status_obj, &cmdta_shared);
  	if (ret)
- 		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ccb_kick_locked(
-+	return poulsbo_sgx_validate_submit_sgx_cmdta_shared_locked(
- 		dev_priv, submit, status_obj);
+-		return ret;
++		goto out;
+ 
+ 	if (submit->launch_valid && !submit->launch_consumed &&
+ 	    submit->issue_plan_packet_count) {
+ 		ret = poulsbo_sgx_build_submit_ccb_kick_locked(
+ 			dev_priv, submit, PSB_SGX_LAB_EXEC_SOURCE_LAUNCH,
+-			true, &ccb_kick);
++			true, ccb_kick);
+ 		if (ret)
+-			return ret;
++			goto out;
+ 		ret = poulsbo_sgx_build_submit_sgx_cmdta_shared_locked(
+-			submit, &ccb_kick, &cmdta_shared);
++			submit, ccb_kick, &cmdta_shared);
+ 		if (ret)
+-			return ret;
+-		if (!cmdta_shared.kick || !cmdta_shared.kick->cmdta.have_issue_plan)
+-			return -EINVAL;
++			goto out;
++		if (!cmdta_shared.kick ||
++		    !cmdta_shared.kick->cmdta.have_issue_plan) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 	}
+ 
+-	return 0;
++out:
++	kfree(ccb_kick);
++	return ret;
  }
  
+ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,

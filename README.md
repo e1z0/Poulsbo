@@ -1198,6 +1198,7 @@ See:
 - [docs/169-sgx-submit-ccb-kick-object.md](/root/Poulsbo/docs/169-sgx-submit-ccb-kick-object.md)
 - [docs/170-sgx-submit-sgx-ccb-kick-object.md](/root/Poulsbo/docs/170-sgx-submit-sgx-ccb-kick-object.md)
 - [docs/171-sgx-submit-cmdta-shared-object.md](/root/Poulsbo/docs/171-sgx-submit-cmdta-shared-object.md)
+- [docs/172-sgx-submit-device-sync-objects.md](/root/Poulsbo/docs/172-sgx-submit-device-sync-objects.md)
 
 Recent VAIO panic-capture validation is now in place too:
 
@@ -1219,9 +1220,16 @@ The current SGX-shaped kernel-internal execution stack is now:
 - `psb_sgx_lab_submit_sgx_ccb_kick`
 - `psb_sgx_lab_submit_sgx_cmdta_shared`
 
+The shared SGX layer now explicitly models device-sync objects and the
+hardware destination-sync list through:
+
+- `psb_sgx_lab_submit_sgx_device_sync_object`
+- `psb_sgx_lab_submit_sgx_hwdevice_sync_list`
+
 The newest validated hardware batch for that line is:
 
 - [docs/168-sgx-submit-cmdta-kick-object.md](/root/Poulsbo/docs/168-sgx-submit-cmdta-kick-object.md)
 - [docs/169-sgx-submit-ccb-kick-object.md](/root/Poulsbo/docs/169-sgx-submit-ccb-kick-object.md)
 - [docs/170-sgx-submit-sgx-ccb-kick-object.md](/root/Poulsbo/docs/170-sgx-submit-sgx-ccb-kick-object.md)
 - [docs/171-sgx-submit-cmdta-shared-object.md](/root/Poulsbo/docs/171-sgx-submit-cmdta-shared-object.md)
+- [docs/172-sgx-submit-device-sync-objects.md](/root/Poulsbo/docs/172-sgx-submit-device-sync-objects.md)

@@ -10927,3 +10927,92 @@ Conclusion:
   - `source_timestamp=20260513-034951`
 - Documented in:
   - `docs/169-sgx-submit-ccb-kick-object.md`
+
+### SGX submit device sync objects
+
+- Normalized the shared SGX sync side around explicit internal helpers:
+  - `psb_sgx_lab_submit_sgx_device_sync_object`
+  - `psb_sgx_lab_submit_sgx_hwdevice_sync_list`
+  - updated `psb_sgx_lab_submit_sgx_cmdta_shared`
+- Kernel-side changes in:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- The shared builder now derives separate read/write pending values and
+  complete GPU VA32 addresses for:
+  - `ta_tq_sync`
+  - `threed_tq_sync`
+  - `ta3d_dependency_sync`
+  - `hwdevice_sync_list`
+- The validator now checks those explicit sync objects directly, and the
+  temporary `ccb_kick` scratch object moved off stack so the old
+  `-Wframe-larger-than=1024` warning is gone again
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-052151-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=41BF53B53E121CEEB0F3594`
+    - `override_module_size=449960`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-052334-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=41BF53B53E121CEEB0F3594`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-052451-sgx-submit-device-sync-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_live_stage_name=retired`
+    - `submit_result_stage_name=retired`
+    - `submit_manifest_stage_name=retired`
+    - `submit_descriptor_stage_name=retired`
+    - `submit_plan_stage_name=retired`
+    - `submit_issue_plan_stage_name=retired`
+    - `submit_issue_plan_dependency_active_count=0`
+    - `coord_live_submit_count=0`
+    - `gtt_state_range_sgx_object_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-052529-sgx-multi-submit-device-sync-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=3`
+    - `SUBMIT_B_ID=4`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_issue_plan_stage_name=retired`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_result_dependency_active_count=1`
+      - `submit_manifest_dependency_active_count=1`
+      - `submit_descriptor_dependency_active_count=1`
+      - `submit_plan_dependency_active_count=1`
+      - `submit_dependency_active_count=1`
+      - `submit_issue_plan_stage_name=retired`
+    - final cleanup returned:
+      - `coord_live_submit_count=0`
+      - `gtt_state_range_sgx_object_count=0`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-052334`
+- Documented in:
+  - `docs/172-sgx-submit-device-sync-objects.md`
