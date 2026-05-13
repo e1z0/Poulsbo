@@ -5,6 +5,80 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### SGX submit TA queue-stream object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped top object:
+  - `psb_sgx_lab_submit_sgx_ta_queue_stream`
+- The top validator now moves from `sgx_ta_scheduler_entry` to
+  `sgx_ta_queue_stream`.
+- The live top-layer execution boundary is now unified too:
+  - the submit-op ioctl path builds and applies `sgx_ta_queue_stream`
+  - `issue_submit()` compatibility flow builds and applies `sgx_ta_queue_stream`
+  - `transition_submit()` compatibility flow builds and applies `sgx_ta_queue_stream`
+- The new shared top object now owns:
+  - the existing `sgx_ta_scheduler_entry`
+  - the selected `issue` or `transition` queue stream image
+  - the selected `queue header + ccb record + sync + owner` payload
+  - the selected queue/sync/owner region-end bounds and chosen CCB slot offset
+- The first live draft over-constrained the queue-stream validator and rejected
+  a real focused `issue` submit at `launch -> issue`; the repair was to keep
+  the full scheduler/global-state proof in the nested `sgx_ta_scheduler_entry`
+  validator while narrowing the top queue-stream validator to the fields the
+  selected stream image actually owns.
+- Guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-225919-sgx-ta-queue-stream-rerun-deploy`
+  - final live override:
+    - `driver_srcversion=D814CEE2FD7F50C9ECE148D`
+    - `override_module_size=477908`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the new module also still passed:
+  - `logs/vaio-plan-session/20260513-230104-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=D814CEE2FD7F50C9ECE148D`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-230207-sgx-submit-ta-queue-stream-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-230247-sgx-multi-submit-ta-queue-stream-live/summary.log`
+  - final typed run proved:
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=5`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-230104`
+- Documented in:
+  - `docs/201-sgx-submit-ta-queue-stream-object.md`
+
 ### SGX submit TA scheduler-entry object
 
 - Updated:
