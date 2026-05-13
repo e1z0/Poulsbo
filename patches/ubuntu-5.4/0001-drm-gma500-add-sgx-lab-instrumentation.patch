@@ -1,342 +1,227 @@
-From 523597e7a0f68ca0415d8761b0bcb6d86942174d Mon Sep 17 00:00:00 2001
+From 73b96d7b390a64fe1c1344d6d5c9f0689dee0265 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Wed, 13 May 2026 19:32:47 +0300
-Subject: [PATCH] drm/gma500: add SGX TA scheduler object
+Date: Wed, 13 May 2026 19:52:13 +0300
+Subject: [PATCH] drm/gma500: add SGX TA sequence object
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 403 ++++++++++++++++++++++++++-----
- 1 file changed, 342 insertions(+), 61 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 290 +++++++++++++++++++++++++------
+ 1 file changed, 234 insertions(+), 56 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index adfe190e8..9e5864f50 100644
+index 9e5864f50..41b22bb11 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1582,6 +1582,27 @@ struct psb_sgx_lab_submit_sgx_ta_op {
- 	u32 packet_count;
+@@ -1603,6 +1603,19 @@ struct psb_sgx_lab_submit_sgx_ta_scheduler {
+ 	struct psb_sgx_lab_submit_sgx_scheduler_state next_state;
  };
  
-+struct psb_sgx_lab_submit_sgx_scheduler_state {
-+	u32 issue_ticket;
-+	u32 running_ticket;
-+	u32 complete_ticket;
-+	u32 issue_submit_id;
-+	u32 running_submit_id;
-+	u32 complete_submit_id;
-+	bool active_running_valid;
-+	u32 active_running_submit_id;
-+};
-+
-+struct psb_sgx_lab_submit_sgx_ta_scheduler {
-+	struct psb_sgx_lab_submit_sgx_ta_op ta_op;
++struct psb_sgx_lab_submit_sgx_ta_sequence {
++	struct psb_sgx_lab_submit_sgx_ta_scheduler scheduler;
 +	bool active;
-+	bool issue_advanced;
-+	bool running_advanced;
-+	bool complete_advanced;
-+	bool active_running_changed;
-+	struct psb_sgx_lab_submit_sgx_scheduler_state next_state;
++	bool refresh_views;
++	bool increment_issue_count;
++	bool increment_transition_count;
++	bool update_last_epoch_jiffies;
++	bool update_last_issue_jiffies;
++	bool update_last_transition_jiffies;
++	u32 next_issue_count;
++	u32 next_transition_count;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -4779,10 +4800,6 @@ static int poulsbo_sgx_apply_submit_sgx_ta_commit_locked(
- 			submit, &commit->next_state);
- 		poulsbo_sgx_record_dispatch_submit_locked(submit);
- 		poulsbo_sgx_clear_preissue_submit_locked(submit);
--		dev_priv->sgx_lab_global_issue_ticket =
--			commit->next_state.global_issue_ticket;
--		dev_priv->sgx_lab_global_issue_submit_id = submit->submit_id;
--		dev_priv->sgx_lab_global_issue_jiffies = jiffies;
- 		return 0;
- 	}
+@@ -4919,30 +4932,11 @@ static int poulsbo_sgx_apply_submit_sgx_ta_event_locked(
+ 	struct psb_sgx_lab_submit *submit,
+ 	const struct psb_sgx_lab_submit_sgx_ta_event *event)
+ {
+-	int ret;
+-
+ 	if (!dev_priv || !submit || !event)
+ 		return -EINVAL;
  
-@@ -4833,28 +4850,7 @@ static int poulsbo_sgx_apply_submit_sgx_ta_commit_locked(
- 	poulsbo_sgx_update_dispatch_submit_locked(
- 		submit, commit->next_state.owner_state,
- 		commit->completed_packets);
--	if (commit->next_state.owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
--	    commit->entering_running) {
--		dev_priv->sgx_lab_global_running_ticket =
--			commit->next_state.global_running_ticket;
--		dev_priv->sgx_lab_global_running_submit_id = submit->submit_id;
--		dev_priv->sgx_lab_global_running_jiffies = jiffies;
--		dev_priv->sgx_lab_running_active = true;
--		dev_priv->sgx_lab_active_running_submit_id = submit->submit_id;
--	} else if (commit->next_state.owner_state !=
--			   PSB_SGX_LAB_OWNER_RUNNING &&
--		   dev_priv->sgx_lab_running_active &&
--		   dev_priv->sgx_lab_active_running_submit_id ==
--			   submit->submit_id) {
--		dev_priv->sgx_lab_running_active = false;
--		dev_priv->sgx_lab_active_running_submit_id = 0;
--	}
- 	if (commit->entering_complete) {
--		dev_priv->sgx_lab_global_complete_ticket =
--			commit->next_state.global_complete_ticket;
--		dev_priv->sgx_lab_global_complete_submit_id =
--			submit->submit_id;
--		dev_priv->sgx_lab_global_complete_jiffies = jiffies;
- 		poulsbo_sgx_retire_submit_locked(submit);
- 		ret = poulsbo_sgx_refresh_dependency_dependents_locked(
- 			dev_priv, submit->submit_id);
-@@ -5112,6 +5108,149 @@ static int poulsbo_sgx_apply_submit_sgx_ta_op_locked(
- 		dev_priv, submit, &ta_op->work_item);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_commit_locked(
++	return poulsbo_sgx_apply_submit_sgx_ta_commit_locked(
+ 		dev_priv, submit, &event->commit);
+-	if (ret)
+-		return ret;
+-
+-	if (event->increment_issue_count)
+-		submit->issue_count++;
+-	if (event->increment_transition_count)
+-		submit->transition_count++;
+-	if (event->update_last_epoch_jiffies)
+-		submit->last_epoch_jiffies = jiffies;
+-	if (event->update_last_issue_jiffies)
+-		submit->last_issue_jiffies = jiffies;
+-	if (event->update_last_transition_jiffies)
+-		submit->last_transition_jiffies = jiffies;
+-	if (!event->refresh_views)
+-		return 0;
+-
+-	return poulsbo_sgx_refresh_submit_views_locked(dev_priv, submit);
  }
  
-+static void poulsbo_sgx_fill_submit_sgx_scheduler_state_from_coordination(
-+	const struct psb_sgx_lab_submit_sgx_coordination *coordination,
-+	struct psb_sgx_lab_submit_sgx_scheduler_state *state)
-+{
-+	if (!state)
-+		return;
-+
-+	memset(state, 0, sizeof(*state));
-+	if (!coordination)
-+		return;
-+
-+	state->issue_ticket = coordination->issue_ticket;
-+	state->running_ticket = coordination->running_ticket;
-+	state->complete_ticket = coordination->complete_ticket;
-+	state->issue_submit_id = coordination->issue_submit_id;
-+	state->running_submit_id = coordination->running_submit_id;
-+	state->complete_submit_id = coordination->complete_submit_id;
-+	state->active_running_valid = coordination->active_running_valid;
-+	state->active_running_submit_id =
-+		coordination->active_running_submit_id;
-+}
-+
-+static int poulsbo_sgx_build_submit_sgx_ta_scheduler_locked(
+ static int poulsbo_sgx_build_submit_sgx_ta_work_item_locked(
+@@ -5251,6 +5245,84 @@ static int poulsbo_sgx_apply_submit_sgx_ta_scheduler_locked(
+ 	return 0;
+ }
+ 
++static int poulsbo_sgx_build_submit_sgx_ta_sequence_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	u32 op_kind,
 +	u32 owner_state,
 +	u32 packet_count,
-+	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler)
++	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_commit *commit;
-+	const struct psb_sgx_lab_submit_sgx_coordination *coordination;
++	const struct psb_sgx_lab_submit_sgx_ta_event *event;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !scheduler)
++	if (!dev_priv || !submit || !sequence)
 +		return -EINVAL;
 +
-+	memset(scheduler, 0, sizeof(*scheduler));
++	memset(sequence, 0, sizeof(*sequence));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_op_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_scheduler_locked(
 +		dev_priv, submit, op_kind, owner_state, packet_count,
-+		&scheduler->ta_op);
++		&sequence->scheduler);
 +	if (ret)
 +		return ret;
 +	if (op_kind == PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE)
 +		return 0;
 +
-+	commit = &scheduler->ta_op.work_item.event.commit;
-+	coordination =
-+		&commit->path.dispatch.schedule.control.runtime.coordination;
-+	poulsbo_sgx_fill_submit_sgx_scheduler_state_from_coordination(
-+		coordination, &scheduler->next_state);
-+	scheduler->active = true;
++	event = &sequence->scheduler.ta_op.work_item.event;
++	sequence->active = true;
++	sequence->refresh_views = event->refresh_views;
++	sequence->increment_issue_count = event->increment_issue_count;
++	sequence->increment_transition_count =
++		event->increment_transition_count;
++	sequence->update_last_epoch_jiffies =
++		event->update_last_epoch_jiffies;
++	sequence->update_last_issue_jiffies =
++		event->update_last_issue_jiffies;
++	sequence->update_last_transition_jiffies =
++		event->update_last_transition_jiffies;
++	sequence->next_issue_count =
++		submit->issue_count + (event->increment_issue_count ? 1 : 0);
++	sequence->next_transition_count =
++		submit->transition_count +
++		(event->increment_transition_count ? 1 : 0);
 +
-+	switch (op_kind) {
-+	case PSB_SGX_LAB_SUBMIT_SGX_TA_OP_ISSUE:
-+		if (!commit->issue_active || commit->transition_active)
-+			return -EINVAL;
-+		scheduler->issue_advanced = true;
-+		scheduler->next_state.issue_ticket =
-+			commit->next_state.global_issue_ticket;
-+		scheduler->next_state.issue_submit_id = submit->submit_id;
-+		return 0;
-+	case PSB_SGX_LAB_SUBMIT_SGX_TA_OP_TRANSITION:
-+		if (!commit->transition_active || commit->issue_active)
-+			return -EINVAL;
-+		if (commit->next_state.owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
-+		    commit->entering_running) {
-+			scheduler->running_advanced = true;
-+			scheduler->active_running_changed = true;
-+			scheduler->next_state.running_ticket =
-+				commit->next_state.global_running_ticket;
-+			scheduler->next_state.running_submit_id =
-+				submit->submit_id;
-+			scheduler->next_state.active_running_valid = true;
-+			scheduler->next_state.active_running_submit_id =
-+				submit->submit_id;
-+		} else if (commit->next_state.owner_state !=
-+				   PSB_SGX_LAB_OWNER_RUNNING &&
-+			   scheduler->next_state.active_running_valid &&
-+			   scheduler->next_state.active_running_submit_id ==
-+				   submit->submit_id) {
-+			scheduler->active_running_changed = true;
-+			scheduler->next_state.active_running_valid = false;
-+			scheduler->next_state.active_running_submit_id = 0;
-+		}
-+		if (commit->entering_complete) {
-+			scheduler->complete_advanced = true;
-+			scheduler->next_state.complete_ticket =
-+				commit->next_state.global_complete_ticket;
-+			scheduler->next_state.complete_submit_id =
-+				submit->submit_id;
-+		}
-+		return 0;
-+	default:
-+		return -EINVAL;
-+	}
++	return 0;
 +}
 +
-+static int poulsbo_sgx_apply_submit_sgx_ta_scheduler_locked(
++static int poulsbo_sgx_apply_submit_sgx_ta_sequence_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler)
++	const struct psb_sgx_lab_submit_sgx_ta_sequence *sequence)
 +{
 +	int ret;
 +
-+	if (!dev_priv || !submit || !scheduler)
++	if (!dev_priv || !submit || !sequence)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_op_locked(
-+		dev_priv, submit, &scheduler->ta_op);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_scheduler_locked(
++		dev_priv, submit, &sequence->scheduler);
 +	if (ret)
 +		return ret;
-+	if (!scheduler->active)
++	if (!sequence->active)
 +		return 0;
 +
-+	dev_priv->sgx_lab_global_issue_ticket =
-+		scheduler->next_state.issue_ticket;
-+	dev_priv->sgx_lab_global_running_ticket =
-+		scheduler->next_state.running_ticket;
-+	dev_priv->sgx_lab_global_complete_ticket =
-+		scheduler->next_state.complete_ticket;
-+	dev_priv->sgx_lab_global_issue_submit_id =
-+		scheduler->next_state.issue_submit_id;
-+	dev_priv->sgx_lab_global_running_submit_id =
-+		scheduler->next_state.running_submit_id;
-+	dev_priv->sgx_lab_global_complete_submit_id =
-+		scheduler->next_state.complete_submit_id;
-+	dev_priv->sgx_lab_running_active =
-+		scheduler->next_state.active_running_valid;
-+	dev_priv->sgx_lab_active_running_submit_id =
-+		scheduler->next_state.active_running_submit_id;
++	if (sequence->increment_issue_count)
++		submit->issue_count = sequence->next_issue_count;
++	if (sequence->increment_transition_count)
++		submit->transition_count = sequence->next_transition_count;
++	if (sequence->update_last_epoch_jiffies)
++		submit->last_epoch_jiffies = jiffies;
++	if (sequence->update_last_issue_jiffies)
++		submit->last_issue_jiffies = jiffies;
++	if (sequence->update_last_transition_jiffies)
++		submit->last_transition_jiffies = jiffies;
++	if (!sequence->refresh_views)
++		return 0;
 +
-+	if (scheduler->issue_advanced)
-+		dev_priv->sgx_lab_global_issue_jiffies = jiffies;
-+	if (scheduler->running_advanced)
-+		dev_priv->sgx_lab_global_running_jiffies = jiffies;
-+	if (scheduler->complete_advanced)
-+		dev_priv->sgx_lab_global_complete_jiffies = jiffies;
-+
-+	return 0;
++	return poulsbo_sgx_refresh_submit_views_locked(dev_priv, submit);
 +}
 +
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -10837,6 +10976,114 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_op_locked(
- 		ta_op->packet_count) ? -EINVAL : 0;
+@@ -11084,6 +11156,80 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_scheduler_locked(
+ 	return 0;
  }
  
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_scheduler_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_sequence_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler)
++	const struct psb_sgx_lab_submit_sgx_ta_sequence *sequence)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_commit *commit;
-+	const struct psb_sgx_lab_submit_sgx_coordination *coordination;
-+	struct psb_sgx_lab_submit_sgx_scheduler_state next_state;
++	const struct psb_sgx_lab_submit_sgx_ta_event *event;
 +	bool active;
-+	bool issue_advanced = false;
-+	bool running_advanced = false;
-+	bool complete_advanced = false;
-+	bool active_running_changed = false;
++	u32 next_issue_count;
++	u32 next_transition_count;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !scheduler)
++	if (!dev_priv || !submit || !sequence)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_op_locked(
-+		dev_priv, submit, &scheduler->ta_op);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_scheduler_locked(
++		dev_priv, submit, &sequence->scheduler);
 +	if (ret)
 +		return ret;
 +
-+	active = scheduler->ta_op.op_kind != PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE;
-+	if (scheduler->active != active)
++	active = sequence->scheduler.ta_op.op_kind !=
++		 PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE;
++	if (sequence->active != active)
 +		return -EINVAL;
 +	if (!active) {
-+		const struct psb_sgx_lab_submit_sgx_scheduler_state zero_state = {};
-+
-+		if (scheduler->issue_advanced || scheduler->running_advanced ||
-+		    scheduler->complete_advanced ||
-+		    scheduler->active_running_changed)
++		if (sequence->scheduler.active ||
++		    sequence->scheduler.issue_advanced ||
++		    sequence->scheduler.running_advanced ||
++		    sequence->scheduler.complete_advanced ||
++		    sequence->scheduler.active_running_changed ||
++		    sequence->scheduler.next_state.issue_ticket ||
++		    sequence->scheduler.next_state.running_ticket ||
++		    sequence->scheduler.next_state.complete_ticket ||
++		    sequence->scheduler.next_state.issue_submit_id ||
++		    sequence->scheduler.next_state.running_submit_id ||
++		    sequence->scheduler.next_state.complete_submit_id ||
++		    sequence->scheduler.next_state.active_running_valid ||
++		    sequence->scheduler.next_state.active_running_submit_id ||
++		    sequence->refresh_views ||
++		    sequence->increment_issue_count ||
++		    sequence->increment_transition_count ||
++		    sequence->update_last_epoch_jiffies ||
++		    sequence->update_last_issue_jiffies ||
++		    sequence->update_last_transition_jiffies ||
++		    sequence->next_issue_count ||
++		    sequence->next_transition_count) {
 +			return -EINVAL;
-+		return memcmp(&scheduler->next_state, &zero_state,
-+			      sizeof(zero_state)) ? -EINVAL : 0;
-+	}
-+
-+	commit = &scheduler->ta_op.work_item.event.commit;
-+	coordination =
-+		&commit->path.dispatch.schedule.control.runtime.coordination;
-+	poulsbo_sgx_fill_submit_sgx_scheduler_state_from_coordination(
-+		coordination, &next_state);
-+
-+	switch (scheduler->ta_op.op_kind) {
-+	case PSB_SGX_LAB_SUBMIT_SGX_TA_OP_ISSUE:
-+		if (!commit->issue_active || commit->transition_active)
-+			return -EINVAL;
-+		issue_advanced = true;
-+		next_state.issue_ticket = commit->next_state.global_issue_ticket;
-+		next_state.issue_submit_id = submit->submit_id;
-+		break;
-+	case PSB_SGX_LAB_SUBMIT_SGX_TA_OP_TRANSITION:
-+		if (!commit->transition_active || commit->issue_active)
-+			return -EINVAL;
-+		if (commit->next_state.owner_state == PSB_SGX_LAB_OWNER_RUNNING &&
-+		    commit->entering_running) {
-+			running_advanced = true;
-+			active_running_changed = true;
-+			next_state.running_ticket =
-+				commit->next_state.global_running_ticket;
-+			next_state.running_submit_id = submit->submit_id;
-+			next_state.active_running_valid = true;
-+			next_state.active_running_submit_id = submit->submit_id;
-+		} else if (commit->next_state.owner_state !=
-+				   PSB_SGX_LAB_OWNER_RUNNING &&
-+			   next_state.active_running_valid &&
-+			   next_state.active_running_submit_id ==
-+				   submit->submit_id) {
-+			active_running_changed = true;
-+			next_state.active_running_valid = false;
-+			next_state.active_running_submit_id = 0;
 +		}
-+		if (commit->entering_complete) {
-+			complete_advanced = true;
-+			next_state.complete_ticket =
-+				commit->next_state.global_complete_ticket;
-+			next_state.complete_submit_id = submit->submit_id;
-+		}
-+		break;
-+	default:
-+		return -EINVAL;
++		return 0;
 +	}
 +
-+	if (scheduler->issue_advanced != issue_advanced ||
-+	    scheduler->running_advanced != running_advanced ||
-+	    scheduler->complete_advanced != complete_advanced ||
-+	    scheduler->active_running_changed != active_running_changed)
-+		return -EINVAL;
++	event = &sequence->scheduler.ta_op.work_item.event;
++	next_issue_count =
++		submit->issue_count + (event->increment_issue_count ? 1 : 0);
++	next_transition_count =
++		submit->transition_count +
++		(event->increment_transition_count ? 1 : 0);
 +
-+	if (scheduler->next_state.issue_ticket != next_state.issue_ticket ||
-+	    scheduler->next_state.running_ticket != next_state.running_ticket ||
-+	    scheduler->next_state.complete_ticket != next_state.complete_ticket ||
-+	    scheduler->next_state.issue_submit_id !=
-+		    next_state.issue_submit_id ||
-+	    scheduler->next_state.running_submit_id !=
-+		    next_state.running_submit_id ||
-+	    scheduler->next_state.complete_submit_id !=
-+		    next_state.complete_submit_id ||
-+	    scheduler->next_state.active_running_valid !=
-+		    next_state.active_running_valid ||
-+	    scheduler->next_state.active_running_submit_id !=
-+		    next_state.active_running_submit_id) {
++	if (sequence->refresh_views != event->refresh_views ||
++	    sequence->increment_issue_count != event->increment_issue_count ||
++	    sequence->increment_transition_count !=
++		    event->increment_transition_count ||
++	    sequence->update_last_epoch_jiffies !=
++		    event->update_last_epoch_jiffies ||
++	    sequence->update_last_issue_jiffies !=
++		    event->update_last_issue_jiffies ||
++	    sequence->update_last_transition_jiffies !=
++		    event->update_last_transition_jiffies ||
++	    sequence->next_issue_count != next_issue_count ||
++	    sequence->next_transition_count != next_transition_count)
 +		return -EINVAL;
-+	}
 +
 +	return 0;
 +}
@@ -344,201 +229,201 @@ index adfe190e8..9e5864f50 100644
  static int poulsbo_sgx_validate_submit_sgx_ta_work_item_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -10900,6 +11147,38 @@ out:
+@@ -11179,6 +11325,38 @@ out:
  	return ret;
  }
  
-+static int poulsbo_sgx_validate_submit_sgx_ta_scheduler_locked(
++static int poulsbo_sgx_validate_submit_sgx_ta_sequence_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	struct psb_sgx_lab_object *control_obj,
 +	struct psb_sgx_lab_object *status_obj)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler;
++	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence;
 +	int ret;
 +
-+	scheduler = kmalloc(sizeof(*scheduler), GFP_KERNEL);
-+	if (!scheduler)
++	sequence = kmalloc(sizeof(*sequence), GFP_KERNEL);
++	if (!sequence)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_validate_submit_sgx_ta_op_locked(
++	ret = poulsbo_sgx_validate_submit_sgx_ta_scheduler_locked(
 +		dev_priv, submit, control_obj, status_obj);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_scheduler_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_sequence_locked(
 +		dev_priv, submit, PSB_SGX_LAB_SUBMIT_SGX_TA_OP_NONE, 0, 0,
-+		scheduler);
++		sequence);
 +	if (ret)
 +		goto out;
 +
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_scheduler_locked(
-+		dev_priv, submit, scheduler);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_sequence_locked(
++		dev_priv, submit, sequence);
 +
 +out:
-+	kfree(scheduler);
++	kfree(sequence);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  					      struct psb_sgx_lab_submit *submit)
  {
-@@ -11111,33 +11390,33 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -11390,33 +11568,33 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		submit, status_obj, NULL);
  	if (ret)
  		return ret;
--	return poulsbo_sgx_validate_submit_sgx_ta_op_locked(
-+	return poulsbo_sgx_validate_submit_sgx_ta_scheduler_locked(
+-	return poulsbo_sgx_validate_submit_sgx_ta_scheduler_locked(
++	return poulsbo_sgx_validate_submit_sgx_ta_sequence_locked(
  		dev_priv, submit, control_obj, status_obj);
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_op(
-+static int poulsbo_sgx_execute_submit_sgx_ta_scheduler(
+-static int poulsbo_sgx_execute_submit_sgx_ta_scheduler(
++static int poulsbo_sgx_execute_submit_sgx_ta_sequence(
  	struct drm_device *dev,
  	u32 submit_id,
  	u32 op_kind,
  	u32 owner_state,
  	u32 packet_count,
--	struct psb_sgx_lab_submit_sgx_ta_op **ta_op_out)
-+	struct psb_sgx_lab_submit_sgx_ta_scheduler **scheduler_out)
+-	struct psb_sgx_lab_submit_sgx_ta_scheduler **scheduler_out)
++	struct psb_sgx_lab_submit_sgx_ta_sequence **sequence_out)
  {
  	struct drm_psb_private *dev_priv;
  	struct psb_sgx_lab_submit *submit;
--	struct psb_sgx_lab_submit_sgx_ta_op *ta_op;
-+	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler;
+-	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler;
++	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence;
  	int ret;
  
--	if (!dev || !ta_op_out)
-+	if (!dev || !scheduler_out)
+-	if (!dev || !scheduler_out)
++	if (!dev || !sequence_out)
  		return -EINVAL;
  
  	dev_priv = dev->dev_private;
  	if (!dev_priv)
  		return -ENODEV;
  
--	*ta_op_out = NULL;
--	ta_op = kmalloc(sizeof(*ta_op), GFP_KERNEL);
--	if (!ta_op)
-+	*scheduler_out = NULL;
-+	scheduler = kmalloc(sizeof(*scheduler), GFP_KERNEL);
-+	if (!scheduler)
+-	*scheduler_out = NULL;
+-	scheduler = kmalloc(sizeof(*scheduler), GFP_KERNEL);
+-	if (!scheduler)
++	*sequence_out = NULL;
++	sequence = kmalloc(sizeof(*sequence), GFP_KERNEL);
++	if (!sequence)
  		return -ENOMEM;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -11150,13 +11429,14 @@ static int poulsbo_sgx_execute_submit_sgx_ta_op(
+@@ -11429,14 +11607,14 @@ static int poulsbo_sgx_execute_submit_sgx_ta_scheduler(
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_op_locked(
--		dev_priv, submit, op_kind, owner_state, packet_count, ta_op);
-+	ret = poulsbo_sgx_build_submit_sgx_ta_scheduler_locked(
-+		dev_priv, submit, op_kind, owner_state, packet_count,
-+		scheduler);
+-	ret = poulsbo_sgx_build_submit_sgx_ta_scheduler_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_sequence_locked(
+ 		dev_priv, submit, op_kind, owner_state, packet_count,
+-		scheduler);
++		sequence);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_apply_submit_sgx_ta_op_locked(
--		dev_priv, submit, ta_op);
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_scheduler_locked(
-+		dev_priv, submit, scheduler);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_scheduler_locked(
+-		dev_priv, submit, scheduler);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_sequence_locked(
++		dev_priv, submit, sequence);
  
  out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
-@@ -11164,11 +11444,11 @@ out_unlock:
+@@ -11444,11 +11622,11 @@ out_unlock:
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
  
  	if (ret) {
--		kfree(ta_op);
-+		kfree(scheduler);
+-		kfree(scheduler);
++		kfree(sequence);
  		return ret;
  	}
  
--	*ta_op_out = ta_op;
-+	*scheduler_out = scheduler;
+-	*scheduler_out = scheduler;
++	*sequence_out = sequence;
  	return 0;
  }
  
-@@ -13654,12 +13934,12 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -13934,12 +14112,12 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
  					 u32 owner_state,
  					 u32 completed_packets)
  {
--	struct psb_sgx_lab_submit_sgx_ta_op *ta_op = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence = NULL;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_op(
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_scheduler(
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_scheduler(
++	ret = poulsbo_sgx_execute_submit_sgx_ta_sequence(
  		dev, submit_id, PSB_SGX_LAB_SUBMIT_SGX_TA_OP_TRANSITION,
--		owner_state, completed_packets, &ta_op);
-+		owner_state, completed_packets, &scheduler);
+-		owner_state, completed_packets, &scheduler);
++		owner_state, completed_packets, &sequence);
  
  	if (!ret)
  		dev_info(dev->dev,
-@@ -13667,34 +13947,35 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+@@ -13947,35 +14125,35 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
  			 submit_id,
  			 poulsbo_sgx_lab_owner_state_name(owner_state),
  			 completed_packets,
--			 ta_op->work_item.event.commit.next_state.ccb_read_offset,
--			 ta_op->work_item.event.commit.next_state.ccb_write_offset,
--			 ta_op->work_item.event.commit.next_state.ccb_offset,
--			 ta_op->work_item.event.commit.next_state.queue_packet_count,
--			 !!ta_op->work_item.event.commit.next_state.queue_head_packet_count,
--			 ta_op->work_item.event.commit.next_state.sync_complete_seq,
--			 ta_op->work_item.event.commit.next_state.owner_complete_cookie,
--			 ta_op->work_item.event.commit.next_state.queue_epoch,
--			 ta_op->work_item.event.commit.next_state.global_running_ticket,
--			 ta_op->work_item.event.commit.next_state.global_complete_ticket);
--	kfree(ta_op);
-+			 scheduler->ta_op.work_item.event.commit.next_state.ccb_read_offset,
-+			 scheduler->ta_op.work_item.event.commit.next_state.ccb_write_offset,
-+			 scheduler->ta_op.work_item.event.commit.next_state.ccb_offset,
-+			 scheduler->ta_op.work_item.event.commit.next_state.queue_packet_count,
-+			 !!scheduler->ta_op.work_item.event.commit.next_state.queue_head_packet_count,
-+			 scheduler->ta_op.work_item.event.commit.next_state.sync_complete_seq,
-+			 scheduler->ta_op.work_item.event.commit.next_state.owner_complete_cookie,
-+			 scheduler->ta_op.work_item.event.commit.next_state.queue_epoch,
-+			 scheduler->next_state.running_ticket,
-+			 scheduler->next_state.complete_ticket);
-+	kfree(scheduler);
+-			 scheduler->ta_op.work_item.event.commit.next_state.ccb_read_offset,
+-			 scheduler->ta_op.work_item.event.commit.next_state.ccb_write_offset,
+-			 scheduler->ta_op.work_item.event.commit.next_state.ccb_offset,
+-			 scheduler->ta_op.work_item.event.commit.next_state.queue_packet_count,
+-			 !!scheduler->ta_op.work_item.event.commit.next_state.queue_head_packet_count,
+-			 scheduler->ta_op.work_item.event.commit.next_state.sync_complete_seq,
+-			 scheduler->ta_op.work_item.event.commit.next_state.owner_complete_cookie,
+-			 scheduler->ta_op.work_item.event.commit.next_state.queue_epoch,
+-			 scheduler->next_state.running_ticket,
+-			 scheduler->next_state.complete_ticket);
+-	kfree(scheduler);
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.ccb_read_offset,
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.ccb_write_offset,
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.ccb_offset,
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.queue_packet_count,
++			 !!sequence->scheduler.ta_op.work_item.event.commit.next_state.queue_head_packet_count,
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.sync_complete_seq,
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.owner_complete_cookie,
++			 sequence->scheduler.ta_op.work_item.event.commit.next_state.queue_epoch,
++			 sequence->scheduler.next_state.running_ticket,
++			 sequence->scheduler.next_state.complete_ticket);
++	kfree(sequence);
  	return ret;
  }
  
  static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  				    u32 owner_state, u32 issued_packets)
  {
--	struct psb_sgx_lab_submit_sgx_ta_op *ta_op = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_scheduler *scheduler = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_sequence *sequence = NULL;
  	const struct psb_sgx_lab_submit_sgx_issue_image *issue_image;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_op(
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_scheduler(
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_scheduler(
++	ret = poulsbo_sgx_execute_submit_sgx_ta_sequence(
  		dev, submit_id, PSB_SGX_LAB_SUBMIT_SGX_TA_OP_ISSUE,
--		owner_state, issued_packets, &ta_op);
-+		owner_state, issued_packets, &scheduler);
+-		owner_state, issued_packets, &scheduler);
++		owner_state, issued_packets, &sequence);
  	if (ret)
  		goto out;
  
--	issue_image = &ta_op->work_item.event.commit.path.dispatch.issue_image;
-+	issue_image =
-+		&scheduler->ta_op.work_item.event.commit.path.dispatch.issue_image;
+ 	issue_image =
+-		&scheduler->ta_op.work_item.event.commit.path.dispatch.issue_image;
++		&sequence->scheduler.ta_op.work_item.event.commit.path.dispatch.issue_image;
  
  	if (!ret)
  		dev_info(dev->dev,
-@@ -13707,12 +13988,12 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+@@ -13988,12 +14166,12 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
  			 issue_image->sync.pending_seq,
  			 issue_image->owner.owner_issue_cookie,
  			 issue_image->sync.epoch,
--			 ta_op->work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
--			 issue_image->sync.global_issue_ticket,
--			 issue_image->owner.global_running_ticket);
-+			 scheduler->ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
-+			 scheduler->next_state.issue_ticket,
-+			 scheduler->next_state.running_ticket);
+-			 scheduler->ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
+-			 scheduler->next_state.issue_ticket,
+-			 scheduler->next_state.running_ticket);
++			 sequence->scheduler.ta_op.work_item.event.commit.path.dispatch.schedule.control.issue_request.plan.refilled_from_complete,
++			 sequence->scheduler.next_state.issue_ticket,
++			 sequence->scheduler.next_state.running_ticket);
  
  out:
--	kfree(ta_op);
-+	kfree(scheduler);
+-	kfree(scheduler);
++	kfree(sequence);
  	return ret;
  }
  
