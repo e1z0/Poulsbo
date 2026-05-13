@@ -1,0 +1,8 @@
+phase=complete
+phase_complete_rc=1
+phase_complete_health=remote_usable
+phase_complete_reason=phase_failed
+phase_complete_failed_step=
+phase_complete_failed_rc=
+phase_complete_failed_log=
+phase_complete_remote_tmpdir=

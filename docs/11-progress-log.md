@@ -5,6 +5,90 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### SGX submit TA execution object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped execution object:
+  - `psb_sgx_lab_submit_sgx_ta_execution`
+- The new `sgx_ta_execution` object now keeps together:
+  - the live `ccb_kick`
+  - the live `sgx_ta_submission`
+  - the optional launch-time `ccb_kick`
+  - the optional launch-time `sgx_ta_submission`
+- The first live draft regressed the old `launch -> issue` boundary again:
+  - guarded deploy:
+    - `logs/vaio-deploy/20260513-111124-guarded-deploy`
+    - live override `srcversion 9574D599C4FD8B682D93F32`
+  - exact proof:
+    - `logs/vaio-plan-session/20260513-111340-sgx-plan-session`
+    - failed at `submit_op_name=issue`
+    - `submit_op_ret=-1 errno=22`
+- The root cause was launch-side overvalidation:
+  - the new wrapper was running the full live-submission coherence helper on
+    the launch snapshot
+  - that future snapshot intentionally carries launch-time `issue-plan` state
+    and cannot be treated like the current live submission image
+- The fix kept the higher-level object but narrowed launch-side validation to
+  launch-stable fields only:
+  - queued TA command wiring
+  - queue-header placement
+  - copied future `issue-plan` contents
+- Final guarded deploy after that fix:
+  - `logs/vaio-deploy/20260513-120442-guarded-deploy`
+  - final live override:
+    - `driver_srcversion=311989DA7E14F05C171ED79`
+    - `override_module_size=454160`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the repaired module passed again:
+  - `logs/vaio-plan-session/20260513-120641-sgx-plan-session`
+  - `selected_phase_profile=complete`
+  - `selected_outcome=completed`
+  - `final_driver_srcversion=311989DA7E14F05C171ED79`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-120825-sgx-submit-ta-execution-live/summary.log`
+  - final focused proof:
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+    - `submit_dependency_active_count=0`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-120927-sgx-multi-submit-ta-execution-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=3`
+    - `SUBMIT_B_ID=4`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+      - `submit_dependency_active_count=0`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `submit_dependency_active_count=1`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-120641`
+- Documented in:
+  - `docs/178-sgx-submit-ta-execution-object.md`
+
 ### SGX submit TA submission object
 
 - Updated:

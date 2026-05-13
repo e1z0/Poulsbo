@@ -15,10 +15,10 @@ Current live note on May 13, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260513-080856-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-080856-guarded-deploy)
+  [logs/vaio-deploy/20260513-120442-guarded-deploy](/root/Poulsbo/logs/vaio-deploy/20260513-120442-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=329853678DD9A992924BB5C`
-  - `override_module_size=453508`
+  - `driver_srcversion=311989DA7E14F05C171ED79`
+  - `override_module_size=454160`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -26,17 +26,17 @@ Current live note on May 13, 2026:
   - `kdump_service_active=active`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260513-081039-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-081039-sgx-plan-session)
+  - [logs/vaio-plan-session/20260513-120641-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-120641-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=329853678DD9A992924BB5C`
-- the new internal `psb_sgx_lab_submit_sgx_ta_submission` batch is also
+  - `final_driver_srcversion=311989DA7E14F05C171ED79`
+- the new internal `psb_sgx_lab_submit_sgx_ta_execution` batch is also
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260513-081039-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-081039-sgx-plan-session)
+    [logs/vaio-plan-session/20260513-120641-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260513-120641-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-081614-sgx-submit-ta-submission-live/summary.log)
+    [logs/vaio-ioctl/20260513-120825-sgx-submit-ta-execution-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-120825-sgx-submit-ta-execution-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-081700-sgx-multi-submit-ta-submission-live/summary.log)
+    [logs/vaio-ioctl/20260513-120927-sgx-multi-submit-ta-execution-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260513-120927-sgx-multi-submit-ta-execution-live/summary.log)
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -68,7 +68,7 @@ Current live note on May 13, 2026:
   - `complete`
   - `post_descriptor`
   - `full`
-- the shared kernel execution model now has eleven explicit internal layers:
+- the shared kernel execution model now has twelve explicit internal layers:
   - `psb_sgx_lab_submit_exec_record`
   - `psb_sgx_lab_submit_exec_packet`
   - `psb_sgx_lab_submit_cmdta_kick`
@@ -80,13 +80,14 @@ Current live note on May 13, 2026:
   - `psb_sgx_lab_submit_sgx_ta_command`
   - `psb_sgx_lab_submit_sgx_queued_ta_command`
   - `psb_sgx_lab_submit_sgx_ta_submission`
+  - `psb_sgx_lab_submit_sgx_ta_execution`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-081039`
-  - `source_row_module_srcversion=329853678DD9A992924BB5C`
+  - `source_timestamp=20260513-120641`
+  - `source_row_module_srcversion=311989DA7E14F05C171ED79`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -105,7 +106,7 @@ Current live note on May 13, 2026:
   `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the next engineering step is no longer more exact ladder narrowing; it is
   the next SGX execution-side change on top of the new shared
-  `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command`
+  `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command -> sgx_queued_ta_command -> sgx_ta_submission -> sgx_ta_execution`
   kernel model and the validated
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
   model
