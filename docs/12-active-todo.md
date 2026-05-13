@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 32C3455CEA624602FC2F106`
-  - `override_module_size=472188`
+  - `srcversion 6D6E13A5AC5A07DA2DE5EEC`
+  - `override_module_size=473084`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260513-215042-sgx-ta-submit-op-request-deploy`
+  - `logs/vaio-deploy/20260513-220428-sgx-ta-queue-item-deploy`
 - exact live reruns on the fixed module now all complete cleanly:
   - `plan_query_offset`
   - `plan_query_config`
@@ -60,23 +60,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260513-215228-sgx-plan-session`
-- the newest internal `ta-submit-op-request` batch is now
+  - `logs/vaio-plan-session/20260513-220620-sgx-plan-session`
+- the newest internal `ta-queue-item` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260513-215228-sgx-plan-session`
+    - `logs/vaio-plan-session/20260513-220620-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260513-215330-sgx-submit-ta-submit-op-request-live/summary.log`
+    - `logs/vaio-ioctl/20260513-220721-sgx-submit-ta-queue-item-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260513-215411-sgx-multi-submit-ta-submit-op-request-live/summary.log`
+    - `logs/vaio-ioctl/20260513-220800-sgx-multi-submit-ta-queue-item-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260513-215228`
-  - `source_row_module_srcversion=32C3455CEA624602FC2F106`
+  - `source_timestamp=20260513-220620`
+  - `source_row_module_srcversion=6D6E13A5AC5A07DA2DE5EEC`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -240,10 +240,10 @@ implementation if it materially changes scope.
 - next kernel-side goal:
   - build the first explicit SGX scheduler-facing queue item,
     microkernel-facing request packet, or real work-queue object above the
-    now-shared `psb_sgx_lab_submit_sgx_ta_submit_op_request`, so the typed top
+    now-shared `psb_sgx_lab_submit_sgx_ta_queue_item`, so the typed top
     layer starts modeling a real SGX submit packet or scheduler work entry
-    instead of stopping at the copied public submit-op seam and
-    execution-effect summary
+    instead of stopping at the queue/ticket effect summary above the copied
+    public submit-op seam
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
   - `selected_child_phase_selection=request_only` is the child recovery
