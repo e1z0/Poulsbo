@@ -5,6 +5,90 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-13
 
+### SGX submit TA request-packet object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped top object:
+  - `psb_sgx_lab_submit_sgx_ta_request_packet`
+- The top validator now moves from `sgx_ta_queue_packet` to
+  `sgx_ta_request_packet`.
+- The live top-layer execution boundary is now unified too:
+  - the submit-op ioctl path builds and applies `sgx_ta_request_packet`
+  - `issue_submit()` compatibility flow builds and applies `sgx_ta_request_packet`
+  - `transition_submit()` compatibility flow builds and applies `sgx_ta_request_packet`
+- The new shared top object now owns:
+  - the existing `sgx_ta_queue_packet`
+  - the public request boundary
+  - the selected request-side read/write/CCB/ticket summary
+  - the selected next global ticket vector
+- The first live draft broke the dependency-gated typed multi-submit path by
+  flattening the lower queue-packet builder return code to `-EINVAL`; the
+  repair was to preserve the nested `ret`, which restored the intended
+  lower-layer `-EAGAIN` result for blocked dependent `running` transitions.
+- First-draft evidence:
+  - `logs/vaio-deploy/20260513-234413-sgx-ta-request-packet-deploy`
+  - `logs/vaio-plan-session/20260513-234558-sgx-plan-session`
+  - live multi-submit failure:
+    - `submit_op_name=transition`
+    - `submit_owner_state_name=running`
+    - `submit_op_ret=-1 errno=22`
+    - `submit_resolved_id=0`
+- Repaired guarded deploy completed successfully in:
+  - `logs/vaio-deploy/20260513-235006-sgx-ta-request-packet-rerun-deploy`
+  - final live override:
+    - `driver_srcversion=3FA57ECCFB162117FD52520`
+    - `override_module_size=480168`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on the repaired module also still passed:
+  - `logs/vaio-plan-session/20260513-235155-sgx-plan-session`
+  - `session_outcome=completed`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=3FA57ECCFB162117FD52520`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-235251-sgx-submit-ta-request-packet-rerun-live/summary.log`
+  - final focused proof:
+    - `submit_resolved_id=8`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260513-235347-sgx-multi-submit-ta-request-packet-rerun-live/summary.log`
+  - final typed run proved:
+    - submit A final:
+      - `submit_resolved_id=9`
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_resolved_id=10`
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=17`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260513-235155`
+- Documented in:
+  - `docs/203-sgx-submit-ta-request-packet-object.md`
+
 ### SGX submit TA queue-packet object
 
 - Updated:

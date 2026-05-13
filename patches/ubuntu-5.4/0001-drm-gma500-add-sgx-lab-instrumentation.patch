@@ -1,61 +1,43 @@
-From d7ba6332bd3a6150b32865de1bc173cb02507793 Mon Sep 17 00:00:00 2001
+From 364ef0f5850514dcaa6581c5c6de6280923c50b2 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Wed, 13 May 2026 23:39:20 +0300
-Subject: [PATCH] drm/gma500: add SGX TA queue packet object
+Date: Thu, 14 May 2026 00:10:15 +0300
+Subject: [PATCH] drm/gma500: add SGX TA request packet object
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 343 +++++++++++++++++++++++++++----
- 1 file changed, 299 insertions(+), 44 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 311 ++++++++++++++++++++++++++-----
+ 1 file changed, 268 insertions(+), 43 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 8c5219ff8..7057859a4 100644
+index 7057859a4..a15461dfb 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -1808,6 +1808,53 @@ struct psb_sgx_lab_submit_sgx_ta_queue_stream {
- 	struct psb_sgx_lab_owner_words owner;
+@@ -1855,6 +1855,35 @@ struct psb_sgx_lab_submit_sgx_ta_queue_packet {
+ 	u32 global_complete_ticket;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_queue_packet {
-+	struct psb_sgx_lab_submit_sgx_ta_queue_stream queue_stream;
++struct psb_sgx_lab_submit_sgx_ta_request_packet {
++	struct psb_sgx_lab_submit_sgx_ta_queue_packet queue_packet;
 +	bool active;
++	bool dependency_fields_present;
++	bool use_focus_request;
++	bool focus_resolved;
 +	bool issue_request;
 +	bool transition_request;
 +	bool packet_active;
 +	bool refilled_from_complete;
-+	bool read_advanced;
-+	bool write_advanced;
-+	bool ccb_advanced;
-+	bool outstanding_changed;
-+	bool pending_advanced;
-+	bool complete_advanced;
-+	bool issue_cookie_advanced;
-+	bool complete_cookie_advanced;
-+	bool epoch_advanced;
-+	bool issue_ticket_advanced;
-+	bool running_ticket_advanced;
-+	bool complete_ticket_advanced;
-+	bool scheduler_issue_advanced;
-+	bool scheduler_running_advanced;
-+	bool scheduler_complete_advanced;
-+	u32 submit_id;
++	u32 requested_submit_id;
++	u32 resolved_submit_id;
++	u32 ioctl_op;
++	u32 op_kind;
 +	u32 owner_state;
 +	u32 packet_count;
-+	u32 queue_read_offset;
-+	u32 queue_write_offset;
-+	u32 sync_read_offset;
-+	u32 sync_write_offset;
-+	u32 ccb_offset;
-+	u32 queue_base_offset;
-+	u32 queue_size;
-+	u32 queue_packet_size;
-+	u32 queue_packet_count;
-+	u32 queue_tail_packet_count;
-+	u32 queue_head_packet_count;
-+	u32 sync_complete_seq;
-+	u32 sync_pending_seq;
-+	u32 sync_flags;
-+	u32 owner_issue_cookie;
-+	u32 owner_complete_cookie;
++	u32 selected_read_offset;
++	u32 selected_write_offset;
++	u32 selected_ccb_offset;
++	u32 selected_outstanding_packets;
++	bool selected_wrapped;
++	u32 selected_seq;
++	u32 selected_cookie;
 +	u32 epoch;
 +	u32 global_issue_ticket;
 +	u32 global_running_ticket;
@@ -65,213 +47,200 @@ index 8c5219ff8..7057859a4 100644
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -6779,6 +6826,215 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_queue_stream_locked(
+@@ -7035,6 +7064,202 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_queue_packet_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_queue_packet_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_request_packet_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	u32 resolved_submit_id,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet)
++	struct psb_sgx_lab_submit_sgx_ta_request_packet *request_packet)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_queue_stream *queue_stream;
-+	const struct psb_sgx_lab_submit_sgx_ta_scheduler_entry *scheduler_entry;
-+	const struct psb_sgx_lab_submit_sgx_ta_queue_command *queue_command;
++	const struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request *submit_request;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !op || !queue_packet)
++	if (!dev_priv || !submit || !op || !request_packet)
 +		return -EINVAL;
 +
-+	memset(queue_packet, 0, sizeof(*queue_packet));
++	memset(request_packet, 0, sizeof(*request_packet));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_queue_stream_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_queue_packet_locked(
 +		dev_priv, submit, resolved_submit_id, op,
-+		dependency_fields_present, &queue_packet->queue_stream);
++		dependency_fields_present, &request_packet->queue_packet);
 +	if (ret)
 +		return ret;
 +
-+	queue_stream = &queue_packet->queue_stream;
-+	scheduler_entry = &queue_stream->scheduler_entry;
-+	queue_command = &scheduler_entry->queue_command;
++	queue_packet = &request_packet->queue_packet;
++	submit_request =
++		&queue_packet->queue_stream.scheduler_entry.queue_command
++			 .queue_item.submit_request;
 +
-+	queue_packet->active = queue_stream->active;
-+	queue_packet->issue_request = queue_stream->issue_request;
-+	queue_packet->transition_request = queue_stream->transition_request;
-+	queue_packet->packet_active = queue_stream->stream_active;
-+	queue_packet->refilled_from_complete =
-+		queue_command->refilled_from_complete;
-+	queue_packet->read_advanced = queue_command->read_advanced;
-+	queue_packet->write_advanced = queue_command->write_advanced;
-+	queue_packet->ccb_advanced = queue_command->ccb_advanced;
-+	queue_packet->outstanding_changed = queue_command->outstanding_changed;
-+	queue_packet->pending_advanced = queue_command->pending_advanced;
-+	queue_packet->complete_advanced = queue_command->complete_advanced;
-+	queue_packet->issue_cookie_advanced =
-+		queue_command->issue_cookie_advanced;
-+	queue_packet->complete_cookie_advanced =
-+		queue_command->complete_cookie_advanced;
-+	queue_packet->epoch_advanced = queue_command->epoch_advanced;
-+	queue_packet->issue_ticket_advanced =
-+		queue_command->issue_ticket_advanced;
-+	queue_packet->running_ticket_advanced =
-+		queue_command->running_ticket_advanced;
-+	queue_packet->complete_ticket_advanced =
-+		queue_command->complete_ticket_advanced;
-+	queue_packet->scheduler_issue_advanced =
-+		scheduler_entry->issue_advanced;
-+	queue_packet->scheduler_running_advanced =
-+		scheduler_entry->running_advanced;
-+	queue_packet->scheduler_complete_advanced =
-+		scheduler_entry->complete_advanced;
-+	queue_packet->submit_id = queue_stream->submit_id;
-+	queue_packet->owner_state = queue_stream->owner_state;
-+	queue_packet->packet_count = queue_stream->packet_count;
-+	queue_packet->queue_read_offset = queue_stream->queue_header.read_offset;
-+	queue_packet->queue_write_offset = queue_stream->queue_header.write_offset;
-+	queue_packet->sync_read_offset = queue_stream->sync.read_offset;
-+	queue_packet->sync_write_offset = queue_stream->sync.write_offset;
-+	queue_packet->ccb_offset = queue_stream->stream_ccb_offset;
-+	queue_packet->queue_base_offset =
-+		queue_stream->queue_header.queue_base_offset;
-+	queue_packet->queue_size = queue_stream->queue_header.queue_size;
-+	queue_packet->queue_packet_size =
-+		queue_stream->queue_header.queue_packet_size;
-+	queue_packet->queue_packet_count =
-+		queue_stream->queue_header.queue_packet_count;
-+	queue_packet->queue_tail_packet_count =
-+		queue_stream->queue_header.queue_tail_packet_count;
-+	queue_packet->queue_head_packet_count =
-+		queue_stream->queue_header.queue_head_packet_count;
-+	queue_packet->sync_complete_seq = queue_stream->sync.complete_seq;
-+	queue_packet->sync_pending_seq = queue_stream->sync.pending_seq;
-+	queue_packet->sync_flags = queue_stream->sync.flags;
-+	queue_packet->owner_issue_cookie =
-+		queue_stream->owner.owner_issue_cookie;
-+	queue_packet->owner_complete_cookie =
-+		queue_stream->owner.owner_complete_cookie;
-+	queue_packet->epoch = queue_stream->sync.epoch;
-+	queue_packet->global_issue_ticket =
-+		scheduler_entry->next_state.issue_ticket;
-+	queue_packet->global_running_ticket =
-+		scheduler_entry->next_state.running_ticket;
-+	queue_packet->global_complete_ticket =
-+		scheduler_entry->next_state.complete_ticket;
++	request_packet->active = queue_packet->active;
++	request_packet->dependency_fields_present =
++		submit_request->dependency_fields_present;
++	request_packet->use_focus_request =
++		submit_request->use_focus_request;
++	request_packet->focus_resolved =
++		submit_request->focus_resolved;
++	request_packet->issue_request = queue_packet->issue_request;
++	request_packet->transition_request =
++		queue_packet->transition_request;
++	request_packet->packet_active = queue_packet->packet_active;
++	request_packet->refilled_from_complete =
++		queue_packet->refilled_from_complete;
++	request_packet->requested_submit_id = submit_request->op.submit_id;
++	request_packet->resolved_submit_id = submit_request->resolved_submit_id;
++	request_packet->ioctl_op = submit_request->op.op;
++	request_packet->op_kind = submit_request->op_kind;
++	request_packet->owner_state = submit_request->op.owner_state;
++	request_packet->packet_count = submit_request->op.packet_count;
++	request_packet->selected_write_offset =
++		queue_packet->queue_write_offset;
++	request_packet->selected_ccb_offset = queue_packet->ccb_offset;
++	request_packet->selected_outstanding_packets =
++		queue_packet->queue_packet_count;
++	request_packet->selected_wrapped =
++		!!queue_packet->queue_head_packet_count;
++	request_packet->epoch = queue_packet->epoch;
++	request_packet->global_issue_ticket =
++		queue_packet->global_issue_ticket;
++	request_packet->global_running_ticket =
++		queue_packet->global_running_ticket;
++	request_packet->global_complete_ticket =
++		queue_packet->global_complete_ticket;
++
++	if (request_packet->issue_request) {
++		request_packet->selected_read_offset =
++			queue_packet->sync_read_offset;
++		request_packet->selected_seq =
++			queue_packet->sync_pending_seq;
++		request_packet->selected_cookie =
++			queue_packet->owner_issue_cookie;
++		return 0;
++	}
++
++	if (!request_packet->transition_request)
++		return -EINVAL;
++
++	request_packet->selected_read_offset =
++		queue_packet->queue_read_offset;
++	request_packet->selected_seq = queue_packet->sync_complete_seq;
++	request_packet->selected_cookie =
++		queue_packet->owner_complete_cookie;
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_apply_submit_sgx_ta_queue_packet_locked(
++static int poulsbo_sgx_apply_submit_sgx_ta_request_packet_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet)
++	const struct psb_sgx_lab_submit_sgx_ta_request_packet *request_packet)
 +{
-+	if (!dev_priv || !submit || !queue_packet)
++	if (!dev_priv || !submit || !request_packet)
 +		return -EINVAL;
-+	if (queue_packet->active && queue_packet->submit_id != submit->submit_id)
++	if (request_packet->active &&
++	    request_packet->resolved_submit_id != submit->submit_id) {
 +		return -EINVAL;
++	}
 +
-+	return poulsbo_sgx_apply_submit_sgx_ta_queue_stream_locked(
-+		dev_priv, submit, &queue_packet->queue_stream);
++	return poulsbo_sgx_apply_submit_sgx_ta_queue_packet_locked(
++		dev_priv, submit, &request_packet->queue_packet);
 +}
 +
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_queue_packet_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_request_packet_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet)
++	const struct psb_sgx_lab_submit_sgx_ta_request_packet *request_packet)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_queue_stream *queue_stream;
-+	const struct psb_sgx_lab_submit_sgx_ta_scheduler_entry *scheduler_entry;
-+	const struct psb_sgx_lab_submit_sgx_ta_queue_command *queue_command;
++	const struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request *submit_request;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !queue_packet)
++	if (!dev_priv || !submit || !request_packet)
 +		return -EINVAL;
 +
-+	queue_stream = &queue_packet->queue_stream;
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_queue_stream_locked(
-+		dev_priv, submit, queue_stream);
++	queue_packet = &request_packet->queue_packet;
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_queue_packet_locked(
++		dev_priv, submit, queue_packet);
 +	if (ret)
 +		return ret;
 +
-+	scheduler_entry = &queue_stream->scheduler_entry;
-+	queue_command = &scheduler_entry->queue_command;
++	submit_request =
++		&queue_packet->queue_stream.scheduler_entry.queue_command
++			 .queue_item.submit_request;
 +
-+	if (!queue_packet->active ||
-+	    queue_packet->active != queue_stream->active ||
-+	    queue_packet->issue_request != queue_stream->issue_request ||
-+	    queue_packet->transition_request !=
-+		    queue_stream->transition_request ||
-+	    queue_packet->issue_request ==
++	if (!request_packet->active ||
++	    request_packet->active != queue_packet->active ||
++	    request_packet->dependency_fields_present !=
++		    submit_request->dependency_fields_present ||
++	    request_packet->use_focus_request !=
++		    submit_request->use_focus_request ||
++	    request_packet->focus_resolved !=
++		    submit_request->focus_resolved ||
++	    request_packet->issue_request != queue_packet->issue_request ||
++	    request_packet->transition_request !=
 +		    queue_packet->transition_request ||
-+	    !queue_packet->packet_active ||
-+	    queue_packet->packet_active != queue_stream->stream_active ||
-+	    queue_packet->refilled_from_complete !=
-+		    queue_command->refilled_from_complete ||
-+	    queue_packet->read_advanced != queue_command->read_advanced ||
-+	    queue_packet->write_advanced != queue_command->write_advanced ||
-+	    queue_packet->ccb_advanced != queue_command->ccb_advanced ||
-+	    queue_packet->outstanding_changed !=
-+		    queue_command->outstanding_changed ||
-+	    queue_packet->pending_advanced !=
-+		    queue_command->pending_advanced ||
-+	    queue_packet->complete_advanced !=
-+		    queue_command->complete_advanced ||
-+	    queue_packet->issue_cookie_advanced !=
-+		    queue_command->issue_cookie_advanced ||
-+	    queue_packet->complete_cookie_advanced !=
-+		    queue_command->complete_cookie_advanced ||
-+	    queue_packet->epoch_advanced != queue_command->epoch_advanced ||
-+	    queue_packet->issue_ticket_advanced !=
-+		    queue_command->issue_ticket_advanced ||
-+	    queue_packet->running_ticket_advanced !=
-+		    queue_command->running_ticket_advanced ||
-+	    queue_packet->complete_ticket_advanced !=
-+		    queue_command->complete_ticket_advanced ||
-+	    queue_packet->scheduler_issue_advanced !=
-+		    scheduler_entry->issue_advanced ||
-+	    queue_packet->scheduler_running_advanced !=
-+		    scheduler_entry->running_advanced ||
-+	    queue_packet->scheduler_complete_advanced !=
-+		    scheduler_entry->complete_advanced ||
-+	    queue_packet->submit_id != queue_stream->submit_id ||
-+	    queue_packet->owner_state != queue_stream->owner_state ||
-+	    queue_packet->packet_count != queue_stream->packet_count ||
-+	    queue_packet->queue_read_offset !=
-+		    queue_stream->queue_header.read_offset ||
-+	    queue_packet->queue_write_offset !=
-+		    queue_stream->queue_header.write_offset ||
-+	    queue_packet->sync_read_offset != queue_stream->sync.read_offset ||
-+	    queue_packet->sync_write_offset != queue_stream->sync.write_offset ||
-+	    queue_packet->ccb_offset != queue_stream->stream_ccb_offset ||
-+	    queue_packet->queue_base_offset !=
-+		    queue_stream->queue_header.queue_base_offset ||
-+	    queue_packet->queue_size != queue_stream->queue_header.queue_size ||
-+	    queue_packet->queue_packet_size !=
-+		    queue_stream->queue_header.queue_packet_size ||
-+	    queue_packet->queue_packet_count !=
-+		    queue_stream->queue_header.queue_packet_count ||
-+	    queue_packet->queue_tail_packet_count !=
-+		    queue_stream->queue_header.queue_tail_packet_count ||
-+	    queue_packet->queue_head_packet_count !=
-+		    queue_stream->queue_header.queue_head_packet_count ||
-+	    queue_packet->sync_complete_seq !=
-+		    queue_stream->sync.complete_seq ||
-+	    queue_packet->sync_pending_seq !=
-+		    queue_stream->sync.pending_seq ||
-+	    queue_packet->sync_flags != queue_stream->sync.flags ||
-+	    queue_packet->owner_issue_cookie !=
-+		    queue_stream->owner.owner_issue_cookie ||
-+	    queue_packet->owner_complete_cookie !=
-+		    queue_stream->owner.owner_complete_cookie ||
-+	    queue_packet->epoch != queue_stream->sync.epoch ||
-+	    queue_packet->global_issue_ticket !=
-+		    scheduler_entry->next_state.issue_ticket ||
-+	    queue_packet->global_running_ticket !=
-+		    scheduler_entry->next_state.running_ticket ||
-+	    queue_packet->global_complete_ticket !=
-+		    scheduler_entry->next_state.complete_ticket) {
++	    request_packet->issue_request ==
++		    request_packet->transition_request ||
++	    !request_packet->packet_active ||
++	    request_packet->packet_active != queue_packet->packet_active ||
++	    request_packet->refilled_from_complete !=
++		    queue_packet->refilled_from_complete ||
++	    request_packet->requested_submit_id !=
++		    submit_request->op.submit_id ||
++	    request_packet->resolved_submit_id != submit->submit_id ||
++	    request_packet->resolved_submit_id !=
++		    submit_request->resolved_submit_id ||
++	    request_packet->ioctl_op != submit_request->op.op ||
++	    request_packet->ioctl_op !=
++		    submit_request->ioctl_request.ioctl_op ||
++	    request_packet->op_kind != submit_request->op_kind ||
++	    request_packet->op_kind !=
++		    submit_request->ioctl_request.op_kind ||
++	    request_packet->owner_state != submit_request->op.owner_state ||
++	    request_packet->owner_state != queue_packet->owner_state ||
++	    request_packet->packet_count != submit_request->op.packet_count ||
++	    request_packet->packet_count != queue_packet->packet_count ||
++	    request_packet->selected_write_offset !=
++		    queue_packet->queue_write_offset ||
++	    request_packet->selected_ccb_offset !=
++		    queue_packet->ccb_offset ||
++	    request_packet->selected_outstanding_packets !=
++		    queue_packet->queue_packet_count ||
++	    request_packet->selected_wrapped !=
++		    !!queue_packet->queue_head_packet_count ||
++	    request_packet->epoch != queue_packet->epoch ||
++	    request_packet->global_issue_ticket !=
++		    queue_packet->global_issue_ticket ||
++	    request_packet->global_running_ticket !=
++		    queue_packet->global_running_ticket ||
++	    request_packet->global_complete_ticket !=
++		    queue_packet->global_complete_ticket) {
++		return -EINVAL;
++	}
++
++	if (request_packet->issue_request) {
++		if (request_packet->selected_read_offset !=
++			    queue_packet->sync_read_offset ||
++		    request_packet->selected_seq !=
++			    queue_packet->sync_pending_seq ||
++		    request_packet->selected_cookie !=
++			    queue_packet->owner_issue_cookie) {
++			return -EINVAL;
++		}
++		return 0;
++	}
++
++	if (!request_packet->transition_request ||
++	    request_packet->selected_read_offset !=
++		    queue_packet->queue_read_offset ||
++	    request_packet->selected_seq !=
++		    queue_packet->sync_complete_seq ||
++	    request_packet->selected_cookie !=
++		    queue_packet->owner_complete_cookie) {
 +		return -EINVAL;
 +	}
 +
@@ -281,172 +250,171 @@ index 8c5219ff8..7057859a4 100644
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -13377,28 +13633,28 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -13633,28 +13858,28 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		dev_priv, submit, control_obj, status_obj);
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_queue_stream(
-+static int poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
+-static int poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
++static int poulsbo_sgx_execute_submit_sgx_ta_request_packet(
  	struct drm_device *dev,
  	u32 resolved_submit_id,
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present,
--	struct psb_sgx_lab_submit_sgx_ta_queue_stream **queue_stream_out)
-+	struct psb_sgx_lab_submit_sgx_ta_queue_packet **queue_packet_out)
+-	struct psb_sgx_lab_submit_sgx_ta_queue_packet **queue_packet_out)
++	struct psb_sgx_lab_submit_sgx_ta_request_packet **request_packet_out)
  {
  	struct drm_psb_private *dev_priv;
  	struct psb_sgx_lab_submit *submit;
--	struct psb_sgx_lab_submit_sgx_ta_queue_stream *queue_stream;
-+	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet;
+-	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet;
++	struct psb_sgx_lab_submit_sgx_ta_request_packet *request_packet;
  	int ret;
  
--	if (!dev || !op || !queue_stream_out)
-+	if (!dev || !op || !queue_packet_out)
+-	if (!dev || !op || !queue_packet_out)
++	if (!dev || !op || !request_packet_out)
  		return -EINVAL;
  
  	dev_priv = dev->dev_private;
  	if (!dev_priv)
  		return -ENODEV;
  
--	*queue_stream_out = NULL;
--	queue_stream = kmalloc(sizeof(*queue_stream), GFP_KERNEL);
--	if (!queue_stream)
-+	*queue_packet_out = NULL;
-+	queue_packet = kmalloc(sizeof(*queue_packet), GFP_KERNEL);
-+	if (!queue_packet)
+-	*queue_packet_out = NULL;
+-	queue_packet = kmalloc(sizeof(*queue_packet), GFP_KERNEL);
+-	if (!queue_packet)
++	*request_packet_out = NULL;
++	request_packet = kmalloc(sizeof(*request_packet), GFP_KERNEL);
++	if (!request_packet)
  		return -ENOMEM;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -13411,19 +13667,19 @@ static int poulsbo_sgx_execute_submit_sgx_ta_queue_stream(
+@@ -13667,19 +13892,19 @@ static int poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_queue_stream_locked(
-+	ret = poulsbo_sgx_build_submit_sgx_ta_queue_packet_locked(
+-	ret = poulsbo_sgx_build_submit_sgx_ta_queue_packet_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_request_packet_locked(
  		dev_priv, submit, resolved_submit_id, op,
--		dependency_fields_present, queue_stream);
-+		dependency_fields_present, queue_packet);
+-		dependency_fields_present, queue_packet);
++		dependency_fields_present, request_packet);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_validate_built_submit_sgx_ta_queue_stream_locked(
--		dev_priv, submit, queue_stream);
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_queue_packet_locked(
-+		dev_priv, submit, queue_packet);
+-	ret = poulsbo_sgx_validate_built_submit_sgx_ta_queue_packet_locked(
+-		dev_priv, submit, queue_packet);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_packet_locked(
++		dev_priv, submit, request_packet);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_apply_submit_sgx_ta_queue_stream_locked(
--		dev_priv, submit, queue_stream);
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_queue_packet_locked(
-+		dev_priv, submit, queue_packet);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_queue_packet_locked(
+-		dev_priv, submit, queue_packet);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_request_packet_locked(
++		dev_priv, submit, request_packet);
  
  out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
-@@ -13431,11 +13687,11 @@ out_unlock:
+@@ -13687,11 +13912,11 @@ out_unlock:
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
  
  	if (ret) {
--		kfree(queue_stream);
-+		kfree(queue_packet);
+-		kfree(queue_packet);
++		kfree(request_packet);
  		return ret;
  	}
  
--	*queue_stream_out = queue_stream;
-+	*queue_packet_out = queue_packet;
+-	*queue_packet_out = queue_packet;
++	*request_packet_out = request_packet;
  	return 0;
  }
  
-@@ -15922,11 +16178,11 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -16178,11 +16403,11 @@ static int poulsbo_sgx_transition_submit_op_request(
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present)
  {
--	struct psb_sgx_lab_submit_sgx_ta_queue_stream *queue_stream = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_request_packet *request_packet = NULL;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_queue_stream(
--		dev, submit_id, op, dependency_fields_present, &queue_stream);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
-+		dev, submit_id, op, dependency_fields_present, &queue_packet);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
+-		dev, submit_id, op, dependency_fields_present, &queue_packet);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_request_packet(
++		dev, submit_id, op, dependency_fields_present, &request_packet);
  	if (ret)
  		goto out;
  
-@@ -15934,19 +16190,19 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -16190,19 +16415,19 @@ static int poulsbo_sgx_transition_submit_op_request(
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u\n",
  		 submit_id, poulsbo_sgx_lab_owner_state_name(op->owner_state),
  		 op->packet_count,
--		 queue_stream->queue_header.read_offset,
--		 queue_stream->queue_header.write_offset,
--		 queue_stream->stream_ccb_offset,
--		 queue_stream->queue_header.queue_packet_count,
--		 !!queue_stream->queue_header.queue_head_packet_count,
--		 queue_stream->sync.complete_seq,
--		 queue_stream->owner.owner_complete_cookie,
--		 queue_stream->sync.epoch,
--		 queue_stream->scheduler_entry.next_state.running_ticket,
--		 queue_stream->scheduler_entry.next_state.complete_ticket);
-+		 queue_packet->queue_read_offset,
-+		 queue_packet->queue_write_offset,
-+		 queue_packet->ccb_offset,
-+		 queue_packet->queue_packet_count,
-+		 !!queue_packet->queue_head_packet_count,
-+		 queue_packet->sync_complete_seq,
-+		 queue_packet->owner_complete_cookie,
-+		 queue_packet->epoch,
-+		 queue_packet->global_running_ticket,
-+		 queue_packet->global_complete_ticket);
+-		 queue_packet->queue_read_offset,
+-		 queue_packet->queue_write_offset,
+-		 queue_packet->ccb_offset,
+-		 queue_packet->queue_packet_count,
+-		 !!queue_packet->queue_head_packet_count,
+-		 queue_packet->sync_complete_seq,
+-		 queue_packet->owner_complete_cookie,
+-		 queue_packet->epoch,
+-		 queue_packet->global_running_ticket,
+-		 queue_packet->global_complete_ticket);
++		 request_packet->selected_read_offset,
++		 request_packet->selected_write_offset,
++		 request_packet->selected_ccb_offset,
++		 request_packet->selected_outstanding_packets,
++		 request_packet->selected_wrapped,
++		 request_packet->selected_seq,
++		 request_packet->selected_cookie,
++		 request_packet->epoch,
++		 request_packet->global_running_ticket,
++		 request_packet->global_complete_ticket);
  
  out:
--	kfree(queue_stream);
-+	kfree(queue_packet);
+-	kfree(queue_packet);
++	kfree(request_packet);
  	return ret;
  }
  
-@@ -15956,11 +16212,11 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -16212,11 +16437,11 @@ static int poulsbo_sgx_issue_submit_op_request(
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present)
  {
--	struct psb_sgx_lab_submit_sgx_ta_queue_stream *queue_stream = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_queue_packet *queue_packet = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_request_packet *request_packet = NULL;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_queue_stream(
--		dev, submit_id, op, dependency_fields_present, &queue_stream);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
-+		dev, submit_id, op, dependency_fields_present, &queue_packet);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_queue_packet(
+-		dev, submit_id, op, dependency_fields_present, &queue_packet);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_request_packet(
++		dev, submit_id, op, dependency_fields_present, &request_packet);
  	if (ret)
  		goto out;
  
-@@ -15968,20 +16224,19 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -16224,19 +16449,19 @@ static int poulsbo_sgx_issue_submit_op_request(
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u\n",
  		 submit_id, poulsbo_sgx_lab_owner_state_name(op->owner_state),
  		 op->packet_count,
--		 queue_stream->sync.read_offset,
--		 queue_stream->queue_header.write_offset,
--		 queue_stream->queue_header.queue_packet_count,
--		 !!queue_stream->queue_header.queue_head_packet_count,
--		 queue_stream->sync.pending_seq,
--		 queue_stream->owner.owner_issue_cookie,
--		 queue_stream->sync.epoch,
--		 queue_stream->scheduler_entry.queue_command
--			 .refilled_from_complete,
--		 queue_stream->scheduler_entry.next_state.issue_ticket,
--		 queue_stream->scheduler_entry.next_state.running_ticket);
-+		 queue_packet->sync_read_offset,
-+		 queue_packet->queue_write_offset,
-+		 queue_packet->queue_packet_count,
-+		 !!queue_packet->queue_head_packet_count,
-+		 queue_packet->sync_pending_seq,
-+		 queue_packet->owner_issue_cookie,
-+		 queue_packet->epoch,
-+		 queue_packet->refilled_from_complete,
-+		 queue_packet->global_issue_ticket,
-+		 queue_packet->global_running_ticket);
+-		 queue_packet->sync_read_offset,
+-		 queue_packet->queue_write_offset,
+-		 queue_packet->queue_packet_count,
+-		 !!queue_packet->queue_head_packet_count,
+-		 queue_packet->sync_pending_seq,
+-		 queue_packet->owner_issue_cookie,
+-		 queue_packet->epoch,
+-		 queue_packet->refilled_from_complete,
+-		 queue_packet->global_issue_ticket,
+-		 queue_packet->global_running_ticket);
++		 request_packet->selected_read_offset,
++		 request_packet->selected_write_offset,
++		 request_packet->selected_outstanding_packets,
++		 request_packet->selected_wrapped,
++		 request_packet->selected_seq,
++		 request_packet->selected_cookie,
++		 request_packet->epoch,
++		 request_packet->refilled_from_complete,
++		 request_packet->global_issue_ticket,
++		 request_packet->global_running_ticket);
  
  out:
--	kfree(queue_stream);
-+	kfree(queue_packet);
+-	kfree(queue_packet);
++	kfree(request_packet);
  	return ret;
  }
  
