@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion C35518A5768B47A82D11718`
-  - `override_module_size=484732`
+  - `srcversion ECD37083ADA9AA31E6D4661`
+  - `override_module_size=484868`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260514-135443-sgx-ta-request-work-entry-deploy`
+  - `logs/vaio-deploy/20260514-142930-sgx-ta-request-work-result-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260514-135631-sgx-plan-session`
-- the newest internal `ta-request-work-entry` batch is now
+  - `logs/vaio-plan-session/20260514-143114-sgx-plan-session`
+- the newest internal `ta-request-work-result` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260514-135631-sgx-plan-session`
+    - `logs/vaio-plan-session/20260514-143114-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260514-135734-sgx-submit-ta-request-work-entry-live/summary.log`
+    - `logs/vaio-ioctl/20260514-143218-sgx-submit-ta-request-work-result-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260514-135734-sgx-multi-submit-ta-request-work-entry-live/summary.log`
+    - `logs/vaio-ioctl/20260514-143218-sgx-multi-submit-ta-request-work-result-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-135631`
-  - `source_row_module_srcversion=C35518A5768B47A82D11718`
+  - `source_timestamp=20260514-143114`
+  - `source_row_module_srcversion=ECD37083ADA9AA31E6D4661`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
