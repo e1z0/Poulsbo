@@ -1,23 +1,27 @@
-From 8b22207222b4eff99ca201956bc51f0ad2533c2f Mon Sep 17 00:00:00 2001
+From 533acaffbed794b888d092f71cd564588bdd8aa4 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Thu, 14 May 2026 16:30:16 +0300
-Subject: [PATCH] drm/gma500: add SGX TA request work task
+Date: Thu, 14 May 2026 16:50:12 +0300
+Subject: [PATCH] drm/gma500: add SGX TA request work run
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 293 ++++++++++++++++++++++++-------
- 1 file changed, 228 insertions(+), 65 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 308 +++++++++++++++++++++++++------
+ 1 file changed, 247 insertions(+), 61 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index d98a60511..27cf87aa3 100644
+index 27cf87aa3..5cd748b51 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2183,6 +2183,37 @@ struct psb_sgx_lab_submit_sgx_ta_request_work_action {
- 	u32 op_kind;
+@@ -2214,6 +2214,44 @@ struct psb_sgx_lab_submit_sgx_ta_request_work_task {
+ 	struct psb_sgx_lab_submit_sgx_scheduler_state next_state;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_request_work_task {
-+	struct psb_sgx_lab_submit_sgx_ta_request_work_action work_action;
++struct psb_sgx_lab_submit_sgx_ta_request_work_run {
++	struct psb_sgx_lab_submit_sgx_ta_request_work_task work_task;
++	struct drm_psb_sgx_lab_submit_op op;
 +	bool active;
++	bool dependency_fields_present;
++	bool use_focus_request;
++	bool focus_resolved;
 +	bool issue_request;
 +	bool transition_request;
 +	bool refresh_views;
@@ -28,7 +32,10 @@ index d98a60511..27cf87aa3 100644
 +	bool active_running_changed;
 +	bool selected_wrapped;
 +	u32 submit_id;
++	u32 requested_submit_id;
 +	u32 resolved_submit_id;
++	u32 ioctl_op;
++	u32 op_kind;
 +	u32 owner_state;
 +	u32 packet_count;
 +	u32 selected_read_offset;
@@ -49,141 +56,153 @@ index d98a60511..27cf87aa3 100644
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -9073,6 +9104,142 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_request_work_action_locked(
+@@ -9240,6 +9278,154 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_request_work_task_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_request_work_task_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_request_work_run_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
 +	u32 resolved_submit_id,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task)
++	struct psb_sgx_lab_submit_sgx_ta_request_work_run *work_run)
 +{
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task;
 +	const struct psb_sgx_lab_submit_sgx_ta_request_work_action *work_action;
-+	const struct psb_sgx_lab_submit_sgx_ta_request_work_state *work_state;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !op || !work_task)
++	if (!dev_priv || !submit || !op || !work_run)
 +		return -EINVAL;
 +
-+	memset(work_task, 0, sizeof(*work_task));
++	memset(work_run, 0, sizeof(*work_run));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_request_work_action_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_request_work_task_locked(
 +		dev_priv, submit, resolved_submit_id, op,
-+		dependency_fields_present, &work_task->work_action);
++		dependency_fields_present, &work_run->work_task);
 +	if (ret)
 +		return ret;
 +
++	work_task = &work_run->work_task;
 +	work_action = &work_task->work_action;
-+	work_state = &work_action->work_state;
-+	work_task->active = work_state->active;
-+	work_task->issue_request = work_state->issue_request;
-+	work_task->transition_request = work_state->transition_request;
-+	work_task->refresh_views = work_state->refresh_views;
-+	work_task->refilled_from_complete = work_state->refilled_from_complete;
-+	work_task->issue_advanced = work_state->issue_advanced;
-+	work_task->running_advanced = work_state->running_advanced;
-+	work_task->complete_advanced = work_state->complete_advanced;
-+	work_task->active_running_changed = work_state->active_running_changed;
-+	work_task->selected_wrapped = work_state->selected_wrapped;
-+	work_task->submit_id = work_state->submit_id;
-+	work_task->resolved_submit_id = work_state->resolved_submit_id;
-+	work_task->owner_state = work_state->owner_state;
-+	work_task->packet_count = work_state->packet_count;
-+	work_task->selected_read_offset = work_state->selected_read_offset;
-+	work_task->selected_write_offset = work_state->selected_write_offset;
-+	work_task->selected_ccb_offset = work_state->selected_ccb_offset;
-+	work_task->selected_outstanding_packets =
-+		work_state->selected_outstanding_packets;
-+	work_task->selected_seq = work_state->selected_seq;
-+	work_task->selected_cookie = work_state->selected_cookie;
-+	work_task->epoch = work_state->epoch;
-+	work_task->global_issue_ticket = work_state->global_issue_ticket;
-+	work_task->global_running_ticket = work_state->global_running_ticket;
-+	work_task->global_complete_ticket = work_state->global_complete_ticket;
-+	work_task->next_issue_count = work_state->next_issue_count;
-+	work_task->next_transition_count = work_state->next_transition_count;
-+	work_task->next_state = work_state->next_state;
++	work_run->op = work_action->op;
++	work_run->active = work_task->active;
++	work_run->dependency_fields_present =
++		work_action->dependency_fields_present;
++	work_run->use_focus_request = work_action->use_focus_request;
++	work_run->focus_resolved = work_action->focus_resolved;
++	work_run->issue_request = work_task->issue_request;
++	work_run->transition_request = work_task->transition_request;
++	work_run->refresh_views = work_task->refresh_views;
++	work_run->refilled_from_complete = work_task->refilled_from_complete;
++	work_run->issue_advanced = work_task->issue_advanced;
++	work_run->running_advanced = work_task->running_advanced;
++	work_run->complete_advanced = work_task->complete_advanced;
++	work_run->active_running_changed = work_task->active_running_changed;
++	work_run->selected_wrapped = work_task->selected_wrapped;
++	work_run->submit_id = work_task->submit_id;
++	work_run->requested_submit_id = work_action->requested_submit_id;
++	work_run->resolved_submit_id = work_task->resolved_submit_id;
++	work_run->ioctl_op = work_action->ioctl_op;
++	work_run->op_kind = work_action->op_kind;
++	work_run->owner_state = work_task->owner_state;
++	work_run->packet_count = work_task->packet_count;
++	work_run->selected_read_offset = work_task->selected_read_offset;
++	work_run->selected_write_offset = work_task->selected_write_offset;
++	work_run->selected_ccb_offset = work_task->selected_ccb_offset;
++	work_run->selected_outstanding_packets =
++		work_task->selected_outstanding_packets;
++	work_run->selected_seq = work_task->selected_seq;
++	work_run->selected_cookie = work_task->selected_cookie;
++	work_run->epoch = work_task->epoch;
++	work_run->global_issue_ticket = work_task->global_issue_ticket;
++	work_run->global_running_ticket = work_task->global_running_ticket;
++	work_run->global_complete_ticket = work_task->global_complete_ticket;
++	work_run->next_issue_count = work_task->next_issue_count;
++	work_run->next_transition_count = work_task->next_transition_count;
++	work_run->next_state = work_task->next_state;
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_apply_submit_sgx_ta_request_work_task_locked(
++static int poulsbo_sgx_apply_submit_sgx_ta_request_work_run_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task)
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_run *work_run)
 +{
-+	if (!dev_priv || !submit || !work_task)
++	if (!dev_priv || !submit || !work_run)
 +		return -EINVAL;
-+	if (work_task->active &&
-+	    work_task->resolved_submit_id != submit->submit_id)
++	if (work_run->active &&
++	    work_run->resolved_submit_id != submit->submit_id)
 +		return -EINVAL;
 +
-+	return poulsbo_sgx_apply_submit_sgx_ta_request_work_action_locked(
-+		dev_priv, submit, &work_task->work_action);
++	return poulsbo_sgx_apply_submit_sgx_ta_request_work_task_locked(
++		dev_priv, submit, &work_run->work_task);
 +}
 +
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_request_work_task_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_request_work_run_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task)
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_run *work_run)
 +{
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task;
 +	const struct psb_sgx_lab_submit_sgx_ta_request_work_action *work_action;
-+	const struct psb_sgx_lab_submit_sgx_ta_request_work_state *work_state;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !work_task)
++	if (!dev_priv || !submit || !work_run)
 +		return -EINVAL;
 +
++	work_task = &work_run->work_task;
 +	work_action = &work_task->work_action;
-+	work_state = &work_action->work_state;
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_work_action_locked(
-+		dev_priv, submit, work_action);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_work_task_locked(
++		dev_priv, submit, work_task);
 +	if (ret)
 +		return ret;
 +
-+	if (work_task->active != work_state->active ||
-+	    work_task->issue_request != work_state->issue_request ||
-+	    work_task->transition_request != work_state->transition_request ||
-+	    work_task->refresh_views != work_state->refresh_views ||
-+	    work_task->refilled_from_complete !=
-+		    work_state->refilled_from_complete ||
-+	    work_task->issue_advanced != work_state->issue_advanced ||
-+	    work_task->running_advanced != work_state->running_advanced ||
-+	    work_task->complete_advanced != work_state->complete_advanced ||
-+	    work_task->active_running_changed !=
-+		    work_state->active_running_changed ||
-+	    work_task->selected_wrapped != work_state->selected_wrapped ||
-+	    work_task->submit_id != work_state->submit_id ||
-+	    work_task->resolved_submit_id != work_state->resolved_submit_id ||
-+	    work_task->owner_state != work_state->owner_state ||
-+	    work_task->packet_count != work_state->packet_count ||
-+	    work_task->selected_read_offset !=
-+		    work_state->selected_read_offset ||
-+	    work_task->selected_write_offset !=
-+		    work_state->selected_write_offset ||
-+	    work_task->selected_ccb_offset !=
-+		    work_state->selected_ccb_offset ||
-+	    work_task->selected_outstanding_packets !=
-+		    work_state->selected_outstanding_packets ||
-+	    work_task->selected_seq != work_state->selected_seq ||
-+	    work_task->selected_cookie != work_state->selected_cookie ||
-+	    work_task->epoch != work_state->epoch ||
-+	    work_task->global_issue_ticket !=
-+		    work_state->global_issue_ticket ||
-+	    work_task->global_running_ticket !=
-+		    work_state->global_running_ticket ||
-+	    work_task->global_complete_ticket !=
-+		    work_state->global_complete_ticket ||
-+	    work_task->next_issue_count != work_state->next_issue_count ||
-+	    work_task->next_transition_count !=
-+		    work_state->next_transition_count)
++	if (memcmp(&work_run->op, &work_action->op, sizeof(work_run->op)) ||
++	    work_run->active != work_task->active ||
++	    work_run->dependency_fields_present !=
++		    work_action->dependency_fields_present ||
++	    work_run->use_focus_request != work_action->use_focus_request ||
++	    work_run->focus_resolved != work_action->focus_resolved ||
++	    work_run->issue_request != work_task->issue_request ||
++	    work_run->transition_request != work_task->transition_request ||
++	    work_run->refresh_views != work_task->refresh_views ||
++	    work_run->refilled_from_complete !=
++		    work_task->refilled_from_complete ||
++	    work_run->issue_advanced != work_task->issue_advanced ||
++	    work_run->running_advanced != work_task->running_advanced ||
++	    work_run->complete_advanced != work_task->complete_advanced ||
++	    work_run->active_running_changed !=
++		    work_task->active_running_changed ||
++	    work_run->selected_wrapped != work_task->selected_wrapped ||
++	    work_run->submit_id != work_task->submit_id ||
++	    work_run->requested_submit_id != work_action->requested_submit_id ||
++	    work_run->resolved_submit_id != work_task->resolved_submit_id ||
++	    work_run->ioctl_op != work_action->ioctl_op ||
++	    work_run->op_kind != work_action->op_kind ||
++	    work_run->owner_state != work_task->owner_state ||
++	    work_run->packet_count != work_task->packet_count ||
++	    work_run->selected_read_offset != work_task->selected_read_offset ||
++	    work_run->selected_write_offset != work_task->selected_write_offset ||
++	    work_run->selected_ccb_offset != work_task->selected_ccb_offset ||
++	    work_run->selected_outstanding_packets !=
++		    work_task->selected_outstanding_packets ||
++	    work_run->selected_seq != work_task->selected_seq ||
++	    work_run->selected_cookie != work_task->selected_cookie ||
++	    work_run->epoch != work_task->epoch ||
++	    work_run->global_issue_ticket != work_task->global_issue_ticket ||
++	    work_run->global_running_ticket !=
++		    work_task->global_running_ticket ||
++	    work_run->global_complete_ticket !=
++		    work_task->global_complete_ticket ||
++	    work_run->next_issue_count != work_task->next_issue_count ||
++	    work_run->next_transition_count !=
++		    work_task->next_transition_count)
 +		return -EINVAL;
 +
-+	if (memcmp(&work_task->next_state, &work_state->next_state,
-+		   sizeof(work_task->next_state)))
++	if (memcmp(&work_run->next_state, &work_task->next_state,
++		   sizeof(work_run->next_state)))
 +		return -EINVAL;
 +
 +	return 0;
@@ -192,207 +211,203 @@ index d98a60511..27cf87aa3 100644
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -15671,28 +15838,28 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -15838,28 +16024,28 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		dev_priv, submit, control_obj, status_obj);
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_request_work_action(
-+static int poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
+-static int poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
++static int poulsbo_sgx_execute_submit_sgx_ta_request_work_run(
  	struct drm_device *dev,
  	u32 resolved_submit_id,
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present,
--	struct psb_sgx_lab_submit_sgx_ta_request_work_action **work_action_out)
-+	struct psb_sgx_lab_submit_sgx_ta_request_work_task **work_task_out)
+-	struct psb_sgx_lab_submit_sgx_ta_request_work_task **work_task_out)
++	struct psb_sgx_lab_submit_sgx_ta_request_work_run **work_run_out)
  {
  	struct drm_psb_private *dev_priv;
  	struct psb_sgx_lab_submit *submit;
--	struct psb_sgx_lab_submit_sgx_ta_request_work_action *work_action;
-+	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task;
+-	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task;
++	struct psb_sgx_lab_submit_sgx_ta_request_work_run *work_run;
  	int ret;
  
--	if (!dev || !op || !work_action_out)
-+	if (!dev || !op || !work_task_out)
+-	if (!dev || !op || !work_task_out)
++	if (!dev || !op || !work_run_out)
  		return -EINVAL;
  
  	dev_priv = dev->dev_private;
  	if (!dev_priv)
  		return -ENODEV;
  
--	*work_action_out = NULL;
--	work_action = kmalloc(sizeof(*work_action), GFP_KERNEL);
--	if (!work_action)
-+	*work_task_out = NULL;
-+	work_task = kmalloc(sizeof(*work_task), GFP_KERNEL);
-+	if (!work_task)
+-	*work_task_out = NULL;
+-	work_task = kmalloc(sizeof(*work_task), GFP_KERNEL);
+-	if (!work_task)
++	*work_run_out = NULL;
++	work_run = kmalloc(sizeof(*work_run), GFP_KERNEL);
++	if (!work_run)
  		return -ENOMEM;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
-@@ -15705,19 +15872,19 @@ static int poulsbo_sgx_execute_submit_sgx_ta_request_work_action(
+@@ -15872,19 +16058,19 @@ static int poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_request_work_action_locked(
-+	ret = poulsbo_sgx_build_submit_sgx_ta_request_work_task_locked(
+-	ret = poulsbo_sgx_build_submit_sgx_ta_request_work_task_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_request_work_run_locked(
  		dev_priv, submit, resolved_submit_id, op,
--		dependency_fields_present, work_action);
-+		dependency_fields_present, work_task);
+-		dependency_fields_present, work_task);
++		dependency_fields_present, work_run);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_work_action_locked(
--		dev_priv, submit, work_action);
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_work_task_locked(
-+		dev_priv, submit, work_task);
+-	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_work_task_locked(
+-		dev_priv, submit, work_task);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_request_work_run_locked(
++		dev_priv, submit, work_run);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_apply_submit_sgx_ta_request_work_action_locked(
--		dev_priv, submit, work_action);
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_request_work_task_locked(
-+		dev_priv, submit, work_task);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_request_work_task_locked(
+-		dev_priv, submit, work_task);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_request_work_run_locked(
++		dev_priv, submit, work_run);
  
  out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
-@@ -15725,11 +15892,11 @@ out_unlock:
+@@ -15892,11 +16078,11 @@ out_unlock:
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
  
  	if (ret) {
--		kfree(work_action);
-+		kfree(work_task);
+-		kfree(work_task);
++		kfree(work_run);
  		return ret;
  	}
  
--	*work_action_out = work_action;
-+	*work_task_out = work_task;
+-	*work_task_out = work_task;
++	*work_run_out = work_run;
  	return 0;
  }
  
-@@ -18216,41 +18383,39 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -18383,39 +18569,39 @@ static int poulsbo_sgx_transition_submit_op_request(
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present)
  {
--	struct psb_sgx_lab_submit_sgx_ta_request_work_action *work_action = NULL;
--	const struct psb_sgx_lab_submit_sgx_ta_request_work_state *work_state;
-+	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_request_work_run *work_run = NULL;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_action(
--		dev, submit_id, op, dependency_fields_present, &work_action);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
-+		dev, submit_id, op, dependency_fields_present, &work_task);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
+-		dev, submit_id, op, dependency_fields_present, &work_task);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_run(
++		dev, submit_id, op, dependency_fields_present, &work_run);
  	if (ret)
  		goto out;
  
--	work_state = &work_action->work_state;
  	dev_info(dev->dev,
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u refresh_views=%u next_transition_count=%u running_advanced=%u complete_advanced=%u next_running_ticket=%u next_complete_ticket=%u active_running_changed=%u\n",
--		 work_state->submit_id,
--		 poulsbo_sgx_lab_owner_state_name(work_state->owner_state),
--		 work_state->packet_count,
--		 work_state->selected_read_offset,
--		 work_state->selected_write_offset,
--		 work_state->selected_ccb_offset,
--		 work_state->selected_outstanding_packets,
--		 work_state->selected_wrapped,
--		 work_state->selected_seq,
--		 work_state->selected_cookie,
--		 work_state->epoch,
--		 work_state->global_running_ticket,
--		 work_state->global_complete_ticket,
--		 work_state->refresh_views,
--		 work_state->next_transition_count,
--		 work_state->running_advanced,
--		 work_state->complete_advanced,
--		 work_state->next_state.running_ticket,
--		 work_state->next_state.complete_ticket,
--		 work_state->active_running_changed);
-+		 work_task->submit_id,
-+		 poulsbo_sgx_lab_owner_state_name(work_task->owner_state),
-+		 work_task->packet_count,
-+		 work_task->selected_read_offset,
-+		 work_task->selected_write_offset,
-+		 work_task->selected_ccb_offset,
-+		 work_task->selected_outstanding_packets,
-+		 work_task->selected_wrapped,
-+		 work_task->selected_seq,
-+		 work_task->selected_cookie,
-+		 work_task->epoch,
-+		 work_task->global_running_ticket,
-+		 work_task->global_complete_ticket,
-+		 work_task->refresh_views,
-+		 work_task->next_transition_count,
-+		 work_task->running_advanced,
-+		 work_task->complete_advanced,
-+		 work_task->next_state.running_ticket,
-+		 work_task->next_state.complete_ticket,
-+		 work_task->active_running_changed);
+-		 work_task->submit_id,
+-		 poulsbo_sgx_lab_owner_state_name(work_task->owner_state),
+-		 work_task->packet_count,
+-		 work_task->selected_read_offset,
+-		 work_task->selected_write_offset,
+-		 work_task->selected_ccb_offset,
+-		 work_task->selected_outstanding_packets,
+-		 work_task->selected_wrapped,
+-		 work_task->selected_seq,
+-		 work_task->selected_cookie,
+-		 work_task->epoch,
+-		 work_task->global_running_ticket,
+-		 work_task->global_complete_ticket,
+-		 work_task->refresh_views,
+-		 work_task->next_transition_count,
+-		 work_task->running_advanced,
+-		 work_task->complete_advanced,
+-		 work_task->next_state.running_ticket,
+-		 work_task->next_state.complete_ticket,
+-		 work_task->active_running_changed);
++		 work_run->submit_id,
++		 poulsbo_sgx_lab_owner_state_name(work_run->owner_state),
++		 work_run->packet_count,
++		 work_run->selected_read_offset,
++		 work_run->selected_write_offset,
++		 work_run->selected_ccb_offset,
++		 work_run->selected_outstanding_packets,
++		 work_run->selected_wrapped,
++		 work_run->selected_seq,
++		 work_run->selected_cookie,
++		 work_run->epoch,
++		 work_run->global_running_ticket,
++		 work_run->global_complete_ticket,
++		 work_run->refresh_views,
++		 work_run->next_transition_count,
++		 work_run->running_advanced,
++		 work_run->complete_advanced,
++		 work_run->next_state.running_ticket,
++		 work_run->next_state.complete_ticket,
++		 work_run->active_running_changed);
  
  out:
--	kfree(work_action);
-+	kfree(work_task);
+-	kfree(work_task);
++	kfree(work_run);
  	return ret;
  }
  
-@@ -18260,39 +18425,37 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -18425,37 +18611,37 @@ static int poulsbo_sgx_issue_submit_op_request(
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present)
  {
--	struct psb_sgx_lab_submit_sgx_ta_request_work_action *work_action = NULL;
--	const struct psb_sgx_lab_submit_sgx_ta_request_work_state *work_state;
-+	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_request_work_task *work_task = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_request_work_run *work_run = NULL;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_action(
--		dev, submit_id, op, dependency_fields_present, &work_action);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
-+		dev, submit_id, op, dependency_fields_present, &work_task);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_task(
+-		dev, submit_id, op, dependency_fields_present, &work_task);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_request_work_run(
++		dev, submit_id, op, dependency_fields_present, &work_run);
  	if (ret)
  		goto out;
  
--	work_state = &work_action->work_state;
  	dev_info(dev->dev,
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u refresh_views=%u next_issue_count=%u issue_advanced=%u next_issue_ticket=%u next_issue_submit_id=%u\n",
--		 work_state->submit_id,
--		 poulsbo_sgx_lab_owner_state_name(work_state->owner_state),
--		 work_state->packet_count,
--		 work_state->selected_read_offset,
--		 work_state->selected_write_offset,
--		 work_state->selected_outstanding_packets,
--		 work_state->selected_wrapped,
--		 work_state->selected_seq,
--		 work_state->selected_cookie,
--		 work_state->epoch,
--		 work_state->refilled_from_complete,
--		 work_state->global_issue_ticket,
--		 work_state->global_running_ticket,
--		 work_state->refresh_views,
--		 work_state->next_issue_count,
--		 work_state->issue_advanced,
--		 work_state->next_state.issue_ticket,
--		 work_state->next_state.issue_submit_id);
-+		 work_task->submit_id,
-+		 poulsbo_sgx_lab_owner_state_name(work_task->owner_state),
-+		 work_task->packet_count,
-+		 work_task->selected_read_offset,
-+		 work_task->selected_write_offset,
-+		 work_task->selected_outstanding_packets,
-+		 work_task->selected_wrapped,
-+		 work_task->selected_seq,
-+		 work_task->selected_cookie,
-+		 work_task->epoch,
-+		 work_task->refilled_from_complete,
-+		 work_task->global_issue_ticket,
-+		 work_task->global_running_ticket,
-+		 work_task->refresh_views,
-+		 work_task->next_issue_count,
-+		 work_task->issue_advanced,
-+		 work_task->next_state.issue_ticket,
-+		 work_task->next_state.issue_submit_id);
+-		 work_task->submit_id,
+-		 poulsbo_sgx_lab_owner_state_name(work_task->owner_state),
+-		 work_task->packet_count,
+-		 work_task->selected_read_offset,
+-		 work_task->selected_write_offset,
+-		 work_task->selected_outstanding_packets,
+-		 work_task->selected_wrapped,
+-		 work_task->selected_seq,
+-		 work_task->selected_cookie,
+-		 work_task->epoch,
+-		 work_task->refilled_from_complete,
+-		 work_task->global_issue_ticket,
+-		 work_task->global_running_ticket,
+-		 work_task->refresh_views,
+-		 work_task->next_issue_count,
+-		 work_task->issue_advanced,
+-		 work_task->next_state.issue_ticket,
+-		 work_task->next_state.issue_submit_id);
++		 work_run->submit_id,
++		 poulsbo_sgx_lab_owner_state_name(work_run->owner_state),
++		 work_run->packet_count,
++		 work_run->selected_read_offset,
++		 work_run->selected_write_offset,
++		 work_run->selected_outstanding_packets,
++		 work_run->selected_wrapped,
++		 work_run->selected_seq,
++		 work_run->selected_cookie,
++		 work_run->epoch,
++		 work_run->refilled_from_complete,
++		 work_run->global_issue_ticket,
++		 work_run->global_running_ticket,
++		 work_run->refresh_views,
++		 work_run->next_issue_count,
++		 work_run->issue_advanced,
++		 work_run->next_state.issue_ticket,
++		 work_run->next_state.issue_submit_id);
  
  out:
--	kfree(work_action);
-+	kfree(work_task);
+-	kfree(work_task);
++	kfree(work_run);
  	return ret;
  }
  

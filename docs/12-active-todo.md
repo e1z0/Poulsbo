@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 0B7BEF6C22715A3E3A6B5A8`
-  - `override_module_size=488140`
+  - `srcversion A57696CAA2F570377CAE40B`
+  - `override_module_size=488344`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260514-162142-sgx-ta-request-work-task-deploy`
+  - `logs/vaio-deploy/20260514-163445-sgx-ta-request-work-run-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260514-162333-sgx-plan-session`
-- the newest internal `ta-request-work-task` batch is now
+  - `logs/vaio-plan-session/20260514-163630-sgx-plan-session`
+- the newest internal `ta-request-work-run` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260514-162333-sgx-plan-session`
+    - `logs/vaio-plan-session/20260514-163630-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260514-162436-sgx-submit-ta-request-work-task-live/summary.log`
+    - `logs/vaio-ioctl/20260514-163734-sgx-submit-ta-request-work-run-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260514-162436-sgx-multi-submit-ta-request-work-task-live/summary.log`
+    - `logs/vaio-ioctl/20260514-163734-sgx-multi-submit-ta-request-work-run-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-162333`
-  - `source_row_module_srcversion=C75813FD38ABA9D6D10A7A9`
+  - `source_timestamp=20260514-163630`
+  - `source_row_module_srcversion=A57696CAA2F570377CAE40B`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -191,7 +191,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 0B7BEF6C22715A3E3A6B5A8`
+  `srcversion A57696CAA2F570377CAE40B`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
