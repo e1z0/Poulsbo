@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 09985BE3AA727C3FDF53E42`
-  - `override_module_size=494652`
+  - `srcversion A417E135FB014B70E256095`
+  - `override_module_size=493616`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260514-182908-sgx-plan-session`
-- the newest internal `ta-request-work-response` batch is now
+  - `logs/vaio-plan-session/20260514-184356-sgx-plan-session`
+- the newest internal `ta-submit-op-reply` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260514-182908-sgx-plan-session`
+    - `logs/vaio-plan-session/20260514-184356-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260514-183020-sgx-submit-ta-request-work-response-live/summary.log`
+    - `logs/vaio-ioctl/20260514-184506-sgx-submit-ta-submit-op-reply-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260514-183104-sgx-multi-submit-ta-request-work-response-live/summary.log`
+    - `logs/vaio-ioctl/20260514-184547-sgx-multi-submit-ta-submit-op-reply-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-182908`
-  - `source_row_module_srcversion=09985BE3AA727C3FDF53E42`
+  - `source_timestamp=20260514-184356`
+  - `source_row_module_srcversion=A417E135FB014B70E256095`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
