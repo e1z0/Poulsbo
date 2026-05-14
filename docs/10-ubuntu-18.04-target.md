@@ -15,23 +15,23 @@ Current live note on May 14, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-plan/20260514-191918-sgx-ta-submit-op-ioctl-deploy/children/20260514-191918-guarded-deploy](/root/Poulsbo/logs/vaio-plan/20260514-191918-sgx-ta-submit-op-ioctl-deploy/children/20260514-191918-guarded-deploy)
+  [logs/vaio-plan/20260514-194105-sgx-ta-submit-op-entry-deploy/children/20260514-194105-guarded-deploy](/root/Poulsbo/logs/vaio-plan/20260514-194105-sgx-ta-submit-op-entry-deploy/children/20260514-194105-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=5884B548EB5E1D6C7698955`
-  - `override_module_size=494168`
+  - `driver_srcversion=12046BB01C587A8CAAB2BE3`
+  - `override_module_size=494580`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
   - `xorg_process_count=0`
   - `kdump_service_active=active`
-- the newest internal `submit-op-ioctl` batch is now
+- the newest internal `submit-op-entry` batch is now
   hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260514-192144-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-192144-sgx-plan-session)
+    [logs/vaio-plan-session/20260514-194317-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-194317-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260514-192303-sgx-submit-ta-submit-op-ioctl-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-192303-sgx-submit-ta-submit-op-ioctl-live/summary.log)
+    [logs/vaio-ioctl/20260514-194443-sgx-submit-ta-submit-op-entry-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-194443-sgx-submit-ta-submit-op-entry-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260514-192344-sgx-multi-submit-ta-submit-op-ioctl-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-192344-sgx-multi-submit-ta-submit-op-ioctl-live/summary.log)
+    [logs/vaio-ioctl/20260514-194541-sgx-multi-submit-ta-submit-op-entry-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-194541-sgx-multi-submit-ta-submit-op-entry-live/summary.log)
 - the pinned stable-lab milestone for today is now the restored exact same
   override plus a three-cycle proof soak:
   - soak bundle:
@@ -46,9 +46,9 @@ Current live note on May 14, 2026:
     - `final_driver_srcversion=92CB8FBC111248DC82C2825`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260514-192144-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-192144-sgx-plan-session)
+  - [logs/vaio-plan-session/20260514-194317-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-194317-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=5884B548EB5E1D6C7698955`
+  - `final_driver_srcversion=12046BB01C587A8CAAB2BE3`
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -137,13 +137,14 @@ Current live note on May 14, 2026:
   - `psb_sgx_lab_submit_sgx_ta_submit_op_reply`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_control`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_ioctl`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_entry`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-192144`
-  - `source_row_module_srcversion=5884B548EB5E1D6C7698955`
+  - `source_timestamp=20260514-194317`
+  - `source_row_module_srcversion=12046BB01C587A8CAAB2BE3`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -165,10 +166,11 @@ Current live note on May 14, 2026:
 - the next engineering step is no longer more exact ladder narrowing; it is
   the next SGX execution-side change on top of the new shared
   `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command -> sgx_queued_ta_command -> sgx_ta_submission -> sgx_ta_execution -> sgx_ta_timeline -> sgx_ta_runtime -> sgx_ta_gate -> sgx_ta_control -> sgx_ta_schedule -> sgx_ta_dispatch -> sgx_ta_path -> sgx_ta_commit -> sgx_ta_event -> sgx_ta_work_item -> sgx_ta_op -> sgx_ta_scheduler -> sgx_ta_sequence -> sgx_ta_work_queue`
-  -> sgx_ta_job -> sgx_ta_request -> sgx_ta_ioctl_request -> sgx_ta_submit_op_request -> sgx_ta_queue_item -> sgx_ta_queue_command -> sgx_ta_scheduler_entry -> sgx_ta_queue_stream -> sgx_ta_queue_packet -> sgx_ta_request_packet -> sgx_ta_request_sequence -> sgx_ta_request_work_packet -> sgx_ta_request_execution -> sgx_ta_request_work_entry -> sgx_ta_request_work_result -> sgx_ta_request_work_record -> sgx_ta_request_work_request -> sgx_ta_request_work_operation -> sgx_ta_request_work_event -> sgx_ta_request_work_state -> sgx_ta_request_work_action -> sgx_ta_request_work_task -> sgx_ta_request_work_run -> sgx_ta_request_work_invocation -> sgx_ta_request_work_submit_op -> sgx_ta_request_work_outcome -> sgx_ta_request_work_response -> sgx_ta_submit_op_reply -> sgx_ta_submit_op_control -> sgx_ta_submit_op_ioctl` kernel model, with both live mutation entrypoints now routed through the shared
-  `sgx_ta_submit_op_ioctl` top layer that now owns the copied public
+  -> sgx_ta_job -> sgx_ta_request -> sgx_ta_ioctl_request -> sgx_ta_submit_op_request -> sgx_ta_queue_item -> sgx_ta_queue_command -> sgx_ta_scheduler_entry -> sgx_ta_queue_stream -> sgx_ta_queue_packet -> sgx_ta_request_packet -> sgx_ta_request_sequence -> sgx_ta_request_work_packet -> sgx_ta_request_execution -> sgx_ta_request_work_entry -> sgx_ta_request_work_result -> sgx_ta_request_work_record -> sgx_ta_request_work_request -> sgx_ta_request_work_operation -> sgx_ta_request_work_event -> sgx_ta_request_work_state -> sgx_ta_request_work_action -> sgx_ta_request_work_task -> sgx_ta_request_work_run -> sgx_ta_request_work_invocation -> sgx_ta_request_work_submit_op -> sgx_ta_request_work_outcome -> sgx_ta_request_work_response -> sgx_ta_submit_op_reply -> sgx_ta_submit_op_control -> sgx_ta_submit_op_ioctl -> sgx_ta_submit_op_entry` kernel model, with both live mutation entrypoints now routed through the shared
+  `sgx_ta_submit_op_entry` top layer that now owns the copied public
   submit-op request image, copied caller-visible reply image, selected
-  submit-id, resolved submit-id return path, outer ioctl seam, request-side response seam,
+  submit-id, resolved submit-id return path, outer issue-versus-transition
+  entry seam, outer ioctl seam, request-side response seam,
   final effect-visible request/work result, focus/direct submit selection
   seam, pure request/work event state, exact request/work state,
   request-work-request boundary, exact live work record, top request result,
