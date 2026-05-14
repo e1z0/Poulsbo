@@ -5,6 +5,96 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-14
 
+### SGX submit TA submit-op control object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped live top object:
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_control`
+- The shared live execution boundary now moves from
+  `sgx_ta_submit_op_reply` to `sgx_ta_submit_op_control`:
+  - the submit-op ioctl control image is now built, validated, applied, and
+    returned through `sgx_ta_submit_op_control`
+  - `issue_submit()` compatibility flow now uses
+    `sgx_ta_submit_op_control`
+  - `transition_submit()` compatibility flow now uses
+    `sgx_ta_submit_op_control`
+- The new top object now keeps together:
+  - the existing `sgx_ta_submit_op_reply`
+  - the copied submit-op request image:
+    - `ioctl_op`
+  - the remaining top control boundary:
+    - `active`
+    - `dependency_fields_present`
+    - `use_focus_request`
+    - `focus_valid`
+    - `focus_resolved`
+    - `issue_request`
+    - `transition_request`
+    - `submit_id`
+    - `requested_submit_id`
+    - `selected_submit_id`
+    - `resolved_submit_id`
+    - `op_kind`
+- The old standalone
+  `poulsbo_sgx_execute_submit_sgx_ta_submit_op_reply()` helper is now
+  replaced by `poulsbo_sgx_execute_submit_sgx_ta_submit_op_control()`.
+- Guarded deploy plus exact recovery wrapper completed successfully in:
+  - `logs/vaio-plan/20260514-185945-sgx-ta-submit-op-control-deploy`
+  - final live override:
+    - `driver_srcversion=3052308F8E83D766FBBE045`
+    - `override_module_size=493892`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on that module still passed:
+  - `logs/vaio-plan-session/20260514-190601-sgx-plan-session`
+  - `session_outcome=completed`
+  - `plan_session_mode=recovery`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=3052308F8E83D766FBBE045`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260514-190712-sgx-submit-ta-submit-op-control-live/summary.log`
+  - final focused proof:
+    - `submit_resolved_id=7`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260514-190759-sgx-multi-submit-ta-submit-op-control-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=8`
+    - `SUBMIT_B_ID=9`
+    - submit A final:
+      - `submit_arm_count=3`
+      - `submit_emit_count=3`
+      - `submit_launch_count=3`
+      - `submit_dispatch_count=3`
+      - `submit_retired_count=3`
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_arm_count=2`
+      - `submit_emit_count=2`
+      - `submit_launch_count=2`
+      - `submit_dispatch_count=2`
+      - `submit_retired_count=2`
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=13`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260514-190601`
+- Documented in:
+  - `docs/223-sgx-submit-ta-submit-op-control-object.md`
+
 ### SGX submit TA submit-op reply object
 
 - Updated:

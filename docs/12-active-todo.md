@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion A417E135FB014B70E256095`
-  - `override_module_size=493616`
+  - `srcversion 3052308F8E83D766FBBE045`
+  - `override_module_size=493892`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-plan/20260514-182606-sgx-plan-guarded-deploy/children/20260514-182606-guarded-deploy`
+  - `logs/vaio-plan/20260514-185945-sgx-ta-submit-op-control-deploy/children/20260514-185945-guarded-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -68,22 +68,22 @@ implementation if it materially changes scope.
   - `complete`
 - canonical bundles for that fixed-module line:
   - `logs/vaio-plan-session/20260514-184356-sgx-plan-session`
-- the newest internal `ta-submit-op-reply` batch is now
+- the newest internal `ta-submit-op-control` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260514-184356-sgx-plan-session`
+    - `logs/vaio-plan-session/20260514-190601-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260514-184506-sgx-submit-ta-submit-op-reply-live/summary.log`
+    - `logs/vaio-ioctl/20260514-190712-sgx-submit-ta-submit-op-control-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260514-184547-sgx-multi-submit-ta-submit-op-reply-live/summary.log`
+    - `logs/vaio-ioctl/20260514-190759-sgx-multi-submit-ta-submit-op-control-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-184356`
-  - `source_row_module_srcversion=A417E135FB014B70E256095`
+  - `source_timestamp=20260514-190601`
+  - `source_row_module_srcversion=3052308F8E83D766FBBE045`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -191,7 +191,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion EB358736E802BE490602A17`
+  `srcversion 3052308F8E83D766FBBE045`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -247,12 +247,15 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_request_work_invocation`
   - `psb_sgx_lab_submit_sgx_ta_request_work_submit_op`
   - `psb_sgx_lab_submit_sgx_ta_request_work_outcome`
+  - `psb_sgx_lab_submit_sgx_ta_request_work_response`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_reply`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_control`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `EB358736E802BE490602A17` as the
+- keep the current guarded-deploy override `3052308F8E83D766FBBE045` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -265,12 +268,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-request-work-outcome` validation bundles as the active typed-submit
+- use the new `ta-submit-op-control` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260514-181225-sgx-submit-ta-request-work-outcome-live/summary.log`
+    `logs/vaio-ioctl/20260514-190712-sgx-submit-ta-submit-op-control-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260514-181305-sgx-multi-submit-ta-request-work-outcome-live/summary.log`
+    `logs/vaio-ioctl/20260514-190759-sgx-multi-submit-ta-submit-op-control-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -284,12 +287,10 @@ implementation if it materially changes scope.
   question on the fixed module:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
-  - build the next explicit SGX request-side scheduler or microkernel-facing
-    work item above the now-shared
-    `psb_sgx_lab_submit_sgx_ta_request_work_outcome`, so the typed top
-    layer starts modeling a real SGX request-side scheduler entry or packet
-    instead of stopping at the pure effect-visible work-event state above the
-    request-work-operation seam
+  - build the common submit-op ioctl control path above the now-shared
+    `psb_sgx_lab_submit_sgx_ta_submit_op_control`, so the typed top layer
+    starts modeling the full ioctl control seam instead of stopping at the
+    control object that still sits just below the outer submit-op entrypoint
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
   - `selected_child_phase_selection=request_only` is the child recovery
@@ -309,7 +310,7 @@ implementation if it materially changes scope.
   the current exact source row now points at the newest clean `complete` rerun:
   - `source_kind=plan_session`
   - `source_name=sgx-plan-session`
-  - `source_timestamp=20260514-002126`
+  - `source_timestamp=20260514-190601`
   - `source_row_requested=complete:profile[complete]`
   - `source_row_evidence_last_good=complete`
 - use the current live fixed module for continued no-redeploy exact reruns:
