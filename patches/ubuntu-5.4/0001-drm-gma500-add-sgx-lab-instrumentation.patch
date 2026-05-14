@@ -1,127 +1,127 @@
-From 5054d117e32bd42da5178f77b81fecebe462f741 Mon Sep 17 00:00:00 2001
+From 6069e2e401f5aa58636e3e0a988241e83c73e2b3 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 01:20:52 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op request result
+Date: Fri, 15 May 2026 01:30:17 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op request response
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 165 +++++++++++++++++++++++++------
- 1 file changed, 134 insertions(+), 31 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 167 +++++++++++++++++++++++++------
+ 1 file changed, 138 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 2e730a68f..ef613444f 100644
+index ef613444f..94b1f424d 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2656,6 +2656,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch {
- 	u32 request_dispatch_op;
+@@ -2670,6 +2670,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result {
+ 	u32 request_result_op;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch
-+		submit_op_request_dispatch;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result
++		submit_op_request_result;
 +	struct drm_psb_sgx_lab_submit_op request_op;
 +	struct drm_psb_sgx_lab_submit_op response_op;
 +	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 +	bool active;
 +	bool dependency_fields_present;
-+	bool issue_request_result;
-+	bool transition_request_result;
++	bool issue_request_response;
++	bool transition_request_response;
 +	u32 resolved_submit_id;
-+	u32 request_result_op;
++	u32 request_response_op;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -11950,6 +11964,97 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_dispatch_l
+@@ -12055,6 +12069,97 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_result_loc
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_submit_op_request_result_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_submit_op_request_response_locked(
 +	struct drm_psb_private *dev_priv,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response *response)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch *dispatch;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result;
 +	int ret;
 +
-+	if (!dev_priv || !op || !result)
++	if (!dev_priv || !op || !response)
 +		return -EINVAL;
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_request_dispatch_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_request_result_locked(
 +		dev_priv, op, dependency_fields_present,
-+		&result->submit_op_request_dispatch);
++		&response->submit_op_request_result);
 +	if (ret)
 +		return ret;
 +
-+	dispatch = &result->submit_op_request_dispatch;
-+	result->request_op = dispatch->request_op;
-+	result->response_op = dispatch->response_op;
-+	result->outcome = dispatch->outcome;
-+	result->active = dispatch->active;
-+	result->dependency_fields_present =
-+		dispatch->dependency_fields_present;
-+	result->issue_request_result = dispatch->issue_request_dispatch;
-+	result->transition_request_result =
-+		dispatch->transition_request_dispatch;
-+	result->resolved_submit_id = dispatch->resolved_submit_id;
-+	result->request_result_op = op->op;
++	result = &response->submit_op_request_result;
++	response->request_op = result->request_op;
++	response->response_op = result->response_op;
++	response->outcome = result->outcome;
++	response->active = result->active;
++	response->dependency_fields_present =
++		result->dependency_fields_present;
++	response->issue_request_response = result->issue_request_result;
++	response->transition_request_response =
++		result->transition_request_result;
++	response->resolved_submit_id = result->resolved_submit_id;
++	response->request_response_op = op->op;
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_result_locked(
++static int poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_response_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result)
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response *response)
 +{
-+	if (!dev_priv || !submit || !result)
++	if (!dev_priv || !submit || !response)
 +		return -EINVAL;
 +
-+	return poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_dispatch_locked(
-+		dev_priv, submit, &result->submit_op_request_dispatch);
++	return poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_result_locked(
++		dev_priv, submit, &response->submit_op_request_result);
 +}
 +
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_result_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_response_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result)
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response *response)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch *dispatch;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !result)
++	if (!dev_priv || !submit || !response)
 +		return -EINVAL;
 +
-+	dispatch = &result->submit_op_request_dispatch;
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_dispatch_locked(
-+		dev_priv, submit, dispatch);
++	result = &response->submit_op_request_result;
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_result_locked(
++		dev_priv, submit, result);
 +	if (ret)
 +		return ret;
 +
-+	if (!result->active ||
-+	    result->dependency_fields_present !=
-+		    dispatch->dependency_fields_present ||
-+	    result->issue_request_result !=
-+		    dispatch->issue_request_dispatch ||
-+	    result->transition_request_result !=
-+		    dispatch->transition_request_dispatch ||
-+	    result->resolved_submit_id != dispatch->resolved_submit_id ||
-+	    result->resolved_submit_id !=
-+		    result->response_op.resolved_submit_id ||
-+	    result->request_result_op != dispatch->request_dispatch_op)
++	if (!response->active ||
++	    response->dependency_fields_present !=
++		    result->dependency_fields_present ||
++	    response->issue_request_response !=
++		    result->issue_request_result ||
++	    response->transition_request_response !=
++		    result->transition_request_result ||
++	    response->resolved_submit_id != result->resolved_submit_id ||
++	    response->resolved_submit_id !=
++		    response->response_op.resolved_submit_id ||
++	    response->request_response_op != result->request_result_op)
 +		return -EINVAL;
 +
-+	if (memcmp(&result->request_op, &dispatch->request_op,
-+		   sizeof(result->request_op)) != 0 ||
-+	    memcmp(&result->response_op, &dispatch->response_op,
-+		   sizeof(result->response_op)) != 0 ||
-+	    memcmp(&result->outcome, &dispatch->outcome,
-+		   sizeof(result->outcome)) != 0)
++	if (memcmp(&response->request_op, &result->request_op,
++		   sizeof(response->request_op)) != 0 ||
++	    memcmp(&response->response_op, &result->response_op,
++		   sizeof(response->response_op)) != 0 ||
++	    memcmp(&response->outcome, &result->outcome,
++		   sizeof(response->outcome)) != 0)
 +		return -EINVAL;
 +
-+	if (result->issue_request_result ==
-+	    result->transition_request_result)
++	if (response->issue_request_response ==
++	    response->transition_request_response)
 +		return -EINVAL;
 +
 +	return 0;
@@ -130,154 +130,156 @@ index 2e730a68f..ef613444f 100644
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -18548,53 +18653,53 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -18653,53 +18758,53 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		dev_priv, submit, control_obj, status_obj);
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_dispatch(
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_result(
+-static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_result(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_response(
  	struct drm_device *dev,
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present,
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch
--		**dispatch_out)
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result
-+		**result_out)
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result
+-		**result_out)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response
++		**response_out)
  {
  	struct drm_psb_private *dev_priv;
  	struct psb_sgx_lab_submit *submit;
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch *dispatch;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response *response;
  	int ret;
  
--	if (!dev || !op || !dispatch_out)
-+	if (!dev || !op || !result_out)
+-	if (!dev || !op || !result_out)
++	if (!dev || !op || !response_out)
  		return -EINVAL;
  
  	dev_priv = dev->dev_private;
  	if (!dev_priv)
  		return -ENODEV;
  
--	*dispatch_out = NULL;
--	dispatch = kmalloc(sizeof(*dispatch), GFP_KERNEL);
--	if (!dispatch)
-+	*result_out = NULL;
-+	result = kmalloc(sizeof(*result), GFP_KERNEL);
-+	if (!result)
+-	*result_out = NULL;
+-	result = kmalloc(sizeof(*result), GFP_KERNEL);
+-	if (!result)
++	*response_out = NULL;
++	response = kmalloc(sizeof(*response), GFP_KERNEL);
++	if (!response)
  		return -ENOMEM;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
  	mutex_lock(&dev_priv->sgx_lab_object_mutex);
  	mutex_lock(&dev_priv->gtt_mutex);
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_request_dispatch_locked(
--		dev_priv, op, dependency_fields_present, dispatch);
-+	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_request_result_locked(
-+		dev_priv, op, dependency_fields_present, result);
+-	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_request_result_locked(
+-		dev_priv, op, dependency_fields_present, result);
++	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_request_response_locked(
++		dev_priv, op, dependency_fields_present, response);
  	if (ret)
  		goto out_unlock;
  
  	submit = poulsbo_sgx_find_submit_locked(dev_priv,
--						dispatch->resolved_submit_id);
-+						result->resolved_submit_id);
+-						result->resolved_submit_id);
++						response->resolved_submit_id);
  	if (!submit) {
  		ret = -ENOENT;
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_dispatch_locked(
--		dev_priv, submit, dispatch);
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_result_locked(
-+		dev_priv, submit, result);
+-	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_result_locked(
+-		dev_priv, submit, result);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_request_response_locked(
++		dev_priv, submit, response);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_dispatch_locked(
--		dev_priv, submit, dispatch);
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_result_locked(
-+		dev_priv, submit, result);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_result_locked(
+-		dev_priv, submit, result);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_request_response_locked(
++		dev_priv, submit, response);
  
  out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
-@@ -18602,11 +18707,11 @@ out_unlock:
+@@ -18707,11 +18812,11 @@ out_unlock:
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
  
  	if (ret) {
--		kfree(dispatch);
-+		kfree(result);
+-		kfree(result);
++		kfree(response);
  		return ret;
  	}
  
--	*dispatch_out = dispatch;
-+	*result_out = result;
+-	*result_out = result;
++	*response_out = response;
  	return 0;
  }
  
-@@ -21093,19 +21198,18 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -21198,18 +21303,20 @@ static int poulsbo_sgx_transition_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch *dispatch = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response *response =
++		NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_dispatch(
--		dev, op, dependency_fields_present, &dispatch);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_result(
-+		dev, op, dependency_fields_present, &result);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_result(
+-		dev, op, dependency_fields_present, &result);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_response(
++		dev, op, dependency_fields_present, &response);
  	if (ret)
  		goto out;
  
--	outcome = &dispatch->outcome;
-+	outcome = &result->outcome;
+-	outcome = &result->outcome;
++	outcome = &response->outcome;
  	if (resolved_submit_id_out)
--		*resolved_submit_id_out =
--			dispatch->response_op.resolved_submit_id;
-+		*resolved_submit_id_out = result->response_op.resolved_submit_id;
+-		*resolved_submit_id_out = result->response_op.resolved_submit_id;
++		*resolved_submit_id_out =
++			response->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u refresh_views=%u next_transition_count=%u running_advanced=%u complete_advanced=%u next_running_ticket=%u next_complete_ticket=%u active_running_changed=%u\n",
-@@ -21131,7 +21235,7 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -21235,7 +21342,7 @@ static int poulsbo_sgx_transition_submit_op_request(
  		 outcome->active_running_changed);
  
  out:
--	kfree(dispatch);
-+	kfree(result);
+-	kfree(result);
++	kfree(response);
  	return ret;
  }
  
-@@ -21141,19 +21245,18 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -21245,18 +21352,20 @@ static int poulsbo_sgx_issue_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_dispatch *dispatch = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_result *result = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_response *response =
++		NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_dispatch(
--		dev, op, dependency_fields_present, &dispatch);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_result(
-+		dev, op, dependency_fields_present, &result);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_result(
+-		dev, op, dependency_fields_present, &result);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_response(
++		dev, op, dependency_fields_present, &response);
  	if (ret)
  		goto out;
  
--	outcome = &dispatch->outcome;
-+	outcome = &result->outcome;
+-	outcome = &result->outcome;
++	outcome = &response->outcome;
  	if (resolved_submit_id_out)
--		*resolved_submit_id_out =
--			dispatch->response_op.resolved_submit_id;
-+		*resolved_submit_id_out = result->response_op.resolved_submit_id;
+-		*resolved_submit_id_out = result->response_op.resolved_submit_id;
++		*resolved_submit_id_out =
++			response->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u refresh_views=%u next_issue_count=%u issue_advanced=%u next_issue_ticket=%u next_issue_submit_id=%u\n",
-@@ -21177,7 +21280,7 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -21280,7 +21389,7 @@ static int poulsbo_sgx_issue_submit_op_request(
  		 outcome->next_state.issue_submit_id);
  
  out:
--	kfree(dispatch);
-+	kfree(result);
+-	kfree(result);
++	kfree(response);
  	return ret;
  }
  
