@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 92CB8FBC111248DC82C2825`
-  - `override_module_size=481200`
+  - `srcversion 090E915D8E9ED7786CCAD27`
+  - `override_module_size=481988`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy`
+  - `logs/vaio-deploy/20260514-113632-sgx-ta-request-work-packet-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260514-002126-sgx-plan-session`
-- the newest internal `ta-request-sequence` batch is now
+  - `logs/vaio-plan-session/20260514-113831-sgx-plan-session`
+- the newest internal `ta-request-work-packet` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260514-002126-sgx-plan-session`
+    - `logs/vaio-plan-session/20260514-113831-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260514-002243-sgx-submit-ta-request-sequence-live/summary.log`
+    - `logs/vaio-ioctl/20260514-114042-sgx-submit-ta-request-work-packet-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260514-002324-sgx-multi-submit-ta-request-sequence-live/summary.log`
+    - `logs/vaio-ioctl/20260514-114119-sgx-multi-submit-ta-request-work-packet-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-002126`
-  - `source_row_module_srcversion=92CB8FBC111248DC82C2825`
+  - `source_timestamp=20260514-113831`
+  - `source_row_module_srcversion=090E915D8E9ED7786CCAD27`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -191,7 +191,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 92CB8FBC111248DC82C2825`
+  `srcversion 090E915D8E9ED7786CCAD27`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -222,9 +222,9 @@ implementation if it materially changes scope.
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `92CB8FBC111248DC82C2825` as the
+- keep the current guarded-deploy override `090E915D8E9ED7786CCAD27` as the
   active headless, panic-safe validation base
-- keep the restored stable-lab milestone fixed for today:
+- keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
     `logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy`
   - three-cycle soak proof:
