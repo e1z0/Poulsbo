@@ -1,23 +1,24 @@
-From 5f6cfac695f5c64e54446480a3d238c03378465b Mon Sep 17 00:00:00 2001
+From c4c2e7518779e3f0861cca4f9dff970b4b458754 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Thu, 14 May 2026 19:14:20 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op control
+Date: Thu, 14 May 2026 19:34:16 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op ioctl
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 163 ++++++++++++++++++++++++++-----
- 1 file changed, 137 insertions(+), 26 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 185 ++++++++++++++++++++++++++-----
+ 1 file changed, 159 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index cc7ec8c20..2f1d9832c 100644
+index 2f1d9832c..8583f2d59 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2362,6 +2362,23 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_reply {
+@@ -2379,6 +2379,25 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_control {
  	u32 op_kind;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_control {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_reply submit_op_reply;
-+	struct drm_psb_sgx_lab_submit_op ioctl_op;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_control submit_op_control;
++	struct drm_psb_sgx_lab_submit_op request_op;
++	struct drm_psb_sgx_lab_submit_op response_op;
 +	bool active;
 +	bool dependency_fields_present;
 +	bool use_focus_request;
@@ -29,100 +30,122 @@ index cc7ec8c20..2f1d9832c 100644
 +	u32 requested_submit_id;
 +	u32 selected_submit_id;
 +	u32 resolved_submit_id;
++	u32 ioctl_op;
 +	u32 op_kind;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -10118,6 +10135,95 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_reply_locked(
+@@ -10224,6 +10243,116 @@ static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_control_locked(
  	return 0;
  }
  
-+static int poulsbo_sgx_build_submit_sgx_ta_submit_op_control_locked(
++static int poulsbo_sgx_build_submit_sgx_ta_submit_op_ioctl_locked(
 +	struct drm_psb_private *dev_priv,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl *ioctl)
 +{
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control;
 +	int ret;
 +
-+	if (!dev_priv || !op || !control)
++	if (!dev_priv || !op || !ioctl)
 +		return -EINVAL;
 +
-+	memset(control, 0, sizeof(*control));
++	memset(ioctl, 0, sizeof(*ioctl));
 +
-+	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_reply_locked(
++	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_control_locked(
 +		dev_priv, op, dependency_fields_present,
-+		&control->submit_op_reply);
++		&ioctl->submit_op_control);
 +	if (ret)
 +		return ret;
 +
-+	reply = &control->submit_op_reply;
-+	control->ioctl_op = reply->response_op;
-+	control->active = reply->active;
-+	control->dependency_fields_present = reply->dependency_fields_present;
-+	control->use_focus_request = reply->use_focus_request;
-+	control->focus_valid = reply->focus_valid;
-+	control->focus_resolved = reply->focus_resolved;
-+	control->issue_request = reply->issue_request;
-+	control->transition_request = reply->transition_request;
-+	control->submit_id = reply->submit_id;
-+	control->requested_submit_id = reply->requested_submit_id;
-+	control->selected_submit_id = reply->selected_submit_id;
-+	control->resolved_submit_id = reply->resolved_submit_id;
-+	control->op_kind = reply->op_kind;
++	control = &ioctl->submit_op_control;
++	ioctl->request_op = *op;
++	ioctl->response_op = control->ioctl_op;
++	ioctl->active = control->active;
++	ioctl->dependency_fields_present = control->dependency_fields_present;
++	ioctl->use_focus_request = control->use_focus_request;
++	ioctl->focus_valid = control->focus_valid;
++	ioctl->focus_resolved = control->focus_resolved;
++	ioctl->issue_request = control->issue_request;
++	ioctl->transition_request = control->transition_request;
++	ioctl->submit_id = control->submit_id;
++	ioctl->requested_submit_id = control->requested_submit_id;
++	ioctl->selected_submit_id = control->selected_submit_id;
++	ioctl->resolved_submit_id = control->resolved_submit_id;
++	ioctl->ioctl_op = control->ioctl_op.op;
++	ioctl->op_kind = control->op_kind;
 +
 +	return 0;
 +}
 +
-+static int poulsbo_sgx_apply_submit_sgx_ta_submit_op_control_locked(
++static int poulsbo_sgx_apply_submit_sgx_ta_submit_op_ioctl_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control)
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl *ioctl)
 +{
-+	if (!dev_priv || !submit || !control)
++	if (!dev_priv || !submit || !ioctl)
 +		return -EINVAL;
-+	if (control->active && control->resolved_submit_id != submit->submit_id)
++	if (ioctl->active && ioctl->resolved_submit_id != submit->submit_id)
 +		return -EINVAL;
 +
-+	return poulsbo_sgx_apply_submit_sgx_ta_submit_op_reply_locked(
-+		dev_priv, submit, &control->submit_op_reply);
++	return poulsbo_sgx_apply_submit_sgx_ta_submit_op_control_locked(
++		dev_priv, submit, &ioctl->submit_op_control);
 +}
 +
-+static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_control_locked(
++static int poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_ioctl_locked(
 +	struct drm_psb_private *dev_priv,
 +	struct psb_sgx_lab_submit *submit,
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control)
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl *ioctl)
 +{
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control;
 +	const struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_response *response;
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
++	const struct psb_sgx_lab_submit_sgx_ta_request_work_submit_op *submit_op;
 +	int ret;
 +
-+	if (!dev_priv || !submit || !control)
++	if (!dev_priv || !submit || !ioctl)
 +		return -EINVAL;
 +
-+	reply = &control->submit_op_reply;
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_reply_locked(
-+		dev_priv, submit, reply);
++	control = &ioctl->submit_op_control;
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_control_locked(
++		dev_priv, submit, control);
 +	if (ret)
 +		return ret;
 +
-+	if (memcmp(&control->ioctl_op, &reply->response_op,
-+		   sizeof(control->ioctl_op)) ||
-+	    control->active != reply->active ||
-+	    control->dependency_fields_present !=
-+		    reply->dependency_fields_present ||
-+	    control->use_focus_request != reply->use_focus_request ||
-+	    control->focus_valid != reply->focus_valid ||
-+	    control->focus_resolved != reply->focus_resolved ||
-+	    control->issue_request != reply->issue_request ||
-+	    control->transition_request != reply->transition_request ||
-+	    control->submit_id != reply->submit_id ||
-+	    control->requested_submit_id != reply->requested_submit_id ||
-+	    control->selected_submit_id != reply->selected_submit_id ||
-+	    control->resolved_submit_id != reply->resolved_submit_id ||
-+	    control->op_kind != reply->op_kind)
++	reply = &control->submit_op_reply;
++	response = &reply->work_response;
++	outcome = &response->outcome;
++	submit_op = &outcome->submit_op;
++
++	if (memcmp(&ioctl->request_op, &submit_op->op,
++		   sizeof(ioctl->request_op)) ||
++	    memcmp(&ioctl->response_op, &control->ioctl_op,
++		   sizeof(ioctl->response_op)) ||
++	    ioctl->active != control->active ||
++	    ioctl->dependency_fields_present !=
++		    control->dependency_fields_present ||
++	    ioctl->use_focus_request != control->use_focus_request ||
++	    ioctl->focus_valid != control->focus_valid ||
++	    ioctl->focus_resolved != control->focus_resolved ||
++	    ioctl->issue_request != control->issue_request ||
++	    ioctl->transition_request != control->transition_request ||
++	    ioctl->submit_id != control->submit_id ||
++	    ioctl->requested_submit_id != control->requested_submit_id ||
++	    ioctl->selected_submit_id != control->selected_submit_id ||
++	    ioctl->resolved_submit_id != control->resolved_submit_id ||
++	    ioctl->ioctl_op != control->ioctl_op.op ||
++	    ioctl->ioctl_op != submit_op->ioctl_op ||
++	    ioctl->op_kind != control->op_kind ||
++	    ioctl->request_op.submit_id != control->requested_submit_id ||
++	    ioctl->response_op.resolved_submit_id !=
++		    control->resolved_submit_id ||
++	    ioctl->request_op.op != ioctl->response_op.op ||
++	    ioctl->request_op.op != ioctl->ioctl_op ||
++	    !ioctl->active)
 +		return -EINVAL;
 +
 +	return 0;
@@ -131,156 +154,160 @@ index cc7ec8c20..2f1d9832c 100644
  static int poulsbo_sgx_collect_submit_view_records_locked(
  	struct drm_psb_private *dev_priv,
  	struct psb_sgx_lab_submit *submit,
-@@ -16716,51 +16822,52 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
+@@ -16822,52 +16951,52 @@ static int poulsbo_sgx_validate_submit_locked(struct drm_psb_private *dev_priv,
  		dev_priv, submit, control_obj, status_obj);
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_reply(
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_control(
+-static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_control(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_ioctl(
  	struct drm_device *dev,
  	const struct drm_psb_sgx_lab_submit_op *op,
  	bool dependency_fields_present,
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_reply **reply_out)
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_control **control_out)
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_control **control_out)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl **ioctl_out)
  {
  	struct drm_psb_private *dev_priv;
  	struct psb_sgx_lab_submit *submit;
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl *ioctl;
  	int ret;
  
--	if (!dev || !op || !reply_out)
-+	if (!dev || !op || !control_out)
+-	if (!dev || !op || !control_out)
++	if (!dev || !op || !ioctl_out)
  		return -EINVAL;
  
  	dev_priv = dev->dev_private;
  	if (!dev_priv)
  		return -ENODEV;
  
--	*reply_out = NULL;
--	reply = kmalloc(sizeof(*reply), GFP_KERNEL);
--	if (!reply)
-+	*control_out = NULL;
-+	control = kmalloc(sizeof(*control), GFP_KERNEL);
-+	if (!control)
+-	*control_out = NULL;
+-	control = kmalloc(sizeof(*control), GFP_KERNEL);
+-	if (!control)
++	*ioctl_out = NULL;
++	ioctl = kmalloc(sizeof(*ioctl), GFP_KERNEL);
++	if (!ioctl)
  		return -ENOMEM;
  
  	mutex_lock(&dev_priv->sgx_lab_submit_mutex);
  	mutex_lock(&dev_priv->sgx_lab_object_mutex);
  	mutex_lock(&dev_priv->gtt_mutex);
  
--	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_reply_locked(
--		dev_priv, op, dependency_fields_present, reply);
-+	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_control_locked(
-+		dev_priv, op, dependency_fields_present, control);
+-	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_control_locked(
+-		dev_priv, op, dependency_fields_present, control);
++	ret = poulsbo_sgx_build_submit_sgx_ta_submit_op_ioctl_locked(
++		dev_priv, op, dependency_fields_present, ioctl);
  	if (ret)
  		goto out_unlock;
  
--	submit = poulsbo_sgx_find_submit_locked(dev_priv, reply->resolved_submit_id);
-+	submit = poulsbo_sgx_find_submit_locked(dev_priv,
-+						control->resolved_submit_id);
+ 	submit = poulsbo_sgx_find_submit_locked(dev_priv,
+-						control->resolved_submit_id);
++						ioctl->resolved_submit_id);
  	if (!submit) {
  		ret = -ENOENT;
  		goto out_unlock;
  	}
  
--	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_reply_locked(
--		dev_priv, submit, reply);
-+	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_control_locked(
-+		dev_priv, submit, control);
+-	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_control_locked(
+-		dev_priv, submit, control);
++	ret = poulsbo_sgx_validate_built_submit_sgx_ta_submit_op_ioctl_locked(
++		dev_priv, submit, ioctl);
  	if (ret)
  		goto out_unlock;
  
--	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_reply_locked(
--		dev_priv, submit, reply);
-+	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_control_locked(
-+		dev_priv, submit, control);
+-	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_control_locked(
+-		dev_priv, submit, control);
++	ret = poulsbo_sgx_apply_submit_sgx_ta_submit_op_ioctl_locked(
++		dev_priv, submit, ioctl);
  
  out_unlock:
  	mutex_unlock(&dev_priv->gtt_mutex);
-@@ -16768,11 +16875,11 @@ out_unlock:
+@@ -16875,11 +17004,11 @@ out_unlock:
  	mutex_unlock(&dev_priv->sgx_lab_submit_mutex);
  
  	if (ret) {
--		kfree(reply);
-+		kfree(control);
+-		kfree(control);
++		kfree(ioctl);
  		return ret;
  	}
  
--	*reply_out = reply;
-+	*control_out = control;
+-	*control_out = control;
++	*ioctl_out = ioctl;
  	return 0;
  }
  
-@@ -19259,20 +19366,22 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -19366,22 +19495,24 @@ static int poulsbo_sgx_transition_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control = NULL;
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl *ioctl = NULL;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control;
+ 	const struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_response *response;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_reply(
--		dev, op, dependency_fields_present, &reply);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_control(
-+		dev, op, dependency_fields_present, &control);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_control(
+-		dev, op, dependency_fields_present, &control);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_ioctl(
++		dev, op, dependency_fields_present, &ioctl);
  	if (ret)
  		goto out;
  
-+	reply = &control->submit_op_reply;
++	control = &ioctl->submit_op_control;
+ 	reply = &control->submit_op_reply;
  	response = &reply->work_response;
  	outcome = &response->outcome;
  	if (resolved_submit_id_out)
--		*resolved_submit_id_out = reply->response_op.resolved_submit_id;
-+		*resolved_submit_id_out = control->ioctl_op.resolved_submit_id;
+-		*resolved_submit_id_out = control->ioctl_op.resolved_submit_id;
++		*resolved_submit_id_out = ioctl->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u refresh_views=%u next_transition_count=%u running_advanced=%u complete_advanced=%u next_running_ticket=%u next_complete_ticket=%u active_running_changed=%u\n",
-@@ -19298,7 +19407,7 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -19407,7 +19538,7 @@ static int poulsbo_sgx_transition_submit_op_request(
  		 outcome->active_running_changed);
  
  out:
--	kfree(reply);
-+	kfree(control);
+-	kfree(control);
++	kfree(ioctl);
  	return ret;
  }
  
-@@ -19308,20 +19417,22 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -19417,22 +19548,24 @@ static int poulsbo_sgx_issue_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control = NULL;
-+	const struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_ioctl *ioctl = NULL;
++	const struct psb_sgx_lab_submit_sgx_ta_submit_op_control *control;
+ 	const struct psb_sgx_lab_submit_sgx_ta_submit_op_reply *reply;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_response *response;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_reply(
--		dev, op, dependency_fields_present, &reply);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_control(
-+		dev, op, dependency_fields_present, &control);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_control(
+-		dev, op, dependency_fields_present, &control);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_ioctl(
++		dev, op, dependency_fields_present, &ioctl);
  	if (ret)
  		goto out;
  
-+	reply = &control->submit_op_reply;
++	control = &ioctl->submit_op_control;
+ 	reply = &control->submit_op_reply;
  	response = &reply->work_response;
  	outcome = &response->outcome;
  	if (resolved_submit_id_out)
--		*resolved_submit_id_out = reply->response_op.resolved_submit_id;
-+		*resolved_submit_id_out = control->ioctl_op.resolved_submit_id;
+-		*resolved_submit_id_out = control->ioctl_op.resolved_submit_id;
++		*resolved_submit_id_out = ioctl->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u refresh_views=%u next_issue_count=%u issue_advanced=%u next_issue_ticket=%u next_issue_submit_id=%u\n",
-@@ -19345,7 +19456,7 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -19456,7 +19589,7 @@ static int poulsbo_sgx_issue_submit_op_request(
  		 outcome->next_state.issue_submit_id);
  
  out:
--	kfree(reply);
-+	kfree(control);
+-	kfree(control);
++	kfree(ioctl);
  	return ret;
  }
  
