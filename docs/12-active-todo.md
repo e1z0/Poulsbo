@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion ECD37083ADA9AA31E6D4661`
-  - `override_module_size=484868`
+  - `srcversion 06C3675E67B2E675955E36E`
+  - `override_module_size=485332`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260514-142930-sgx-ta-request-work-result-deploy`
+  - `logs/vaio-deploy/20260514-145539-sgx-ta-request-work-record-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260514-143114-sgx-plan-session`
-- the newest internal `ta-request-work-result` batch is now
+  - `logs/vaio-plan-session/20260514-145730-sgx-plan-session`
+- the newest internal `ta-request-work-record` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260514-143114-sgx-plan-session`
+    - `logs/vaio-plan-session/20260514-145730-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260514-143218-sgx-submit-ta-request-work-result-live/summary.log`
+    - `logs/vaio-ioctl/20260514-145831-sgx-submit-ta-request-work-record-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260514-143218-sgx-multi-submit-ta-request-work-result-live/summary.log`
+    - `logs/vaio-ioctl/20260514-145831-sgx-multi-submit-ta-request-work-record-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260514-143114`
-  - `source_row_module_srcversion=ECD37083ADA9AA31E6D4661`
+  - `source_timestamp=20260514-145730`
+  - `source_row_module_srcversion=06C3675E67B2E675955E36E`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -191,7 +191,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 090E915D8E9ED7786CCAD27`
+  `srcversion 06C3675E67B2E675955E36E`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -222,7 +222,7 @@ implementation if it materially changes scope.
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `090E915D8E9ED7786CCAD27` as the
+- keep the current guarded-deploy override `06C3675E67B2E675955E36E` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -254,10 +254,10 @@ implementation if it materially changes scope.
   question on the fixed module:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
-  - build the first explicit SGX microkernel-facing scheduler work packet,
-    request work packet, or queue packet sequence object above the
-    now-shared `psb_sgx_lab_submit_sgx_ta_request_sequence`, so the typed top
-    layer starts modeling a real SGX submit packet or scheduler work entry
+  - build the next explicit SGX request-side scheduler or microkernel-facing
+    work record above the now-shared
+    `psb_sgx_lab_submit_sgx_ta_request_work_record`, so the typed top layer
+    starts modeling a real SGX work record or request-side scheduler entry
     instead of stopping at the public request boundary plus request-level
     refresh/count/ticket progression above the queue-packet seam
 - read the saved parent result with the newer semantics:
