@@ -15,22 +15,22 @@ Current live note on May 14, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260514-154213-sgx-ta-request-work-event-deploy](/root/Poulsbo/logs/vaio-deploy/20260514-154213-sgx-ta-request-work-event-deploy)
+  [logs/vaio-deploy/20260514-155500-sgx-ta-request-work-state-deploy](/root/Poulsbo/logs/vaio-deploy/20260514-155500-sgx-ta-request-work-state-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=0B7BEF6C22715A3E3A6B5A8`
-  - `override_module_size=488140`
+  - `driver_srcversion=AD04A2CE076B73340EDFAE4`
+  - `override_module_size=488604`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
   - `xorg_process_count=0`
   - `kdump_service_active=active`
-- the newest internal `request-work-event` batch is now hardware-validated:
+- the newest internal `request-work-state` batch is now hardware-validated:
   - exact regression proof:
-    [logs/vaio-plan-session/20260514-154358-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-154358-sgx-plan-session)
+    [logs/vaio-plan-session/20260514-155648-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-155648-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260514-154457-sgx-submit-ta-request-work-event-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-154457-sgx-submit-ta-request-work-event-live/summary.log)
+    [logs/vaio-ioctl/20260514-155808-sgx-submit-ta-request-work-state-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-155808-sgx-submit-ta-request-work-state-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260514-154537-sgx-multi-submit-ta-request-work-event-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-154537-sgx-multi-submit-ta-request-work-event-live/summary.log)
+    [logs/vaio-ioctl/20260514-155808-sgx-multi-submit-ta-request-work-state-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260514-155808-sgx-multi-submit-ta-request-work-state-live/summary.log)
 - the pinned stable-lab milestone for today is now the restored exact same
   override plus a three-cycle proof soak:
   - soak bundle:
@@ -45,9 +45,9 @@ Current live note on May 14, 2026:
     - `final_driver_srcversion=92CB8FBC111248DC82C2825`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260514-154358-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-154358-sgx-plan-session)
+  - [logs/vaio-plan-session/20260514-155648-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-155648-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=0B7BEF6C22715A3E3A6B5A8`
+  - `final_driver_srcversion=AD04A2CE076B73340EDFAE4`
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
