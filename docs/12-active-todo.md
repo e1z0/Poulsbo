@@ -45,7 +45,14 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-deploy/20260514-001931-sgx-ta-request-sequence-deploy`
+  - `logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy`
+- stable-lab soak bundle:
+  - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
+  - `session_outcome=completed`
+  - `cycles=3`
+  - `completed_cycles=3`
+  - `last_overall=remote_usable`
+  - `final_driver_srcversion=92CB8FBC111248DC82C2825`
 - exact live reruns on the fixed module now all complete cleanly:
   - `plan_query_offset`
   - `plan_query_config`
@@ -148,6 +155,8 @@ implementation if it materially changes scope.
   `./scripts/run-vaio-sgx-plan-recovery-session.sh`
 - preferred one-command full-cycle rerun once the target is back:
   `./scripts/run-vaio-sgx-plan-guarded-deploy-session.sh`
+- preferred one-command stability proof on the pinned fixed line:
+  `CYCLES=3 ./scripts/run-vaio-sgx-stable-soak-session.sh`
 - preferred operator entrypoint regardless of current target state:
   `./scripts/run-vaio-sgx-plan-session.sh`
 - current default phase-profile policy:
@@ -215,6 +224,13 @@ implementation if it materially changes scope.
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
 - keep the current guarded-deploy override `92CB8FBC111248DC82C2825` as the
   active headless, panic-safe validation base
+- keep the restored stable-lab milestone fixed for today:
+  - guarded redeploy proof:
+    `logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy`
+  - three-cycle soak proof:
+    `logs/vaio-stability/20260514-083309-sgx-stable-soak`
+- do not treat the driver as desktop-ready; treat the current target as a
+  pinned SGX lab baseline that is safe to rerun and investigate
 - treat the exact single-submit ladder as closed for the current module:
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`

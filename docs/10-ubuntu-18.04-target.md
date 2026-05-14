@@ -15,7 +15,7 @@ Current live note on May 14, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-deploy/20260514-001931-sgx-ta-request-sequence-deploy](/root/Poulsbo/logs/vaio-deploy/20260514-001931-sgx-ta-request-sequence-deploy)
+  [logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy](/root/Poulsbo/logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy)
   and it booted the VAIO onto:
   - `driver_srcversion=92CB8FBC111248DC82C2825`
   - `override_module_size=481200`
@@ -24,6 +24,18 @@ Current live note on May 14, 2026:
   - `lightdm_active=inactive`
   - `xorg_process_count=0`
   - `kdump_service_active=active`
+- the pinned stable-lab milestone for today is now the restored exact same
+  override plus a three-cycle proof soak:
+  - soak bundle:
+    [logs/vaio-stability/20260514-083309-sgx-stable-soak](/root/Poulsbo/logs/vaio-stability/20260514-083309-sgx-stable-soak)
+  - wrapper:
+    [scripts/run-vaio-sgx-stable-soak-session.sh](/root/Poulsbo/scripts/run-vaio-sgx-stable-soak-session.sh)
+  - final soak result:
+    - `session_outcome=completed`
+    - `cycles=3`
+    - `completed_cycles=3`
+    - `last_overall=remote_usable`
+    - `final_driver_srcversion=92CB8FBC111248DC82C2825`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
   - [logs/vaio-plan-session/20260514-002126-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260514-002126-sgx-plan-session)
@@ -126,6 +138,8 @@ Current live note on May 14, 2026:
   - `tcp_22_status=open`
   - `ssh_pubkey_status=ok`
   - `overall=remote_usable`
+- the fastest repeatability command for that restored fixed line is now:
+  `CYCLES=3 ./scripts/run-vaio-sgx-stable-soak-session.sh`
 - if the machine is already on the current override and you want the exact
   regression proof without a redeploy:
   `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`

@@ -5,6 +5,57 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-14
 
+### SGX stable lab milestone soak
+
+- Added:
+  - `scripts/run-vaio-sgx-stable-soak-session.sh`
+- Restored the workspace to the last known-good SGX lab kernel line instead of
+  continuing the failed uncommitted `request_work_packet` experiment:
+  - pinned top-level baseline:
+    - `8556d312`
+  - pinned kernel-subrepo baseline:
+    - `a89b91f8b`
+  - pinned live override:
+    - `driver_srcversion=92CB8FBC111248DC82C2825`
+- Rebuilt that exact local module and confirmed the rebuilt artifact matched
+  the pinned live `srcversion`.
+- Redeployed the same pinned build with a longer rollback grace in:
+  - `logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy`
+  - final live override:
+    - `driver_srcversion=92CB8FBC111248DC82C2825`
+    - `override_module_size=481200`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- Added one reusable stable-soak wrapper that runs:
+  - exact `complete` plan recovery
+  - focused typed submit proof
+  - typed multi-submit proof
+  - for a configurable number of cycles under one session tree
+- Ran the new stable-soak wrapper for three full cycles in:
+  - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
+  - final wrapper result:
+    - `session_outcome=completed`
+    - `cycles=3`
+    - `completed_cycles=3`
+    - `last_overall=remote_usable`
+    - `final_driver_srcversion=92CB8FBC111248DC82C2825`
+- Each soak cycle completed:
+  - one exact no-redeploy `plan` proof at terminal `complete`
+  - one focused typed submit proof
+  - one typed multi-submit proof
+- The latest stable-lab milestone therefore is now:
+  - exact live proof remains pinned at:
+    - `logs/vaio-plan-session/20260514-002126-sgx-plan-session`
+  - restored guarded deploy is:
+    - `logs/vaio-deploy/20260514-082755-sgx-stable-milestone-deploy`
+  - repeatability soak is:
+    - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
+- This is explicitly a stable SGX lab milestone, not a finished desktop-ready
+  driver.
+- Documented in:
+  - `docs/205-sgx-stable-lab-milestone.md`
+
 ### SGX submit TA request-sequence object
 
 - Updated:
