@@ -1,143 +1,143 @@
-From 8b003ab99abd124b799d947d3fff5689f1569eba Mon Sep 17 00:00:00 2001
+From da802591660d3a0843381a21ff4b3649f2d213c6 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 13:34:39 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op request relay
+Date: Fri, 15 May 2026 14:32:59 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op request terminal
 
 ---
  drivers/gpu/drm/gma500/psb_drv.c | 86 +++++++++++++++++++++++++++-----
  1 file changed, 73 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 5bcb3d915..c55437bb5 100644
+index c55437bb5..a9a3eed63 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2852,6 +2852,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge {
- 	u32 request_bridge_op;
+@@ -2866,6 +2866,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay {
+ 	u32 request_relay_op;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal
-+		submit_op_request_portal;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay
++		submit_op_request_relay;
 +	struct drm_psb_sgx_lab_submit_op request_op;
 +	struct drm_psb_sgx_lab_submit_op response_op;
 +	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 +	bool active;
 +	bool dependency_fields_present;
-+	bool issue_request_relay;
-+	bool transition_request_relay;
++	bool issue_request_terminal;
++	bool transition_request_terminal;
 +	u32 resolved_submit_id;
-+	u32 request_relay_op;
++	u32 request_terminal_op;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -19691,6 +19705,52 @@ out_free_bridge:
+@@ -19751,6 +19765,51 @@ out_free_relay:
  	return ret;
  }
  
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_terminal(
 +	struct drm_device *dev,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay **return_out)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal **return_out)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal
-+		*portal = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay *relay;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay *relay = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal *terminal;
 +	int ret;
 +
 +	if (!dev || !op || !return_out)
 +		return -EINVAL;
 +
 +	*return_out = NULL;
-+	relay = kmalloc(sizeof(*relay), GFP_KERNEL);
-+	if (!relay)
++	terminal = kmalloc(sizeof(*terminal), GFP_KERNEL);
++	if (!terminal)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
-+		dev, op, dependency_fields_present, &portal);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay(
++		dev, op, dependency_fields_present, &relay);
 +	if (ret)
-+		goto out_free_relay;
++		goto out_free_terminal;
 +
-+	relay->submit_op_request_portal = *portal;
-+	relay->request_op = portal->request_op;
-+	relay->response_op = portal->response_op;
-+	relay->outcome = portal->outcome;
-+	relay->active = portal->active;
-+	relay->dependency_fields_present =
-+		portal->dependency_fields_present;
-+	relay->issue_request_relay = portal->issue_request_portal;
-+	relay->transition_request_relay =
-+		portal->transition_request_portal;
-+	relay->resolved_submit_id = portal->resolved_submit_id;
-+	relay->request_relay_op = op->op;
++	terminal->submit_op_request_relay = *relay;
++	terminal->request_op = relay->request_op;
++	terminal->response_op = relay->response_op;
++	terminal->outcome = relay->outcome;
++	terminal->active = relay->active;
++	terminal->dependency_fields_present =
++		relay->dependency_fields_present;
++	terminal->issue_request_terminal = relay->issue_request_relay;
++	terminal->transition_request_terminal =
++		relay->transition_request_relay;
++	terminal->resolved_submit_id = relay->resolved_submit_id;
++	terminal->request_terminal_op = op->op;
 +
-+	kfree(portal);
-+	*return_out = relay;
++	kfree(relay);
++	*return_out = terminal;
 +	return 0;
 +
-+out_free_relay:
-+	kfree(relay);
++out_free_terminal:
++	kfree(terminal);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_prepare_queue_packets_locked(
  	struct psb_sgx_lab_object *control_obj,
  	struct psb_sgx_lab_submit *submit,
-@@ -25865,7 +25925,7 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
+@@ -25925,7 +25984,8 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
  {
  	struct drm_psb_private *dev_priv = dev->dev_private;
  	struct drm_psb_sgx_lab_submit_op *op = data;
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay *relay = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_relay *relay = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal *terminal =
++		NULL;
  	const char *slot_name = NULL;
  	bool dependency_fields_present;
  	u32 submit_id;
-@@ -26115,16 +26175,16 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
+@@ -26175,16 +26235,16 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
  						op->packet_count);
  		break;
  	case DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE:
--		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
--			dev, op, dependency_fields_present, &portal);
-+		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay(
-+			dev, op, dependency_fields_present, &relay);
+-		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay(
+-			dev, op, dependency_fields_present, &relay);
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_terminal(
++			dev, op, dependency_fields_present, &terminal);
  		if (!ret)
--			submit_id = portal->response_op.resolved_submit_id;
-+			submit_id = relay->response_op.resolved_submit_id;
+-			submit_id = relay->response_op.resolved_submit_id;
++			submit_id = terminal->response_op.resolved_submit_id;
  		break;
  	case DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION:
--		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
--			dev, op, dependency_fields_present, &portal);
-+		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay(
-+			dev, op, dependency_fields_present, &relay);
+-		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay(
+-			dev, op, dependency_fields_present, &relay);
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_terminal(
++			dev, op, dependency_fields_present, &terminal);
  		if (!ret)
--			submit_id = portal->response_op.resolved_submit_id;
-+			submit_id = relay->response_op.resolved_submit_id;
+-			submit_id = relay->response_op.resolved_submit_id;
++			submit_id = terminal->response_op.resolved_submit_id;
  		break;
  	case DRM_PSB_SGX_LAB_SUBMIT_OP_ATTACH:
  		if (op->owner_state || op->packet_count || op->context ||
-@@ -26565,17 +26625,17 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
+@@ -26625,17 +26685,17 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
  		return -EINVAL;
  	}
  	if (ret)
--		goto out_free_portal;
--	if (portal) {
--		kfree(portal);
--		portal = NULL;
-+		goto out_free_relay;
-+	if (relay) {
-+		kfree(relay);
-+		relay = NULL;
+-		goto out_free_relay;
+-	if (relay) {
+-		kfree(relay);
+-		relay = NULL;
++		goto out_free_terminal;
++	if (terminal) {
++		kfree(terminal);
++		terminal = NULL;
  	}
  
  	op->resolved_submit_id = submit_id;
  	return 0;
  
--out_free_portal:
--	kfree(portal);
-+out_free_relay:
-+	kfree(relay);
+-out_free_relay:
+-	kfree(relay);
++out_free_terminal:
++	kfree(terminal);
  	return ret;
  }
  
