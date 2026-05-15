@@ -5,6 +5,77 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-16
 
+### SGX submit TA submit-op request-relay cleanup
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Removed the now-redundant ioctl-side return wrapper layer:
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_relay`
+  - `poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_relay()`
+- Kept the live top request path split on:
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_portal`
+- The shared live execution boundary now changes only by one cleanup:
+  - the parsed sysfs `issue` path still uses
+    `sgx_ta_submit_op_request_bridge`
+  - the parsed sysfs `transition` path still uses
+    `sgx_ta_submit_op_request_bridge`
+  - the parsed sysfs submit-store seam still sits directly on
+    `sgx_ta_submit_op_request_bridge`
+  - the ioctl `ISSUE` path now uses `sgx_ta_submit_op_request_portal`
+  - the ioctl `TRANSITION` path now uses
+    `sgx_ta_submit_op_request_portal`
+- The split top pair is now one layer smaller and still validated:
+  - `request_bridge` owns the copied outer wrapper seam
+  - `request_portal` owns the copied ioctl-side request / response / outcome
+    return seam and the final ioctl-side `ISSUE` / `TRANSITION` caller seam
+- Guarded deploy plus recovery completed successfully in:
+  - `logs/vaio-plan/20260516-012104-sgx-ta-submit-op-request-relay-cleanup-deploy`
+  - final live override:
+    - `driver_srcversion=93E71D737D3CA4C02534E5B`
+    - `override_module_size=507992`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - validated deploy bundle:
+      - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on that module still passed:
+  - `logs/vaio-plan-session/20260516-012305-sgx-plan-session`
+  - `session_outcome=completed`
+  - `plan_session_mode=recovery`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=93E71D737D3CA4C02534E5B`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260516-012305-sgx-submit-ta-submit-op-request-relay-cleanup-live/summary.log`
+  - final focused proof:
+    - `submit_resolved_id=1`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260516-012305-sgx-multi-submit-ta-submit-op-request-relay-cleanup-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=2`
+    - `SUBMIT_B_ID=3`
+    - submit A final:
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=4`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260516-012305`
+- Documented in:
+  - `docs/272-sgx-submit-ta-submit-op-request-relay-cleanup.md`
+
 ### SGX submit TA submit-op request-terminal cleanup
 
 - Updated:

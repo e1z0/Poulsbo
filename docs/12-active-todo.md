@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260516-010642-sgx-plan-session`
-- the newest internal `ta-submit-op-request-terminal-cleanup` batch is now
+  - `logs/vaio-plan-session/20260516-012305-sgx-plan-session`
+- the newest internal `ta-submit-op-request-relay-cleanup` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260516-010642-sgx-plan-session`
+    - `logs/vaio-plan-session/20260516-012305-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260516-010550-sgx-submit-ta-submit-op-request-terminal-cleanup-live/summary.log`
+    - `logs/vaio-ioctl/20260516-012305-sgx-submit-ta-submit-op-request-relay-cleanup-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260516-010745-sgx-multi-submit-ta-submit-op-request-terminal-cleanup-live/summary.log`
+    - `logs/vaio-ioctl/20260516-012305-sgx-multi-submit-ta-submit-op-request-relay-cleanup-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260516-010642`
-  - `source_row_module_srcversion=8B4A3031EA4523816EEACA1`
+  - `source_timestamp=20260516-012305`
+  - `source_row_module_srcversion=93E71D737D3CA4C02534E5B`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -277,13 +277,12 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_portal`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge`
-  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_relay`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `8B4A3031EA4523816EEACA1` as the
+- keep the current guarded-deploy override `93E71D737D3CA4C02534E5B` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -296,12 +295,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-terminal-cleanup` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-relay-cleanup` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260516-010550-sgx-submit-ta-submit-op-request-terminal-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260516-012305-sgx-submit-ta-submit-op-request-relay-cleanup-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260516-010745-sgx-multi-submit-ta-submit-op-request-terminal-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260516-012305-sgx-multi-submit-ta-submit-op-request-relay-cleanup-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -319,7 +318,7 @@ implementation if it materially changes scope.
     more hardware-facing SGX execution-side change above the now-cleaned
     top request split rooted at
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge` and
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_relay`,
+    `psb_sgx_lab_submit_sgx_ta_submit_op_request_portal`,
     not a broader retry that rejoins those seams
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
