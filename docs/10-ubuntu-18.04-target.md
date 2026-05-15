@@ -15,10 +15,10 @@ Current live note on May 15, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-plan/20260515-032419-sgx-ta-submit-op-request-trace-deploy/children/20260515-032419-guarded-deploy](/root/Poulsbo/logs/vaio-plan/20260515-032419-sgx-ta-submit-op-request-trace-deploy/children/20260515-032419-guarded-deploy)
+  [logs/vaio-plan/20260515-034251-sgx-ta-submit-op-request-frontend-deploy/children/20260515-034251-guarded-deploy](/root/Poulsbo/logs/vaio-plan/20260515-034251-sgx-ta-submit-op-request-frontend-deploy/children/20260515-034251-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=02FE6E9BFD5534B9D451723`
-  - `override_module_size=506048`
+  - `driver_srcversion=77BBC4071B0DC6393A76C80`
+  - `override_module_size=506420`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -158,13 +158,14 @@ Current live note on May 15, 2026:
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_path`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_report`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_trace`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-032604`
-  - `source_row_module_srcversion=02FE6E9BFD5534B9D451723`
+  - `source_timestamp=20260515-034512`
+  - `source_row_module_srcversion=77BBC4071B0DC6393A76C80`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
@@ -186,8 +187,8 @@ Current live note on May 15, 2026:
 - the next engineering step is no longer more exact ladder narrowing; it is
   the next SGX execution-side change on top of the new shared
   `exec_record -> exec_packet -> cmdta_kick -> ccb_kick -> sgx_ccb_kick -> cmdta_shared -> sgx_cmdta -> sgx_ta_kick -> sgx_ta_command -> sgx_queued_ta_command -> sgx_ta_submission -> sgx_ta_execution -> sgx_ta_timeline -> sgx_ta_runtime -> sgx_ta_gate -> sgx_ta_control -> sgx_ta_schedule -> sgx_ta_dispatch -> sgx_ta_path -> sgx_ta_commit -> sgx_ta_event -> sgx_ta_work_item -> sgx_ta_op -> sgx_ta_scheduler -> sgx_ta_sequence -> sgx_ta_work_queue`
-  -> sgx_ta_job -> sgx_ta_request -> sgx_ta_ioctl_request -> sgx_ta_submit_op_request -> sgx_ta_queue_item -> sgx_ta_queue_command -> sgx_ta_scheduler_entry -> sgx_ta_queue_stream -> sgx_ta_queue_packet -> sgx_ta_request_packet -> sgx_ta_request_sequence -> sgx_ta_request_work_packet -> sgx_ta_request_execution -> sgx_ta_request_work_entry -> sgx_ta_request_work_result -> sgx_ta_request_work_record -> sgx_ta_request_work_request -> sgx_ta_request_work_operation -> sgx_ta_request_work_event -> sgx_ta_request_work_state -> sgx_ta_request_work_action -> sgx_ta_request_work_task -> sgx_ta_request_work_run -> sgx_ta_request_work_invocation -> sgx_ta_request_work_submit_op -> sgx_ta_request_work_outcome -> sgx_ta_request_work_response -> sgx_ta_submit_op_reply -> sgx_ta_submit_op_control -> sgx_ta_submit_op_ioctl -> sgx_ta_submit_op_entry -> sgx_ta_submit_op_call -> sgx_ta_submit_op_entrypoint -> sgx_ta_submit_op_route -> sgx_ta_submit_op_result -> sgx_ta_submit_op_dispatch -> sgx_ta_submit_op_handler -> sgx_ta_submit_op_request_handler -> sgx_ta_submit_op_request_wrapper -> sgx_ta_submit_op_request_entry -> sgx_ta_submit_op_request_call -> sgx_ta_submit_op_request_dispatch -> sgx_ta_submit_op_request_result -> sgx_ta_submit_op_request_response -> sgx_ta_submit_op_request_return -> sgx_ta_submit_op_request_resolution -> sgx_ta_submit_op_request_operation -> sgx_ta_submit_op_request_control -> sgx_ta_submit_op_request_path -> sgx_ta_submit_op_request_report -> sgx_ta_submit_op_request_trace` kernel model, with both live mutation entrypoints now routed through the shared
-  `sgx_ta_submit_op_entry -> sgx_ta_submit_op_call -> sgx_ta_submit_op_entrypoint -> sgx_ta_submit_op_route -> sgx_ta_submit_op_result -> sgx_ta_submit_op_dispatch -> sgx_ta_submit_op_handler -> sgx_ta_submit_op_request_handler -> sgx_ta_submit_op_request_wrapper -> sgx_ta_submit_op_request_entry -> sgx_ta_submit_op_request_call -> sgx_ta_submit_op_request_dispatch -> sgx_ta_submit_op_request_result -> sgx_ta_submit_op_request_response -> sgx_ta_submit_op_request_return -> sgx_ta_submit_op_request_resolution -> sgx_ta_submit_op_request_operation -> sgx_ta_submit_op_request_control -> sgx_ta_submit_op_request_path -> sgx_ta_submit_op_request_report -> sgx_ta_submit_op_request_trace` top layer that now
+  -> sgx_ta_job -> sgx_ta_request -> sgx_ta_ioctl_request -> sgx_ta_submit_op_request -> sgx_ta_queue_item -> sgx_ta_queue_command -> sgx_ta_scheduler_entry -> sgx_ta_queue_stream -> sgx_ta_queue_packet -> sgx_ta_request_packet -> sgx_ta_request_sequence -> sgx_ta_request_work_packet -> sgx_ta_request_execution -> sgx_ta_request_work_entry -> sgx_ta_request_work_result -> sgx_ta_request_work_record -> sgx_ta_request_work_request -> sgx_ta_request_work_operation -> sgx_ta_request_work_event -> sgx_ta_request_work_state -> sgx_ta_request_work_action -> sgx_ta_request_work_task -> sgx_ta_request_work_run -> sgx_ta_request_work_invocation -> sgx_ta_request_work_submit_op -> sgx_ta_request_work_outcome -> sgx_ta_request_work_response -> sgx_ta_submit_op_reply -> sgx_ta_submit_op_control -> sgx_ta_submit_op_ioctl -> sgx_ta_submit_op_entry -> sgx_ta_submit_op_call -> sgx_ta_submit_op_entrypoint -> sgx_ta_submit_op_route -> sgx_ta_submit_op_result -> sgx_ta_submit_op_dispatch -> sgx_ta_submit_op_handler -> sgx_ta_submit_op_request_handler -> sgx_ta_submit_op_request_wrapper -> sgx_ta_submit_op_request_entry -> sgx_ta_submit_op_request_call -> sgx_ta_submit_op_request_dispatch -> sgx_ta_submit_op_request_result -> sgx_ta_submit_op_request_response -> sgx_ta_submit_op_request_return -> sgx_ta_submit_op_request_resolution -> sgx_ta_submit_op_request_operation -> sgx_ta_submit_op_request_control -> sgx_ta_submit_op_request_path -> sgx_ta_submit_op_request_report -> sgx_ta_submit_op_request_trace -> sgx_ta_submit_op_request_frontend` kernel model, with both live mutation entrypoints now routed through the shared
+  `sgx_ta_submit_op_entry -> sgx_ta_submit_op_call -> sgx_ta_submit_op_entrypoint -> sgx_ta_submit_op_route -> sgx_ta_submit_op_result -> sgx_ta_submit_op_dispatch -> sgx_ta_submit_op_handler -> sgx_ta_submit_op_request_handler -> sgx_ta_submit_op_request_wrapper -> sgx_ta_submit_op_request_entry -> sgx_ta_submit_op_request_call -> sgx_ta_submit_op_request_dispatch -> sgx_ta_submit_op_request_result -> sgx_ta_submit_op_request_response -> sgx_ta_submit_op_request_return -> sgx_ta_submit_op_request_resolution -> sgx_ta_submit_op_request_operation -> sgx_ta_submit_op_request_control -> sgx_ta_submit_op_request_path -> sgx_ta_submit_op_request_report -> sgx_ta_submit_op_request_trace -> sgx_ta_submit_op_request_frontend` top layer that now
   owns the copied public submit-op request image, copied caller-visible
   reply image, selected submit-id, resolved submit-id return path, outer
   caller-facing submit-op call seam, outer shared submit-op entrypoint seam,
