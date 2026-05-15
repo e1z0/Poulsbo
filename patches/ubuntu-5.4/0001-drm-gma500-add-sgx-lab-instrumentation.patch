@@ -1,167 +1,146 @@
-From 00b9af39f161cb1b229f1a6400d1862390c71df0 Mon Sep 17 00:00:00 2001
+From 6ad7ea82aecca5254a96e70d452afbc558e66660 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 21:00:53 +0300
-Subject: [PATCH] drm/gma500: fold SGX TA request sysfs into request store
+Date: Fri, 15 May 2026 21:15:06 +0300
+Subject: [PATCH] drm/gma500: fold SGX TA request public into request ioctl
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 103 +++++--------------------------
- 1 file changed, 17 insertions(+), 86 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 89 ++++++--------------------------
+ 1 file changed, 15 insertions(+), 74 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index c1cabce9c..67b929f87 100644
+index 67b929f87..2247919b1 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2985,7 +2985,7 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command {
- 	u32 request_command_op;
+@@ -2908,7 +2908,7 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_alias {
+ 	u32 request_alias_op;
  };
  
--struct psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs {
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store {
- 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command
- 		submit_op_request_command;
+-struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public {
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl {
+ 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal
+ 		submit_op_request_terminal;
  	struct drm_psb_sgx_lab_submit_op request_op;
-@@ -2993,21 +2993,6 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs {
+@@ -2916,20 +2916,6 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public {
  	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
  	bool active;
  	bool dependency_fields_present;
--	bool compatibility_request_sysfs;
--	bool issue_request_sysfs;
--	bool transition_request_sysfs;
+-	bool issue_request_public;
+-	bool transition_request_public;
 -	u32 resolved_submit_id;
--	u32 request_sysfs_op;
+-	u32 request_public_op;
 -};
 -
--struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs
--		submit_op_request_sysfs;
+-struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl {
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public
+-		submit_op_request_public;
 -	struct drm_psb_sgx_lab_submit_op request_op;
 -	struct drm_psb_sgx_lab_submit_op response_op;
 -	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 -	bool active;
 -	bool dependency_fields_present;
- 	bool compatibility_request_store;
- 	bool issue_request_store;
- 	bool transition_request_store;
-@@ -20371,61 +20356,6 @@ out_free_command:
+ 	bool issue_request_ioctl;
+ 	bool transition_request_ioctl;
+ 	u32 resolved_submit_id;
+@@ -20073,59 +20059,14 @@ out_free_alias:
  	return ret;
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_sysfs(
+-static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_public(
 -	struct drm_device *dev,
--	u32 op_kind,
--	u32 submit_id,
--	u32 owner_state,
--	u32 packet_count,
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs **return_out)
+-	const struct drm_psb_sgx_lab_submit_op *op,
+-	bool dependency_fields_present,
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public **return_out)
 -{
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command *command =
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal *terminal =
 -		NULL;
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs *sysfs;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public *public;
 -	int ret;
 -
--	if (!dev || !return_out)
--		return -EINVAL;
--	if (op_kind != DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE &&
--	    op_kind != DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION)
+-	if (!dev || !op || !return_out)
 -		return -EINVAL;
 -
 -	*return_out = NULL;
--	sysfs = kzalloc(sizeof(*sysfs), GFP_KERNEL);
--	if (!sysfs)
+-	public = kmalloc(sizeof(*public), GFP_KERNEL);
+-	if (!public)
 -		return -ENOMEM;
 -
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_command(
--		dev, op_kind, submit_id, owner_state, packet_count, &command);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_terminal(
+-		dev, op, dependency_fields_present, &terminal);
 -	if (ret)
--		goto out_free_sysfs;
+-		goto out_free_public;
 -
--	sysfs->submit_op_request_command = *command;
--	sysfs->request_op = command->request_op;
--	sysfs->response_op = command->response_op;
--	sysfs->outcome = command->outcome;
--	sysfs->active = command->active;
--	sysfs->dependency_fields_present =
--		command->dependency_fields_present;
--	sysfs->compatibility_request_sysfs =
--		command->compatibility_request_command;
--	sysfs->issue_request_sysfs =
--		command->issue_request_command;
--	sysfs->transition_request_sysfs =
--		command->transition_request_command;
--	sysfs->resolved_submit_id = command->resolved_submit_id;
--	sysfs->request_sysfs_op = op_kind;
+-	public->submit_op_request_terminal = *terminal;
+-	public->request_op = terminal->request_op;
+-	public->response_op = terminal->response_op;
+-	public->outcome = terminal->outcome;
+-	public->active = terminal->active;
+-	public->dependency_fields_present =
+-		terminal->dependency_fields_present;
+-	public->issue_request_public = terminal->issue_request_terminal;
+-	public->transition_request_public =
+-		terminal->transition_request_terminal;
+-	public->resolved_submit_id = terminal->resolved_submit_id;
+-	public->request_public_op = op->op;
 -
--	kfree(command);
--	*return_out = sysfs;
+-	kfree(terminal);
+-	*return_out = public;
 -	return 0;
 -
--out_free_sysfs:
--	kfree(command);
--	kfree(sysfs);
+-out_free_public:
+-	kfree(public);
 -	return ret;
 -}
 -
- static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
+ static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
  	struct drm_device *dev,
- 	u32 op_kind,
-@@ -20434,7 +20364,8 @@ static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
- 	u32 packet_count,
- 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store **return_out)
+ 	const struct drm_psb_sgx_lab_submit_op *op,
+ 	bool dependency_fields_present,
+ 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl **return_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs *sysfs = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command *command =
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public *public = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal *terminal =
 +		NULL;
- 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store *store;
+ 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl *ioctl;
  	int ret;
  
-@@ -20449,33 +20380,33 @@ static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
- 	if (!store)
+@@ -20137,25 +20078,25 @@ static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
+ 	if (!ioctl)
  		return -ENOMEM;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_sysfs(
--		dev, op_kind, submit_id, owner_state, packet_count, &sysfs);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_command(
-+		dev, op_kind, submit_id, owner_state, packet_count, &command);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_public(
+-		dev, op, dependency_fields_present, &public);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_terminal(
++		dev, op, dependency_fields_present, &terminal);
  	if (ret)
- 		goto out_free_store;
+ 		goto out_free_ioctl;
  
--	store->submit_op_request_sysfs = *sysfs;
--	store->request_op = sysfs->request_op;
--	store->response_op = sysfs->response_op;
--	store->outcome = sysfs->outcome;
--	store->active = sysfs->active;
-+	store->submit_op_request_command = *command;
-+	store->request_op = command->request_op;
-+	store->response_op = command->response_op;
-+	store->outcome = command->outcome;
-+	store->active = command->active;
- 	store->dependency_fields_present =
--		sysfs->dependency_fields_present;
-+		command->dependency_fields_present;
- 	store->compatibility_request_store =
--		sysfs->compatibility_request_sysfs;
-+		command->compatibility_request_command;
- 	store->issue_request_store =
--		sysfs->issue_request_sysfs;
-+		command->issue_request_command;
- 	store->transition_request_store =
--		sysfs->transition_request_sysfs;
--	store->resolved_submit_id = sysfs->resolved_submit_id;
-+		command->transition_request_command;
-+	store->resolved_submit_id = command->resolved_submit_id;
- 	store->request_store_op = op_kind;
+-	ioctl->submit_op_request_public = *public;
+-	ioctl->request_op = public->request_op;
+-	ioctl->response_op = public->response_op;
+-	ioctl->outcome = public->outcome;
+-	ioctl->active = public->active;
++	ioctl->submit_op_request_terminal = *terminal;
++	ioctl->request_op = terminal->request_op;
++	ioctl->response_op = terminal->response_op;
++	ioctl->outcome = terminal->outcome;
++	ioctl->active = terminal->active;
+ 	ioctl->dependency_fields_present =
+-		public->dependency_fields_present;
+-	ioctl->issue_request_ioctl = public->issue_request_public;
++		terminal->dependency_fields_present;
++	ioctl->issue_request_ioctl = terminal->issue_request_terminal;
+ 	ioctl->transition_request_ioctl =
+-		public->transition_request_public;
+-	ioctl->resolved_submit_id = public->resolved_submit_id;
++		terminal->transition_request_terminal;
++	ioctl->resolved_submit_id = terminal->resolved_submit_id;
+ 	ioctl->request_ioctl_op = op->op;
  
--	kfree(sysfs);
-+	kfree(command);
- 	*return_out = store;
+-	kfree(public);
++	kfree(terminal);
+ 	*return_out = ioctl;
  	return 0;
  
- out_free_store:
--	kfree(sysfs);
-+	kfree(command);
- 	kfree(store);
- 	return ret;
- }
 -- 
 2.34.1
 

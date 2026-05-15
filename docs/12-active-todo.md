@@ -281,7 +281,6 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_adapter`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_alias`
-  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_public`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_origin`
@@ -292,7 +291,7 @@ implementation if it materially changes scope.
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `E8BBA90D394DB692777735B` as the
+- keep the current guarded-deploy override `9C46B6BC078AC87963DFEF7` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -305,12 +304,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-store-cleanup` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-ioctl-cleanup` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260515-205447-sgx-submit-ta-submit-op-request-store-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260515-210938-sgx-submit-ta-submit-op-request-ioctl-cleanup-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260515-205547-sgx-multi-submit-ta-submit-op-request-store-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260515-211024-sgx-multi-submit-ta-submit-op-request-ioctl-cleanup-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -332,7 +331,6 @@ implementation if it materially changes scope.
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_alias` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl` and
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_public` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_adapter` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_relay` and
