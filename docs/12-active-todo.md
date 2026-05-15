@@ -281,13 +281,12 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_terminal`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_alias`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl`
-  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `DC33584BE74BE0302ABDD06` as the
+- keep the current guarded-deploy override `260DE5BEDE54552051085A3` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -300,12 +299,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-origin-cleanup` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-entrypoint-cleanup` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260515-234051-sgx-submit-ta-submit-op-request-origin-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260515-235820-sgx-submit-ta-submit-op-request-entrypoint-cleanup-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260515-234148-sgx-multi-submit-ta-submit-op-request-origin-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260515-235912-sgx-multi-submit-ta-submit-op-request-entrypoint-cleanup-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -322,7 +321,6 @@ implementation if it materially changes scope.
   - stop adding more request-wrapper layers and move into the first
     more hardware-facing SGX execution-side change above the now-cleaned
     top request split rooted at
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_alias` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge` and
