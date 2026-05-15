@@ -15,23 +15,23 @@ Current live note on May 15, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-plan/20260515-212139-sgx-ta-submit-op-request-alias-cleanup-deploy](/root/Poulsbo/logs/vaio-plan/20260515-212139-sgx-ta-submit-op-request-alias-cleanup-deploy)
+  [logs/vaio-plan/20260515-215755-sgx-ta-submit-op-request-store-cleanup2-deploy](/root/Poulsbo/logs/vaio-plan/20260515-215755-sgx-ta-submit-op-request-store-cleanup2-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=BD897F01BB8BCC6972DA782`
-  - `override_module_size=510604`
+  - `driver_srcversion=2641E6575EAE48611D23196`
+  - `override_module_size=509864`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
   - `xorg_process_count=0`
   - validated deploy bundle: `kdump_service_active=active`
-- the newest internal `submit-op-request-alias-cleanup` batch is now
-  hardware-validated as the dead compatibility-wrapper removal rerun:
+- the newest internal `submit-op-request-store-cleanup-2` batch is now
+  hardware-validated as the dead parsed-command removal rerun:
   - exact regression proof:
-    [logs/vaio-plan-session/20260515-212324-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260515-212324-sgx-plan-session)
+    [logs/vaio-plan-session/20260515-222113-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260515-222113-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260515-212422-sgx-submit-ta-submit-op-request-alias-cleanup-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-212422-sgx-submit-ta-submit-op-request-alias-cleanup-live/summary.log)
+    [logs/vaio-ioctl/20260515-222213-sgx-submit-ta-submit-op-request-store-cleanup2-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-222213-sgx-submit-ta-submit-op-request-store-cleanup2-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260515-212500-sgx-multi-submit-ta-submit-op-request-alias-cleanup-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-212500-sgx-multi-submit-ta-submit-op-request-alias-cleanup-live/summary.log)
+    [logs/vaio-ioctl/20260515-222251-sgx-multi-submit-ta-submit-op-request-store-cleanup2-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-222251-sgx-multi-submit-ta-submit-op-request-store-cleanup2-live/summary.log)
 - the pinned stable-lab milestone for today is now the restored exact same
   override plus a three-cycle proof soak:
   - soak bundle:
@@ -46,9 +46,9 @@ Current live note on May 15, 2026:
     - `final_driver_srcversion=92CB8FBC111248DC82C2825`
 - the exact no-redeploy `plan` ladder on that module is now clean all the way
   through `complete`, with the latest canonical terminal proof at:
-  - [logs/vaio-plan-session/20260515-212324-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260515-212324-sgx-plan-session)
+  - [logs/vaio-plan-session/20260515-222113-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260515-222113-sgx-plan-session)
   - `session_outcome=completed`
-  - `final_driver_srcversion=BD897F01BB8BCC6972DA782`
+  - `final_driver_srcversion=2641E6575EAE48611D23196`
 - the current execution-shaped SGX lab memory model now includes:
   - `queue header`
   - `ccb record`
@@ -169,15 +169,14 @@ Current live note on May 15, 2026:
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_origin`
-  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_command`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_store`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-205332`
-  - `source_row_module_srcversion=BD897F01BB8BCC6972DA782`
+  - `source_timestamp=20260515-222113`
+  - `source_row_module_srcversion=2641E6575EAE48611D23196`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
