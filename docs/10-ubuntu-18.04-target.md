@@ -173,13 +173,14 @@ Current live note on May 15, 2026:
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_origin`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_command`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_store`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-192510`
-  - `source_row_module_srcversion=B8659B2874F7971D21FB4D2`
+  - `source_timestamp=20260515-202918`
+  - `source_row_module_srcversion=888811328462B2C6F18202B`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
