@@ -286,12 +286,13 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_origin`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_command`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_sysfs`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `C1DDCA50137885C2202893B` as the
+- keep the current guarded-deploy override `B8659B2874F7971D21FB4D2` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -304,12 +305,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-command` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-sysfs` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260515-184125-sgx-submit-ta-submit-op-request-command-live/summary.log`
+    `logs/vaio-ioctl/20260515-192749-sgx-submit-ta-submit-op-request-sysfs-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260515-184214-sgx-multi-submit-ta-submit-op-request-command-live/summary.log`
+    `logs/vaio-ioctl/20260515-192837-sgx-multi-submit-ta-submit-op-request-sysfs-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
