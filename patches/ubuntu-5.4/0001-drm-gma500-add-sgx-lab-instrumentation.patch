@@ -1,159 +1,159 @@
-From 9ff56861d8cc604874df71f021fa740ea380bb50 Mon Sep 17 00:00:00 2001
+From d30fddb98832ef82792ac26e24f7f9bc7384c2c1 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 03:22:03 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op request report
+Date: Fri, 15 May 2026 03:39:30 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op request trace
 
 ---
  drivers/gpu/drm/gma500/psb_drv.c | 88 +++++++++++++++++++++++++++-----
  1 file changed, 74 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 8cfadbe74..a43ea0133 100644
+index a43ea0133..8b45586a3 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2754,6 +2754,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_path {
- 	u32 request_path_op;
+@@ -2768,6 +2768,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report {
+ 	u32 request_report_op;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_path
-+		submit_op_request_path;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
++		submit_op_request_report;
 +	struct drm_psb_sgx_lab_submit_op request_op;
 +	struct drm_psb_sgx_lab_submit_op response_op;
 +	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 +	bool active;
 +	bool dependency_fields_present;
-+	bool issue_request_report;
-+	bool transition_request_report;
++	bool issue_request_trace;
++	bool transition_request_trace;
 +	u32 resolved_submit_id;
-+	u32 request_report_op;
++	u32 request_trace_op;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -19269,6 +19283,52 @@ out_free_path:
+@@ -19329,6 +19343,52 @@ out_free_report:
  	return ret;
  }
  
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_report(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_trace(
 +	struct drm_device *dev,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
-+		**return_out)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace **return_out)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_path *path = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report *report;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
++		*report = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace *trace;
 +	int ret;
 +
 +	if (!dev || !op || !return_out)
 +		return -EINVAL;
 +
 +	*return_out = NULL;
-+	report = kmalloc(sizeof(*report), GFP_KERNEL);
-+	if (!report)
++	trace = kmalloc(sizeof(*trace), GFP_KERNEL);
++	if (!trace)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_path(
-+		dev, op, dependency_fields_present, &path);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_report(
++		dev, op, dependency_fields_present, &report);
 +	if (ret)
-+		goto out_free_report;
++		goto out_free_trace;
 +
-+	report->submit_op_request_path = *path;
-+	report->request_op = path->request_op;
-+	report->response_op = path->response_op;
-+	report->outcome = path->outcome;
-+	report->active = path->active;
-+	report->dependency_fields_present =
-+		path->dependency_fields_present;
-+	report->issue_request_report = path->issue_request_path;
-+	report->transition_request_report =
-+		path->transition_request_path;
-+	report->resolved_submit_id = path->resolved_submit_id;
-+	report->request_report_op = op->op;
++	trace->submit_op_request_report = *report;
++	trace->request_op = report->request_op;
++	trace->response_op = report->response_op;
++	trace->outcome = report->outcome;
++	trace->active = report->active;
++	trace->dependency_fields_present =
++		report->dependency_fields_present;
++	trace->issue_request_trace = report->issue_request_report;
++	trace->transition_request_trace =
++		report->transition_request_report;
++	trace->resolved_submit_id = report->resolved_submit_id;
++	trace->request_trace_op = op->op;
 +
-+	kfree(path);
-+	*return_out = report;
++	kfree(report);
++	*return_out = trace;
 +	return 0;
 +
-+out_free_report:
-+	kfree(report);
++out_free_trace:
++	kfree(trace);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_prepare_queue_packets_locked(
  	struct psb_sgx_lab_object *control_obj,
  	struct psb_sgx_lab_submit *submit,
-@@ -21752,20 +21812,20 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -21812,20 +21872,20 @@ static int poulsbo_sgx_transition_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_path
--		*path = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
-+		*report = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
+-		*report = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace
++		*trace = NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_path(
--		dev, op, dependency_fields_present, &path);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_report(
-+		dev, op, dependency_fields_present, &report);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_report(
+-		dev, op, dependency_fields_present, &report);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_trace(
++		dev, op, dependency_fields_present, &trace);
  	if (ret)
  		goto out;
  
--	outcome = &path->outcome;
-+	outcome = &report->outcome;
+-	outcome = &report->outcome;
++	outcome = &trace->outcome;
  	if (resolved_submit_id_out)
  		*resolved_submit_id_out =
--			path->response_op.resolved_submit_id;
-+			report->response_op.resolved_submit_id;
+-			report->response_op.resolved_submit_id;
++			trace->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u refresh_views=%u next_transition_count=%u running_advanced=%u complete_advanced=%u next_running_ticket=%u next_complete_ticket=%u active_running_changed=%u\n",
-@@ -21791,7 +21851,7 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -21851,7 +21911,7 @@ static int poulsbo_sgx_transition_submit_op_request(
  		 outcome->active_running_changed);
  
  out:
--	kfree(path);
-+	kfree(report);
+-	kfree(report);
++	kfree(trace);
  	return ret;
  }
  
-@@ -21801,20 +21861,20 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -21861,20 +21921,20 @@ static int poulsbo_sgx_issue_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_path
--		*path = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
-+		*report = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_report
+-		*report = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace
++		*trace = NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_path(
--		dev, op, dependency_fields_present, &path);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_report(
-+		dev, op, dependency_fields_present, &report);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_report(
+-		dev, op, dependency_fields_present, &report);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_trace(
++		dev, op, dependency_fields_present, &trace);
  	if (ret)
  		goto out;
  
--	outcome = &path->outcome;
-+	outcome = &report->outcome;
+-	outcome = &report->outcome;
++	outcome = &trace->outcome;
  	if (resolved_submit_id_out)
  		*resolved_submit_id_out =
--			path->response_op.resolved_submit_id;
-+			report->response_op.resolved_submit_id;
+-			report->response_op.resolved_submit_id;
++			trace->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u refresh_views=%u next_issue_count=%u issue_advanced=%u next_issue_ticket=%u next_issue_submit_id=%u\n",
-@@ -21838,7 +21898,7 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -21898,7 +21958,7 @@ static int poulsbo_sgx_issue_submit_op_request(
  		 outcome->next_state.issue_submit_id);
  
  out:
--	kfree(path);
-+	kfree(report);
+-	kfree(report);
++	kfree(trace);
  	return ret;
  }
  

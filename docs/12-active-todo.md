@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-plan/20260515-031235-sgx-ta-submit-op-request-report-deploy/children/20260515-031235-guarded-deploy`
+  - `logs/vaio-plan/20260515-032419-sgx-ta-submit-op-request-trace-deploy/children/20260515-032419-guarded-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -82,7 +82,7 @@ implementation if it materially changes scope.
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-031353`
+  - `source_timestamp=20260515-032604`
   - `source_row_module_srcversion=277948F7EDD16293BBAB8EC`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
@@ -271,12 +271,13 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_control`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_path`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_report`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_trace`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `277948F7EDD16293BBAB8EC` as the
+- keep the current guarded-deploy override `02FE6E9BFD5534B9D451723` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -289,12 +290,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-report` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-trace` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260515-031519-sgx-submit-ta-submit-op-request-report-live/summary.log`
+    `logs/vaio-ioctl/20260515-032718-sgx-submit-ta-submit-op-request-trace-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260515-031607-sgx-multi-submit-ta-submit-op-request-report-live/summary.log`
+    `logs/vaio-ioctl/20260515-032832-sgx-multi-submit-ta-submit-op-request-trace-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -308,10 +309,9 @@ implementation if it materially changes scope.
   question on the fixed module:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
-  - build the next common submit-op family or broader ioctl/uAPI seam above
-    the now-shared
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_report`, not another
-    nested rewrap of the same top submit-op request boundary
+  - build the next broader submit-op ioctl/uAPI seam above the now-shared
+    `psb_sgx_lab_submit_sgx_ta_submit_op_request_trace`, not another nested
+    rewrap of the same top submit-op request boundary
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
   - `selected_child_phase_selection=request_only` is the child recovery
@@ -331,7 +331,7 @@ implementation if it materially changes scope.
   the current exact source row now points at the newest clean `complete` rerun:
   - `source_kind=plan_session`
   - `source_name=sgx-plan-session`
-  - `source_timestamp=20260515-031353`
+  - `source_timestamp=20260515-032604`
   - `source_row_requested=complete:profile[complete]`
   - `source_row_evidence_last_good=complete`
 - use the current live fixed module for continued no-redeploy exact reruns:
