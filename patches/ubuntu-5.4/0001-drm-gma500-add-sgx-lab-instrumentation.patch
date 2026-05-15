@@ -1,142 +1,229 @@
-From db74c48a672632ca497820304887a611affa735c Mon Sep 17 00:00:00 2001
+From 5c1fb188df0ddf2906274b0d8d95e4af852f792e Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 15:43:38 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op request ioctl
+Date: Fri, 15 May 2026 16:03:21 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op request entrypoint
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 85 +++++++++++++++++++++++++++-----
- 1 file changed, 72 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 144 ++++++++++++++++++++++++++-----
+ 1 file changed, 122 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 108dd8bb5..af00800b5 100644
+index af00800b5..41c0ac05b 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2922,6 +2922,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public {
- 	u32 request_public_op;
+@@ -2936,6 +2936,24 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl {
+ 	u32 request_ioctl_op;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public
-+		submit_op_request_public;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_alias
++		submit_op_request_alias;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl
++		submit_op_request_ioctl;
 +	struct drm_psb_sgx_lab_submit_op request_op;
 +	struct drm_psb_sgx_lab_submit_op response_op;
 +	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 +	bool active;
 +	bool dependency_fields_present;
-+	bool issue_request_ioctl;
-+	bool transition_request_ioctl;
++	bool compatibility_request_entrypoint;
++	bool ioctl_request_entrypoint;
++	bool issue_request_entrypoint;
++	bool transition_request_entrypoint;
 +	u32 resolved_submit_id;
-+	u32 request_ioctl_op;
++	u32 request_entrypoint_op;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -20041,6 +20055,51 @@ out_free_public:
+@@ -20100,6 +20118,86 @@ out_free_ioctl:
  	return ret;
  }
  
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_entrypoint(
 +	struct drm_device *dev,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl **return_out)
++	bool use_ioctl_path,
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint
++		**return_out)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public *public = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl *ioctl;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_alias *alias = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl *ioctl = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint
++		*entrypoint;
 +	int ret;
 +
 +	if (!dev || !op || !return_out)
 +		return -EINVAL;
 +
 +	*return_out = NULL;
-+	ioctl = kmalloc(sizeof(*ioctl), GFP_KERNEL);
-+	if (!ioctl)
++	entrypoint = kzalloc(sizeof(*entrypoint), GFP_KERNEL);
++	if (!entrypoint)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_public(
-+		dev, op, dependency_fields_present, &public);
-+	if (ret)
-+		goto out_free_ioctl;
++	if (use_ioctl_path) {
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
++			dev, op, dependency_fields_present, &ioctl);
++		if (ret)
++			goto out_free_entrypoint;
 +
-+	ioctl->submit_op_request_public = *public;
-+	ioctl->request_op = public->request_op;
-+	ioctl->response_op = public->response_op;
-+	ioctl->outcome = public->outcome;
-+	ioctl->active = public->active;
-+	ioctl->dependency_fields_present =
-+		public->dependency_fields_present;
-+	ioctl->issue_request_ioctl = public->issue_request_public;
-+	ioctl->transition_request_ioctl =
-+		public->transition_request_public;
-+	ioctl->resolved_submit_id = public->resolved_submit_id;
-+	ioctl->request_ioctl_op = op->op;
++		entrypoint->submit_op_request_ioctl = *ioctl;
++		entrypoint->request_op = ioctl->request_op;
++		entrypoint->response_op = ioctl->response_op;
++		entrypoint->outcome = ioctl->outcome;
++		entrypoint->active = ioctl->active;
++		entrypoint->dependency_fields_present =
++			ioctl->dependency_fields_present;
++		entrypoint->compatibility_request_entrypoint = false;
++		entrypoint->ioctl_request_entrypoint = true;
++		entrypoint->issue_request_entrypoint =
++			ioctl->issue_request_ioctl;
++		entrypoint->transition_request_entrypoint =
++			ioctl->transition_request_ioctl;
++		entrypoint->resolved_submit_id = ioctl->resolved_submit_id;
++		entrypoint->request_entrypoint_op = op->op;
 +
-+	kfree(public);
-+	*return_out = ioctl;
++		kfree(ioctl);
++	} else {
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_alias(
++			dev, op, dependency_fields_present, &alias);
++		if (ret)
++			goto out_free_entrypoint;
++
++		entrypoint->submit_op_request_alias = *alias;
++		entrypoint->request_op = alias->request_op;
++		entrypoint->response_op = alias->response_op;
++		entrypoint->outcome = alias->outcome;
++		entrypoint->active = alias->active;
++		entrypoint->dependency_fields_present =
++			alias->dependency_fields_present;
++		entrypoint->compatibility_request_entrypoint = true;
++		entrypoint->ioctl_request_entrypoint = false;
++		entrypoint->issue_request_entrypoint =
++			alias->issue_request_alias;
++		entrypoint->transition_request_entrypoint =
++			alias->transition_request_alias;
++		entrypoint->resolved_submit_id = alias->resolved_submit_id;
++		entrypoint->request_entrypoint_op = op->op;
++
++		kfree(alias);
++	}
++
++	*return_out = entrypoint;
 +	return 0;
 +
-+out_free_ioctl:
++out_free_entrypoint:
++	kfree(alias);
 +	kfree(ioctl);
++	kfree(entrypoint);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_prepare_queue_packets_locked(
  	struct psb_sgx_lab_object *control_obj,
  	struct psb_sgx_lab_submit *submit,
-@@ -26131,7 +26190,7 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
+@@ -22583,7 +22681,8 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+ 					 u32 completed_packets)
+ {
+ 	struct drm_psb_sgx_lab_submit_op op = {};
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_alias *alias = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint
++		*entrypoint = NULL;
+ 	int ret;
+ 
+ 	op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION;
+@@ -22591,9 +22690,9 @@ static int poulsbo_sgx_transition_submit(struct drm_device *dev,
+ 	op.owner_state = owner_state;
+ 	op.packet_count = completed_packets;
+ 
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_alias(
+-		dev, &op, false, &alias);
+-	kfree(alias);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_entrypoint(
++		dev, &op, false, false, &entrypoint);
++	kfree(entrypoint);
+ 	return ret;
+ }
+ 
+@@ -22601,7 +22700,8 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+ 				    u32 owner_state, u32 issued_packets)
+ {
+ 	struct drm_psb_sgx_lab_submit_op op = {};
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_alias *alias = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint
++		*entrypoint = NULL;
+ 	int ret;
+ 
+ 	op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE;
+@@ -22609,9 +22709,9 @@ static int poulsbo_sgx_issue_submit(struct drm_device *dev, u32 submit_id,
+ 	op.owner_state = owner_state;
+ 	op.packet_count = issued_packets;
+ 
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_alias(
+-		dev, &op, false, &alias);
+-	kfree(alias);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_entrypoint(
++		dev, &op, false, false, &entrypoint);
++	kfree(entrypoint);
+ 	return ret;
+ }
+ 
+@@ -26190,8 +26290,8 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
  {
  	struct drm_psb_private *dev_priv = dev->dev_private;
  	struct drm_psb_sgx_lab_submit_op *op = data;
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_public *public =
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl *ioctl =
- 		NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl *ioctl =
+-		NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint
++		*entrypoint = NULL;
  	const char *slot_name = NULL;
  	bool dependency_fields_present;
-@@ -26382,16 +26441,16 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
+ 	u32 submit_id;
+@@ -26441,16 +26541,16 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
  						op->packet_count);
  		break;
  	case DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE:
--		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_public(
--			dev, op, dependency_fields_present, &public);
-+		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
-+			dev, op, dependency_fields_present, &ioctl);
+-		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
+-			dev, op, dependency_fields_present, &ioctl);
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_entrypoint(
++			dev, op, dependency_fields_present, true, &entrypoint);
  		if (!ret)
--			submit_id = public->response_op.resolved_submit_id;
-+			submit_id = ioctl->response_op.resolved_submit_id;
+-			submit_id = ioctl->response_op.resolved_submit_id;
++			submit_id = entrypoint->response_op.resolved_submit_id;
  		break;
  	case DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION:
--		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_public(
--			dev, op, dependency_fields_present, &public);
-+		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
-+			dev, op, dependency_fields_present, &ioctl);
+-		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_ioctl(
+-			dev, op, dependency_fields_present, &ioctl);
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_entrypoint(
++			dev, op, dependency_fields_present, true, &entrypoint);
  		if (!ret)
--			submit_id = public->response_op.resolved_submit_id;
-+			submit_id = ioctl->response_op.resolved_submit_id;
+-			submit_id = ioctl->response_op.resolved_submit_id;
++			submit_id = entrypoint->response_op.resolved_submit_id;
  		break;
  	case DRM_PSB_SGX_LAB_SUBMIT_OP_ATTACH:
  		if (op->owner_state || op->packet_count || op->context ||
-@@ -26832,17 +26891,17 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
+@@ -26891,17 +26991,17 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
  		return -EINVAL;
  	}
  	if (ret)
--		goto out_free_public;
--	if (public) {
--		kfree(public);
--		public = NULL;
-+		goto out_free_ioctl;
-+	if (ioctl) {
-+		kfree(ioctl);
-+		ioctl = NULL;
+-		goto out_free_ioctl;
+-	if (ioctl) {
+-		kfree(ioctl);
+-		ioctl = NULL;
++		goto out_free_entrypoint;
++	if (entrypoint) {
++		kfree(entrypoint);
++		entrypoint = NULL;
  	}
  
  	op->resolved_submit_id = submit_id;
  	return 0;
  
--out_free_public:
--	kfree(public);
-+out_free_ioctl:
-+	kfree(ioctl);
+-out_free_ioctl:
+-	kfree(ioctl);
++out_free_entrypoint:
++	kfree(entrypoint);
  	return ret;
  }
  

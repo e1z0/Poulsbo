@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 0F1335BC6DA0C617739215E`
-  - `override_module_size=509800`
+  - `srcversion 45DC6E0FCCD779A67680873`
+  - `override_module_size=510160`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-plan/20260515-151324-sgx-plan-guarded-deploy/children/20260515-151324-guarded-deploy`
+  - `logs/vaio-plan/20260515-154713-sgx-plan-guarded-deploy/children/20260515-154713-guarded-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260515-152843-sgx-plan-session`
-- the newest internal `ta-submit-op-request-ioctl` batch is now
+  - `logs/vaio-plan-session/20260515-154921-sgx-plan-session`
+- the newest internal `ta-submit-op-request-entrypoint` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260515-152843-sgx-plan-session`
+    - `logs/vaio-plan-session/20260515-154921-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260515-153003-sgx-submit-ta-submit-op-request-ioctl-live/summary.log`
+    - `logs/vaio-ioctl/20260515-155029-sgx-submit-ta-submit-op-request-entrypoint-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260515-153045-sgx-multi-submit-ta-submit-op-request-ioctl-live/summary.log`
+    - `logs/vaio-ioctl/20260515-155120-sgx-multi-submit-ta-submit-op-request-entrypoint-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-152843`
-  - `source_row_module_srcversion=0F1335BC6DA0C617739215E`
+  - `source_timestamp=20260515-154921`
+  - `source_row_module_srcversion=45DC6E0FCCD779A67680873`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -191,7 +191,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 0F1335BC6DA0C617739215E`
+  `srcversion 45DC6E0FCCD779A67680873`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -283,12 +283,13 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_alias`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_public`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `0F1335BC6DA0C617739215E` as the
+- keep the current guarded-deploy override `45DC6E0FCCD779A67680873` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -301,12 +302,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-ioctl` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-entrypoint` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260515-153003-sgx-submit-ta-submit-op-request-ioctl-live/summary.log`
+    `logs/vaio-ioctl/20260515-155029-sgx-submit-ta-submit-op-request-entrypoint-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260515-153045-sgx-multi-submit-ta-submit-op-request-ioctl-live/summary.log`
+    `logs/vaio-ioctl/20260515-155120-sgx-multi-submit-ta-submit-op-request-entrypoint-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -321,7 +322,8 @@ implementation if it materially changes scope.
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - next kernel-side goal:
   - build the next actually more hardware-facing SGX execution-side seam above
-    the now-split top septet
+    the now-split top octet
+    `psb_sgx_lab_submit_sgx_ta_submit_op_request_entrypoint` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_alias` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_ioctl` and
     `psb_sgx_lab_submit_sgx_ta_submit_op_request_public` and
@@ -349,7 +351,7 @@ implementation if it materially changes scope.
   the current exact source row now points at the newest clean `complete` rerun:
   - `source_kind=plan_session`
   - `source_name=sgx-plan-session`
-  - `source_timestamp=20260515-152843`
+  - `source_timestamp=20260515-154921`
   - `source_row_requested=complete:profile[complete]`
   - `source_row_evidence_last_good=complete`
 - use the current live fixed module for continued no-redeploy exact reruns:
