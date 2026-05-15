@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion 1720744908BE47B74AD3D6A`
-  - `override_module_size=505504`
+  - `srcversion 277948F7EDD16293BBAB8EC`
+  - `override_module_size=505812`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-plan/20260515-024942-sgx-ta-submit-op-request-path-deploy/children/20260515-024942-guarded-deploy`
+  - `logs/vaio-plan/20260515-031235-sgx-ta-submit-op-request-report-deploy/children/20260515-031235-guarded-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260515-025343-sgx-plan-session`
-- the newest internal `ta-submit-op-request-path` batch is now
+  - `logs/vaio-plan-session/20260515-031353-sgx-plan-session`
+- the newest internal `ta-submit-op-request-report` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260515-025343-sgx-plan-session`
+    - `logs/vaio-plan-session/20260515-031353-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260515-025458-sgx-submit-ta-submit-op-request-path-live/summary.log`
+    - `logs/vaio-ioctl/20260515-031519-sgx-submit-ta-submit-op-request-report-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260515-025545-sgx-multi-submit-ta-submit-op-request-path-live/summary.log`
+    - `logs/vaio-ioctl/20260515-031607-sgx-multi-submit-ta-submit-op-request-report-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-025343`
-  - `source_row_module_srcversion=1720744908BE47B74AD3D6A`
+  - `source_timestamp=20260515-031353`
+  - `source_row_module_srcversion=277948F7EDD16293BBAB8EC`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -191,7 +191,7 @@ implementation if it materially changes scope.
 - build rule: build locally in this repo, deploy to the target, never build on
   the target
 - last confirmed booted override on the VAIO:
-  `srcversion 1720744908BE47B74AD3D6A`
+  `srcversion 277948F7EDD16293BBAB8EC`
 - current execution-shaped submit memory model:
   `queue + ccb + sync + owner + report + live + result + manifest + descriptor + plan + issue-plan`
 - current shared execution-shaped kernel structures:
@@ -270,12 +270,13 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_operation`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_control`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_path`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_report`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `1720744908BE47B74AD3D6A` as the
+- keep the current guarded-deploy override `277948F7EDD16293BBAB8EC` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -288,12 +289,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-path` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-report` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260515-025458-sgx-submit-ta-submit-op-request-path-live/summary.log`
+    `logs/vaio-ioctl/20260515-031519-sgx-submit-ta-submit-op-request-report-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260515-025545-sgx-multi-submit-ta-submit-op-request-path-live/summary.log`
+    `logs/vaio-ioctl/20260515-031607-sgx-multi-submit-ta-submit-op-request-report-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -309,7 +310,7 @@ implementation if it materially changes scope.
 - next kernel-side goal:
   - build the next common submit-op family or broader ioctl/uAPI seam above
     the now-shared
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_path`, not another
+    `psb_sgx_lab_submit_sgx_ta_submit_op_request_report`, not another
     nested rewrap of the same top submit-op request boundary
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
@@ -330,7 +331,7 @@ implementation if it materially changes scope.
   the current exact source row now points at the newest clean `complete` rerun:
   - `source_kind=plan_session`
   - `source_name=sgx-plan-session`
-  - `source_timestamp=20260515-025343`
+  - `source_timestamp=20260515-031353`
   - `source_row_requested=complete:profile[complete]`
   - `source_row_evidence_last_good=complete`
 - use the current live fixed module for continued no-redeploy exact reruns:
