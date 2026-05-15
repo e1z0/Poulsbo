@@ -5,6 +5,87 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-15
 
+### SGX submit TA submit-op request-endpoint object
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Added one new explicit kernel-internal SGX-shaped live top object:
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint`
+- The shared live execution boundary now moves from
+  `sgx_ta_submit_op_request_frontend` to
+  `sgx_ta_submit_op_request_endpoint`:
+  - the shared top submit-op request-endpoint boundary is now returned through
+    `sgx_ta_submit_op_request_endpoint`
+  - the submit-op ioctl path now routes through
+    `sgx_ta_submit_op_request_endpoint`
+  - `issue_submit()` compatibility flow now uses
+    `sgx_ta_submit_op_request_endpoint`
+  - `transition_submit()` compatibility flow now uses
+    `sgx_ta_submit_op_request_endpoint`
+- The new top object now keeps together:
+  - the existing `sgx_ta_submit_op_request_frontend`
+  - the copied submit-op request image:
+    - `request_op`
+  - the copied submit-op response image:
+    - `response_op`
+  - the copied final effect-visible request/work outcome:
+    - `outcome`
+  - the remaining top request-endpoint boundary:
+    - `active`
+    - `dependency_fields_present`
+    - `issue_request_endpoint`
+    - `transition_request_endpoint`
+    - `resolved_submit_id`
+    - `request_endpoint_op`
+- The old shared outer execute / resolve / free seam is no longer open-coded
+  in `poulsbo_sgx_issue_submit_op_request()` /
+  `poulsbo_sgx_transition_submit_op_request()`.
+- Guarded deploy plus exact recovery wrapper completed successfully in:
+  - `logs/vaio-plan/20260515-035735-sgx-ta-submit-op-request-endpoint-deploy`
+  - final live override:
+    - `driver_srcversion=0844E58E37B9982B2D11C3F`
+    - `override_module_size=506656`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- The exact no-redeploy `plan` proof on that module still passed:
+  - `logs/vaio-plan-session/20260515-035937-sgx-plan-session`
+  - `session_outcome=completed`
+  - `plan_session_mode=recovery`
+  - `selected_phase_profile=complete`
+  - `final_driver_srcversion=0844E58E37B9982B2D11C3F`
+- Focused direct hardware validation passed and is now saved in:
+  - `logs/vaio-ioctl/20260515-040327-sgx-submit-ta-submit-op-request-endpoint-live/summary.log`
+  - final focused proof:
+    - `submit_resolved_id=11`
+    - `submit_prepare_count=1`
+    - `submit_arm_count=1`
+    - `submit_emit_count=1`
+    - `submit_launch_count=1`
+    - `submit_dispatch_count=1`
+    - `submit_retired_count=1`
+    - `submit_issue_count=1`
+    - `submit_transition_count=2`
+- Typed multi-submit hardware validation also passed and is now saved in:
+  - `logs/vaio-ioctl/20260515-040327-sgx-multi-submit-ta-submit-op-request-endpoint-live/summary.log`
+  - final typed run proved:
+    - `SUBMIT_A_ID=9`
+    - `SUBMIT_B_ID=10`
+    - submit A final:
+      - `submit_issue_count=3`
+      - `submit_transition_count=6`
+    - submit B final:
+      - `submit_issue_count=2`
+      - `submit_transition_count=4`
+      - `dependency[1]_required_ticket=3`
+      - `dependency[1]_observed_complete_ticket=10`
+- The shared current-boundary resolver therefore still holds terminal:
+  - `resolved_profile=complete`
+  - `resolved_reason=latest_phase_evidence_terminal`
+  - `source_timestamp=20260515-035937`
+- Documented in:
+  - `docs/247-sgx-submit-ta-submit-op-request-endpoint-object.md`
+
 ### SGX submit TA submit-op request-frontend object
 
 - Updated:

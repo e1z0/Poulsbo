@@ -1,159 +1,160 @@
-From 6c70ed859bcd758b5aa707aa7ac112fbaaa783cd Mon Sep 17 00:00:00 2001
+From e12bcd9e90fbce8510f60f9a733ba36c327f7496 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 03:55:09 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op request frontend
+Date: Fri, 15 May 2026 04:13:24 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op request endpoint
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 88 +++++++++++++++++++++++++++-----
- 1 file changed, 74 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 89 +++++++++++++++++++++++++++-----
+ 1 file changed, 75 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 8b45586a3..2633a898c 100644
+index 2633a898c..fcb0332c3 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2782,6 +2782,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace {
- 	u32 request_trace_op;
+@@ -2796,6 +2796,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend {
+ 	u32 request_frontend_op;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace
-+		submit_op_request_trace;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend
++		submit_op_request_frontend;
 +	struct drm_psb_sgx_lab_submit_op request_op;
 +	struct drm_psb_sgx_lab_submit_op response_op;
 +	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 +	bool active;
 +	bool dependency_fields_present;
-+	bool issue_request_frontend;
-+	bool transition_request_frontend;
++	bool issue_request_endpoint;
++	bool transition_request_endpoint;
 +	u32 resolved_submit_id;
-+	u32 request_frontend_op;
++	u32 request_endpoint_op;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -19389,6 +19403,52 @@ out_free_trace:
+@@ -19449,6 +19463,53 @@ out_free_frontend:
  	return ret;
  }
  
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_frontend(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_endpoint(
 +	struct drm_device *dev,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend **return_out)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint **return_out)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace
-+		*trace = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend *frontend;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend
++		*frontend = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint *endpoint;
 +	int ret;
 +
 +	if (!dev || !op || !return_out)
 +		return -EINVAL;
 +
 +	*return_out = NULL;
-+	frontend = kmalloc(sizeof(*frontend), GFP_KERNEL);
-+	if (!frontend)
++	endpoint = kmalloc(sizeof(*endpoint), GFP_KERNEL);
++	if (!endpoint)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_trace(
-+		dev, op, dependency_fields_present, &trace);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_frontend(
++		dev, op, dependency_fields_present, &frontend);
 +	if (ret)
-+		goto out_free_frontend;
++		goto out_free_endpoint;
 +
-+	frontend->submit_op_request_trace = *trace;
-+	frontend->request_op = trace->request_op;
-+	frontend->response_op = trace->response_op;
-+	frontend->outcome = trace->outcome;
-+	frontend->active = trace->active;
-+	frontend->dependency_fields_present =
-+		trace->dependency_fields_present;
-+	frontend->issue_request_frontend = trace->issue_request_trace;
-+	frontend->transition_request_frontend =
-+		trace->transition_request_trace;
-+	frontend->resolved_submit_id = trace->resolved_submit_id;
-+	frontend->request_frontend_op = op->op;
++	endpoint->submit_op_request_frontend = *frontend;
++	endpoint->request_op = frontend->request_op;
++	endpoint->response_op = frontend->response_op;
++	endpoint->outcome = frontend->outcome;
++	endpoint->active = frontend->active;
++	endpoint->dependency_fields_present =
++		frontend->dependency_fields_present;
++	endpoint->issue_request_endpoint =
++		frontend->issue_request_frontend;
++	endpoint->transition_request_endpoint =
++		frontend->transition_request_frontend;
++	endpoint->resolved_submit_id = frontend->resolved_submit_id;
++	endpoint->request_endpoint_op = op->op;
 +
-+	kfree(trace);
-+	*return_out = frontend;
++	kfree(frontend);
++	*return_out = endpoint;
 +	return 0;
 +
-+out_free_frontend:
-+	kfree(frontend);
++out_free_endpoint:
++	kfree(endpoint);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_prepare_queue_packets_locked(
  	struct psb_sgx_lab_object *control_obj,
  	struct psb_sgx_lab_submit *submit,
-@@ -21872,20 +21932,20 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -21932,20 +21993,20 @@ static int poulsbo_sgx_transition_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace
--		*trace = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend
-+		*frontend = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend
+-		*frontend = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint
++		*endpoint = NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_trace(
--		dev, op, dependency_fields_present, &trace);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_frontend(
-+		dev, op, dependency_fields_present, &frontend);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_frontend(
+-		dev, op, dependency_fields_present, &frontend);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_endpoint(
++		dev, op, dependency_fields_present, &endpoint);
  	if (ret)
  		goto out;
  
--	outcome = &trace->outcome;
-+	outcome = &frontend->outcome;
+-	outcome = &frontend->outcome;
++	outcome = &endpoint->outcome;
  	if (resolved_submit_id_out)
  		*resolved_submit_id_out =
--			trace->response_op.resolved_submit_id;
-+			frontend->response_op.resolved_submit_id;
+-			frontend->response_op.resolved_submit_id;
++			endpoint->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u refresh_views=%u next_transition_count=%u running_advanced=%u complete_advanced=%u next_running_ticket=%u next_complete_ticket=%u active_running_changed=%u\n",
-@@ -21911,7 +21971,7 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -21971,7 +22032,7 @@ static int poulsbo_sgx_transition_submit_op_request(
  		 outcome->active_running_changed);
  
  out:
--	kfree(trace);
-+	kfree(frontend);
+-	kfree(frontend);
++	kfree(endpoint);
  	return ret;
  }
  
-@@ -21921,20 +21981,20 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -21981,20 +22042,20 @@ static int poulsbo_sgx_issue_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_trace
--		*trace = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend
-+		*frontend = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend
+-		*frontend = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint
++		*endpoint = NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_trace(
--		dev, op, dependency_fields_present, &trace);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_frontend(
-+		dev, op, dependency_fields_present, &frontend);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_frontend(
+-		dev, op, dependency_fields_present, &frontend);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_endpoint(
++		dev, op, dependency_fields_present, &endpoint);
  	if (ret)
  		goto out;
  
--	outcome = &trace->outcome;
-+	outcome = &frontend->outcome;
+-	outcome = &frontend->outcome;
++	outcome = &endpoint->outcome;
  	if (resolved_submit_id_out)
  		*resolved_submit_id_out =
--			trace->response_op.resolved_submit_id;
-+			frontend->response_op.resolved_submit_id;
+-			frontend->response_op.resolved_submit_id;
++			endpoint->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u refresh_views=%u next_issue_count=%u issue_advanced=%u next_issue_ticket=%u next_issue_submit_id=%u\n",
-@@ -21958,7 +22018,7 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -22018,7 +22079,7 @@ static int poulsbo_sgx_issue_submit_op_request(
  		 outcome->next_state.issue_submit_id);
  
  out:
--	kfree(trace);
-+	kfree(frontend);
+-	kfree(frontend);
++	kfree(endpoint);
  	return ret;
  }
  
