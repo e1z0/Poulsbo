@@ -18,8 +18,8 @@ implementation if it materially changes scope.
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the current live override is now the latest guarded-deploy validated module:
-  - `srcversion C1DDCA50137885C2202893B`
-  - `override_module_size=510628`
+  - `srcversion DC45B1DBE89501D1620A4C0`
+  - `override_module_size=507212`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
@@ -45,7 +45,7 @@ implementation if it materially changes scope.
   - fetched local crashdump:
     - `logs/vaio-panic-test/20260512-222708-panic-test/panic-artifacts/crashdump/202605122227`
 - guarded deploy bundle:
-  - `logs/vaio-plan/20260515-183629-sgx-ta-submit-op-request-command-deploy/children/20260515-183629-guarded-deploy`
+  - `logs/vaio-plan/20260516-014328-sgx-ta-submit-op-request-portal-cleanup-deploy/children/20260516-014328-guarded-deploy`
 - stable-lab soak bundle:
   - `logs/vaio-stability/20260514-083309-sgx-stable-soak`
   - `session_outcome=completed`
@@ -67,23 +67,23 @@ implementation if it materially changes scope.
   - `running`
   - `complete`
 - canonical bundles for that fixed-module line:
-  - `logs/vaio-plan-session/20260516-013303-sgx-plan-session`
-- the newest internal `ta-submit-op-request-bridge-cleanup` batch is now
+  - `logs/vaio-plan-session/20260516-014514-sgx-plan-session`
+- the newest internal `ta-submit-op-request-portal-cleanup` batch is now
   hardware-validated:
   - exact proof:
-    - `logs/vaio-plan-session/20260516-013303-sgx-plan-session`
+    - `logs/vaio-plan-session/20260516-014514-sgx-plan-session`
   - focused bundle:
-    - `logs/vaio-ioctl/20260516-013303-sgx-submit-ta-submit-op-request-bridge-cleanup-live/summary.log`
+    - `logs/vaio-ioctl/20260516-014514-sgx-submit-ta-submit-op-request-portal-cleanup-live/summary.log`
   - typed multi-submit bundle:
-    - `logs/vaio-ioctl/20260516-013303-sgx-multi-submit-ta-submit-op-request-bridge-cleanup-live/summary.log`
+    - `logs/vaio-ioctl/20260516-014514-sgx-multi-submit-ta-submit-op-request-portal-cleanup-live/summary.log`
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_phases=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260516-013303`
-  - `source_row_module_srcversion=855E58C0139EEF34A51A14C`
+  - `source_timestamp=20260516-014514`
+  - `source_row_module_srcversion=DC45B1DBE89501D1620A4C0`
 - the summary/report layer now prefers the live
   `final_driver_srcversion` over `local_module_srcversion`, so the current
   saved source row reports the actually loaded candidate instead of the local
@@ -275,13 +275,12 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway`
-  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_portal`
 
 ## Current Priority
 
 - keep the old `0EEEE302E3FDA9F59B7CFB9` candidate blocked for recovery-side
   `plan_query*` work after the `poulsbo_sgx_fill_submit_query_locked` panic
-- keep the current guarded-deploy override `855E58C0139EEF34A51A14C` as the
+- keep the current guarded-deploy override `DC45B1DBE89501D1620A4C0` as the
   active headless, panic-safe validation base
 - keep the restored stable-lab milestone available as a fallback proof line:
   - guarded redeploy proof:
@@ -294,12 +293,12 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-bridge-cleanup` validation bundles as the active typed-submit
+- use the new `ta-submit-op-request-portal-cleanup` validation bundles as the active typed-submit
   validation surface:
   - focused proof:
-    `logs/vaio-ioctl/20260516-013303-sgx-submit-ta-submit-op-request-bridge-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260516-014514-sgx-submit-ta-submit-op-request-portal-cleanup-live/summary.log`
   - typed multi-submit proof:
-    `logs/vaio-ioctl/20260516-013303-sgx-multi-submit-ta-submit-op-request-bridge-cleanup-live/summary.log`
+    `logs/vaio-ioctl/20260516-014514-sgx-multi-submit-ta-submit-op-request-portal-cleanup-live/summary.log`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -316,7 +315,7 @@ implementation if it materially changes scope.
   - stop adding more request-wrapper layers and move into the first
     more hardware-facing SGX execution-side change above the now-cleaned
     top request split rooted at
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_portal`,
+    `psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway`,
     and stop further wrapper churn on this path
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice
