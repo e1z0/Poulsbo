@@ -1,112 +1,42 @@
-From e3172e170297f25f1d5bcd675f90084c1e13ce84 Mon Sep 17 00:00:00 2001
+From 1a26b12e3a1878eacbc5dcfd1e5cd0c46172b66e Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 22:31:01 +0300
-Subject: [PATCH] drm/gma500: fold SGX TA request command into request store
+Date: Fri, 15 May 2026 22:59:43 +0300
+Subject: [PATCH] drm/gma500: fold SGX TA request store into request origin
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 106 ++++++-------------------------
- 1 file changed, 18 insertions(+), 88 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 108 ++++++-------------------------
+ 1 file changed, 20 insertions(+), 88 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 45ff0633d..efb393616 100644
+index efb393616..bccbf605d 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2942,7 +2942,7 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin {
+@@ -2942,21 +2942,6 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin {
  	u32 request_origin_op;
  };
  
--struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command {
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store {
- 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin
- 		submit_op_request_origin;
- 	struct drm_psb_sgx_lab_submit_op request_op;
-@@ -2950,21 +2950,6 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command {
- 	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
- 	bool active;
- 	bool dependency_fields_present;
--	bool compatibility_request_command;
--	bool issue_request_command;
--	bool transition_request_command;
--	u32 resolved_submit_id;
--	u32 request_command_op;
--};
--
 -struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command
--		submit_op_request_command;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin
+-		submit_op_request_origin;
 -	struct drm_psb_sgx_lab_submit_op request_op;
 -	struct drm_psb_sgx_lab_submit_op response_op;
 -	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 -	bool active;
 -	bool dependency_fields_present;
- 	bool compatibility_request_store;
- 	bool issue_request_store;
- 	bool transition_request_store;
-@@ -20177,17 +20162,17 @@ out_free_origin:
+-	bool compatibility_request_store;
+-	bool issue_request_store;
+-	bool transition_request_store;
+-	u32 resolved_submit_id;
+-	u32 request_store_op;
+-};
+-
+ static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
+ static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
+ 					u32 *end_out);
+@@ -20162,66 +20147,6 @@ out_free_origin:
  	return ret;
  }
  
--static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_command(
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
- 	struct drm_device *dev,
- 	u32 op_kind,
- 	u32 submit_id,
- 	u32 owner_state,
- 	u32 packet_count,
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command **return_out)
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store **return_out)
- {
- 	struct drm_psb_sgx_lab_submit_op op = {};
- 	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin *origin = NULL;
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command *command;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store *store;
- 	int ret;
- 
- 	if (!dev || !return_out)
-@@ -20197,8 +20182,8 @@ static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_command(
- 		return -EINVAL;
- 
- 	*return_out = NULL;
--	command = kzalloc(sizeof(*command), GFP_KERNEL);
--	if (!command)
-+	store = kzalloc(sizeof(*store), GFP_KERNEL);
-+	if (!store)
- 		return -ENOMEM;
- 
- 	op.op = op_kind;
-@@ -20208,86 +20193,31 @@ static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_command(
- 
- 	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_origin(
- 		dev, &op, false, false, &origin);
--	if (ret)
--		goto out_free_command;
--
--	command->submit_op_request_origin = *origin;
--	command->request_op = origin->request_op;
--	command->response_op = origin->response_op;
--	command->outcome = origin->outcome;
--	command->active = origin->active;
--	command->dependency_fields_present =
--		origin->dependency_fields_present;
--	command->compatibility_request_command =
--		origin->compatibility_request_origin;
--	command->issue_request_command =
--		origin->issue_request_origin;
--	command->transition_request_command =
--		origin->transition_request_origin;
--	command->resolved_submit_id = origin->resolved_submit_id;
--	command->request_command_op = op_kind;
--
--	kfree(origin);
--	*return_out = command;
--	return 0;
--
--out_free_command:
--	kfree(origin);
--	kfree(command);
--	return ret;
--}
--
 -static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
 -	struct drm_device *dev,
 -	u32 op_kind,
@@ -115,8 +45,8 @@ index 45ff0633d..efb393616 100644
 -	u32 packet_count,
 -	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store **return_out)
 -{
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_command *command =
--		NULL;
+-	struct drm_psb_sgx_lab_submit_op op = {};
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin *origin = NULL;
 -	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store *store;
 -	int ret;
 -
@@ -131,48 +61,100 @@ index 45ff0633d..efb393616 100644
 -	if (!store)
 -		return -ENOMEM;
 -
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_command(
--		dev, op_kind, submit_id, owner_state, packet_count, &command);
- 	if (ret)
- 		goto out_free_store;
+-	op.op = op_kind;
+-	op.submit_id = submit_id;
+-	op.owner_state = owner_state;
+-	op.packet_count = packet_count;
+-
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_origin(
+-		dev, &op, false, false, &origin);
+-	if (ret)
+-		goto out_free_store;
+-
+-	store->submit_op_request_origin = *origin;
+-	store->request_op = origin->request_op;
+-	store->response_op = origin->response_op;
+-	store->outcome = origin->outcome;
+-	store->active = origin->active;
+-	store->dependency_fields_present =
+-		origin->dependency_fields_present;
+-	store->compatibility_request_store =
+-		origin->compatibility_request_origin;
+-	store->issue_request_store =
+-		origin->issue_request_origin;
+-	store->transition_request_store =
+-		origin->transition_request_origin;
+-	store->resolved_submit_id = origin->resolved_submit_id;
+-	store->request_store_op = op_kind;
+-
+-	kfree(origin);
+-	*return_out = store;
+-	return 0;
+-
+-out_free_store:
+-	kfree(origin);
+-	kfree(store);
+-	return ret;
+-}
+-
+ static int poulsbo_sgx_prepare_queue_packets_locked(
+ 	struct psb_sgx_lab_object *control_obj,
+ 	struct psb_sgx_lab_submit *submit,
+@@ -24073,8 +23998,9 @@ static ssize_t poulsbo_sgx_submit_store(struct device *kdev,
+ 			ret = poulsbo_sgx_configure_submit_result(dev, id,
+ 								  owner_offset);
+ 	} else if (sysfs_streq(op, "issue")) {
+-		struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store *store =
+-			NULL;
++		struct drm_psb_sgx_lab_submit_op request_op = {};
++		struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin
++			*origin = NULL;
  
--	store->submit_op_request_command = *command;
--	store->request_op = command->request_op;
--	store->response_op = command->response_op;
--	store->outcome = command->outcome;
--	store->active = command->active;
-+	store->submit_op_request_origin = *origin;
-+	store->request_op = origin->request_op;
-+	store->response_op = origin->response_op;
-+	store->outcome = origin->outcome;
-+	store->active = origin->active;
- 	store->dependency_fields_present =
--		command->dependency_fields_present;
-+		origin->dependency_fields_present;
- 	store->compatibility_request_store =
--		command->compatibility_request_command;
-+		origin->compatibility_request_origin;
- 	store->issue_request_store =
--		command->issue_request_command;
-+		origin->issue_request_origin;
- 	store->transition_request_store =
--		command->transition_request_command;
--	store->resolved_submit_id = command->resolved_submit_id;
-+		origin->transition_request_origin;
-+	store->resolved_submit_id = origin->resolved_submit_id;
- 	store->request_store_op = op_kind;
+ 			if (sscanf(buf, "%15s %u %15s %15s",
+ 				   op, &id, arg0, arg1) != 4)
+@@ -24085,13 +24011,17 @@ static ssize_t poulsbo_sgx_submit_store(struct device *kdev,
+ 		ret = kstrtou32(arg1, 0, &issue_issued_packets);
+ 		if (ret)
+ 			return ret;
+-		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
+-			dev, DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE, id,
+-			issue_owner_state, issue_issued_packets, &store);
+-		kfree(store);
++		request_op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE;
++		request_op.submit_id = id;
++		request_op.owner_state = issue_owner_state;
++		request_op.packet_count = issue_issued_packets;
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_origin(
++			dev, &request_op, false, false, &origin);
++		kfree(origin);
+ 	} else if (sysfs_streq(op, "transition")) {
+-		struct psb_sgx_lab_submit_sgx_ta_submit_op_request_store *store =
+-			NULL;
++		struct drm_psb_sgx_lab_submit_op request_op = {};
++		struct psb_sgx_lab_submit_sgx_ta_submit_op_request_origin
++			*origin = NULL;
  
--	kfree(command);
-+	kfree(origin);
- 	*return_out = store;
- 	return 0;
- 
- out_free_store:
--	kfree(command);
-+	kfree(origin);
- 	kfree(store);
- 	return ret;
- }
+ 		if (sscanf(buf, "%15s %u %15s %15s",
+ 			   op, &id, arg0, arg1) != 4)
+@@ -24103,11 +24033,13 @@ static ssize_t poulsbo_sgx_submit_store(struct device *kdev,
+ 		ret = kstrtou32(arg1, 0, &transition_completed_packets);
+ 		if (ret)
+ 			return ret;
+-		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_store(
+-			dev, DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION, id,
+-			transition_owner_state,
+-			transition_completed_packets, &store);
+-		kfree(store);
++		request_op.op = DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION;
++		request_op.submit_id = id;
++		request_op.owner_state = transition_owner_state;
++		request_op.packet_count = transition_completed_packets;
++		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_origin(
++			dev, &request_op, false, false, &origin);
++		kfree(origin);
+ 	} else if (sysfs_streq(op, "focus")) {
+ 		if (sscanf(buf, "%15s %15s", op, arg0) != 2)
+ 			return -EINVAL;
 -- 
 2.34.1
 
