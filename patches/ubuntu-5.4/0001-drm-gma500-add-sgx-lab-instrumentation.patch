@@ -1,209 +1,158 @@
-From da14d5fd371b20bc4a0f2a63c39e38efa18f44c8 Mon Sep 17 00:00:00 2001
+From 8d273e855f9bc12ca5277684bfa1263d15ea0b76 Mon Sep 17 00:00:00 2001
 From: e1z0 <e1z0@icloud.com>
-Date: Fri, 15 May 2026 04:38:04 +0300
-Subject: [PATCH] drm/gma500: add SGX TA submit-op request portal
+Date: Fri, 15 May 2026 11:38:27 +0300
+Subject: [PATCH] drm/gma500: add SGX TA submit-op request bridge
 
 ---
- drivers/gpu/drm/gma500/psb_drv.c | 109 +++++++++++++++++++++++++------
- 1 file changed, 90 insertions(+), 19 deletions(-)
+ drivers/gpu/drm/gma500/psb_drv.c | 84 +++++++++++++++++++++++++++-----
+ 1 file changed, 72 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/gpu/drm/gma500/psb_drv.c b/drivers/gpu/drm/gma500/psb_drv.c
-index 259f3e682..699a92f88 100644
+index 699a92f88..5bcb3d915 100644
 --- a/drivers/gpu/drm/gma500/psb_drv.c
 +++ b/drivers/gpu/drm/gma500/psb_drv.c
-@@ -2824,6 +2824,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway {
- 	u32 request_gateway_op;
+@@ -2838,6 +2838,20 @@ struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal {
+ 	u32 request_portal_op;
  };
  
-+struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal {
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway
-+		submit_op_request_gateway;
++struct psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge {
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal
++		submit_op_request_portal;
 +	struct drm_psb_sgx_lab_submit_op request_op;
 +	struct drm_psb_sgx_lab_submit_op response_op;
 +	struct psb_sgx_lab_submit_sgx_ta_request_work_outcome outcome;
 +	bool active;
 +	bool dependency_fields_present;
-+	bool issue_request_portal;
-+	bool transition_request_portal;
++	bool issue_request_bridge;
++	bool transition_request_bridge;
 +	u32 resolved_submit_id;
-+	u32 request_portal_op;
++	u32 request_bridge_op;
 +};
 +
  static u32 poulsbo_sgx_lab_status_value(u32 seed, bool is_3d, u32 index);
  static int poulsbo_sgx_queue_region_end(u32 base_offset, u32 queue_size,
  					u32 *end_out);
-@@ -19571,6 +19585,52 @@ out_free_gateway:
+@@ -19631,6 +19645,52 @@ out_free_portal:
  	return ret;
  }
  
-+static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
++static int poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_bridge(
 +	struct drm_device *dev,
 +	const struct drm_psb_sgx_lab_submit_op *op,
 +	bool dependency_fields_present,
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal **return_out)
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge **return_out)
 +{
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway
-+		*gateway = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal
++		*portal = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge *bridge;
 +	int ret;
 +
 +	if (!dev || !op || !return_out)
 +		return -EINVAL;
 +
 +	*return_out = NULL;
-+	portal = kmalloc(sizeof(*portal), GFP_KERNEL);
-+	if (!portal)
++	bridge = kmalloc(sizeof(*bridge), GFP_KERNEL);
++	if (!bridge)
 +		return -ENOMEM;
 +
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_gateway(
-+		dev, op, dependency_fields_present, &gateway);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
++		dev, op, dependency_fields_present, &portal);
 +	if (ret)
-+		goto out_free_portal;
++		goto out_free_bridge;
 +
-+	portal->submit_op_request_gateway = *gateway;
-+	portal->request_op = gateway->request_op;
-+	portal->response_op = gateway->response_op;
-+	portal->outcome = gateway->outcome;
-+	portal->active = gateway->active;
-+	portal->dependency_fields_present =
-+		gateway->dependency_fields_present;
-+	portal->issue_request_portal = gateway->issue_request_gateway;
-+	portal->transition_request_portal =
-+		gateway->transition_request_gateway;
-+	portal->resolved_submit_id = gateway->resolved_submit_id;
-+	portal->request_portal_op = op->op;
++	bridge->submit_op_request_portal = *portal;
++	bridge->request_op = portal->request_op;
++	bridge->response_op = portal->response_op;
++	bridge->outcome = portal->outcome;
++	bridge->active = portal->active;
++	bridge->dependency_fields_present =
++		portal->dependency_fields_present;
++	bridge->issue_request_bridge = portal->issue_request_portal;
++	bridge->transition_request_bridge =
++		portal->transition_request_portal;
++	bridge->resolved_submit_id = portal->resolved_submit_id;
++	bridge->request_bridge_op = op->op;
 +
-+	kfree(gateway);
-+	*return_out = portal;
++	kfree(portal);
++	*return_out = bridge;
 +	return 0;
 +
-+out_free_portal:
-+	kfree(portal);
++out_free_bridge:
++	kfree(bridge);
 +	return ret;
 +}
 +
  static int poulsbo_sgx_prepare_queue_packets_locked(
  	struct psb_sgx_lab_object *control_obj,
  	struct psb_sgx_lab_submit *submit,
-@@ -22054,20 +22114,19 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -22114,19 +22174,19 @@ static int poulsbo_sgx_transition_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway
--		*gateway = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge *bridge = NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_gateway(
--		dev, op, dependency_fields_present, &gateway);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
-+		dev, op, dependency_fields_present, &portal);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
+-		dev, op, dependency_fields_present, &portal);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_bridge(
++		dev, op, dependency_fields_present, &bridge);
  	if (ret)
  		goto out;
  
--	outcome = &gateway->outcome;
-+	outcome = &portal->outcome;
+-	outcome = &portal->outcome;
++	outcome = &bridge->outcome;
  	if (resolved_submit_id_out)
  		*resolved_submit_id_out =
--			gateway->response_op.resolved_submit_id;
-+			portal->response_op.resolved_submit_id;
+-			portal->response_op.resolved_submit_id;
++			bridge->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit transition submit_id=%u state=%s completed_packets=%u new_read_offset=%#x new_write_offset=%#x new_ccb_offset=%#x outstanding=%u wrapped=%u complete_seq=%#x complete_cookie=%#x epoch=%u global_running_ticket=%u global_complete_ticket=%u refresh_views=%u next_transition_count=%u running_advanced=%u complete_advanced=%u next_running_ticket=%u next_complete_ticket=%u active_running_changed=%u\n",
-@@ -22093,7 +22152,7 @@ static int poulsbo_sgx_transition_submit_op_request(
+@@ -22152,7 +22212,7 @@ static int poulsbo_sgx_transition_submit_op_request(
  		 outcome->active_running_changed);
  
  out:
--	kfree(gateway);
-+	kfree(portal);
+-	kfree(portal);
++	kfree(bridge);
  	return ret;
  }
  
-@@ -22103,20 +22162,19 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -22162,19 +22222,19 @@ static int poulsbo_sgx_issue_submit_op_request(
  	bool dependency_fields_present,
  	u32 *resolved_submit_id_out)
  {
--	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway
--		*gateway = NULL;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal = NULL;
+-	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal = NULL;
++	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge *bridge = NULL;
  	const struct psb_sgx_lab_submit_sgx_ta_request_work_outcome *outcome;
  	int ret;
  
--	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_gateway(
--		dev, op, dependency_fields_present, &gateway);
-+	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
-+		dev, op, dependency_fields_present, &portal);
+-	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
+-		dev, op, dependency_fields_present, &portal);
++	ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_bridge(
++		dev, op, dependency_fields_present, &bridge);
  	if (ret)
  		goto out;
  
--	outcome = &gateway->outcome;
-+	outcome = &portal->outcome;
+-	outcome = &portal->outcome;
++	outcome = &bridge->outcome;
  	if (resolved_submit_id_out)
  		*resolved_submit_id_out =
--			gateway->response_op.resolved_submit_id;
-+			portal->response_op.resolved_submit_id;
+-			portal->response_op.resolved_submit_id;
++			bridge->response_op.resolved_submit_id;
  
  	dev_info(dev->dev,
  		 "lab submit issue submit_id=%u state=%s issued_packets=%u read_offset=%#x new_write_offset=%#x outstanding=%u wrapped=%u pending_seq=%#x issue_cookie=%#x epoch=%u refill=%u global_issue_ticket=%u global_running_ticket=%u refresh_views=%u next_issue_count=%u issue_advanced=%u next_issue_ticket=%u next_issue_submit_id=%u\n",
-@@ -22140,7 +22198,7 @@ static int poulsbo_sgx_issue_submit_op_request(
+@@ -22198,7 +22258,7 @@ static int poulsbo_sgx_issue_submit_op_request(
  		 outcome->next_state.issue_submit_id);
  
  out:
--	kfree(gateway);
-+	kfree(portal);
+-	kfree(portal);
++	kfree(bridge);
  	return ret;
  }
  
-@@ -25747,6 +25805,7 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
- {
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 	struct drm_psb_sgx_lab_submit_op *op = data;
-+	struct psb_sgx_lab_submit_sgx_ta_submit_op_request_portal *portal = NULL;
- 	const char *slot_name = NULL;
- 	bool dependency_fields_present;
- 	u32 submit_id;
-@@ -25996,12 +26055,16 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
- 						op->packet_count);
- 		break;
- 	case DRM_PSB_SGX_LAB_SUBMIT_OP_ISSUE:
--		ret = poulsbo_sgx_issue_submit_op_request(
--			dev, op, dependency_fields_present, &submit_id);
-+		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
-+			dev, op, dependency_fields_present, &portal);
-+		if (!ret)
-+			submit_id = portal->response_op.resolved_submit_id;
- 		break;
- 	case DRM_PSB_SGX_LAB_SUBMIT_OP_TRANSITION:
--		ret = poulsbo_sgx_transition_submit_op_request(
--			dev, op, dependency_fields_present, &submit_id);
-+		ret = poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_portal(
-+			dev, op, dependency_fields_present, &portal);
-+		if (!ret)
-+			submit_id = portal->response_op.resolved_submit_id;
- 		break;
- 	case DRM_PSB_SGX_LAB_SUBMIT_OP_ATTACH:
- 		if (op->owner_state || op->packet_count || op->context ||
-@@ -26442,10 +26505,18 @@ static int psb_ioctl_sgx_lab_submit_op(struct drm_device *dev, void *data,
- 		return -EINVAL;
- 	}
- 	if (ret)
--		return ret;
-+		goto out_free_portal;
-+	if (portal) {
-+		kfree(portal);
-+		portal = NULL;
-+	}
- 
- 	op->resolved_submit_id = submit_id;
- 	return 0;
-+
-+out_free_portal:
-+	kfree(portal);
-+	return ret;
- }
- 
- static ssize_t poulsbo_sgx_state_show(struct device *kdev,
 -- 
 2.34.1
 

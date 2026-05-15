@@ -15,23 +15,23 @@ Current live note on May 15, 2026:
   - it then panicked in `poulsbo_sgx_fill_submit_query_locked`
   - it is unsafe for further recovery-side `plan_query*` reruns
 - the latest successful deploy session is now:
-  [logs/vaio-plan/20260515-042846-sgx-ta-submit-op-request-portal-deploy/children/20260515-042846-guarded-deploy](/root/Poulsbo/logs/vaio-plan/20260515-042846-sgx-ta-submit-op-request-portal-deploy/children/20260515-042846-guarded-deploy)
+  [logs/vaio-plan/20260515-112156-sgx-ta-submit-op-request-bridge-rerun-deploy/children/20260515-112156-guarded-deploy](/root/Poulsbo/logs/vaio-plan/20260515-112156-sgx-ta-submit-op-request-bridge-rerun-deploy/children/20260515-112156-guarded-deploy)
   and it booted the VAIO onto:
-  - `driver_srcversion=53FC91A14B3946D5652FA82`
-  - `override_module_size=507688`
+  - `driver_srcversion=A8034211F7CCD771E65D255`
+  - `override_module_size=508140`
   - `driver_module_loaded=1`
   - `drm_card0_present=1`
   - `lightdm_active=inactive`
   - `xorg_process_count=0`
   - `kdump_service_active=active`
-- the newest internal `submit-op-request-portal` batch is now
-  hardware-validated:
+- the newest internal `submit-op-request-bridge` batch is now
+  hardware-validated as the narrowed outer-wrapper rerun:
   - exact regression proof:
-    [logs/vaio-plan-session/20260515-043038-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260515-043038-sgx-plan-session)
+    [logs/vaio-plan-session/20260515-112805-sgx-plan-session](/root/Poulsbo/logs/vaio-plan-session/20260515-112805-sgx-plan-session)
   - focused submit-op bundle:
-    [logs/vaio-ioctl/20260515-043158-sgx-submit-ta-submit-op-request-portal-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-043158-sgx-submit-ta-submit-op-request-portal-live/summary.log)
+    [logs/vaio-ioctl/20260515-113121-sgx-submit-ta-submit-op-request-bridge-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-113121-sgx-submit-ta-submit-op-request-bridge-live/summary.log)
   - typed multi-submit bundle:
-    [logs/vaio-ioctl/20260515-043158-sgx-multi-submit-ta-submit-op-request-portal-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-043158-sgx-multi-submit-ta-submit-op-request-portal-live/summary.log)
+    [logs/vaio-ioctl/20260515-113121-sgx-multi-submit-ta-submit-op-request-bridge-live/summary.log](/root/Poulsbo/logs/vaio-ioctl/20260515-113121-sgx-multi-submit-ta-submit-op-request-bridge-live/summary.log)
 - the pinned stable-lab milestone for today is now the restored exact same
   override plus a three-cycle proof soak:
   - soak bundle:
@@ -162,13 +162,14 @@ Current live note on May 15, 2026:
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_gateway`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_portal`
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_bridge`
 - the shared current-boundary resolver now advances from successful exact
   evidence and currently resolves to:
   - `resolved_profile=complete`
   - `resolved_phase=complete`
   - `resolved_reason=latest_phase_evidence_terminal`
-  - `source_timestamp=20260515-043038`
-  - `source_row_module_srcversion=53FC91A14B3946D5652FA82`
+  - `source_timestamp=20260515-112805`
+  - `source_row_module_srcversion=A8034211F7CCD771E65D255`
 - the exact regression command is now:
   - `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
 - the preferred operator entrypoint remains:
