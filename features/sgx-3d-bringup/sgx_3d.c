@@ -154,6 +154,9 @@ struct sgx3d_state {
 	struct sgx3d_bo edm_status[2];	/* EDM status buffers (TA3D-CTL +0xD4/+0xD8) */
 	struct sgx3d_bo edm_dpm;	/* EDM/DPM private buffer (EDM-CTL +0xDC, >=0x3810) */
 	struct sgx3d_bo dpm_temp;	/* scratch / GETMISCINFO output buffer */
+	struct sgx3d_bo hw2dctx;	/* HW 2D context (2D cmd Data[1]) */
+	struct sgx3d_bo client_ccb;	/* client CCB: 2DCMD_SHARED + 2D-core stream */
+	struct sgx3d_bo dst_surf;	/* 2D fill destination (LOW VA, 28-bit 2D addr) */
 	struct sgx3d_bo pds[5];		/* init-PDS programs: 0=pds1_evt 1=pds2_elb
 					 * 2=primary1 3=secondary 4=primary2 */
 
@@ -577,6 +580,24 @@ static int sgx3d_setup_buffers(struct drm_device *dev)
 			     PAGE_SIZE, SGX_KERNEL_DATA_HEAP_BASE + 0x1D0000);
 	if (ret)
 		goto err_pds;
+	/* 2D render: HW context + client CCB (any VA - DMA'd via SGX MMU). */
+	ret = sgx3d_alloc_bo(dev, &s->hw2dctx, PAGE_SIZE, "sgx3d_hw2dctx",
+			     PAGE_SIZE, SGX_KERNEL_DATA_HEAP_BASE + 0x1E0000);
+	if (ret)
+		goto err_pds;
+	ret = sgx3d_alloc_bo(dev, &s->client_ccb, PAGE_SIZE, "sgx3d_2dccb",
+			     PAGE_SIZE, SGX_KERNEL_DATA_HEAP_BASE + 0x1F0000);
+	if (ret)
+		goto err_pds;
+	/* dst surface MUST sit below 0x10000000 - the 2D core dst addr is 28-bit
+	 * (PSB_2D_DST_ADDR_MASK 0x0FFFFFFC). Bind it low in pf_pd. */
+	ret = sgx3d_alloc_bo(dev, &s->dst_surf, 0x10000, "sgx3d_dst2d",
+			     PAGE_SIZE, 0x04000000);
+	if (ret)
+		goto err_pds;
+	sgx3d_zero(&s->hw2dctx);
+	sgx3d_zero(&s->client_ccb);
+	sgx3d_zero(&s->dst_surf);
 	sgx3d_zero(&s->edm_status[0]);
 	sgx3d_zero(&s->edm_status[1]);
 	sgx3d_zero(&s->dpm_temp);
@@ -637,6 +658,9 @@ err_pds:
 	}
 	sgx3d_free_bo(dev, &s->dpm_temp);
 	sgx3d_free_bo(dev, &s->edm_dpm);
+	sgx3d_free_bo(dev, &s->dst_surf);
+	sgx3d_free_bo(dev, &s->client_ccb);
+	sgx3d_free_bo(dev, &s->hw2dctx);
 	sgx3d_free_bo(dev, &s->edm_status[0]);
 	sgx3d_free_bo(dev, &s->edm_status[1]);
 	sgx3d_free_bo(dev, &s->edm_ctl);
@@ -670,6 +694,9 @@ static void sgx3d_teardown_buffers(struct drm_device *dev)
 	{ int k; for (k = 0; k < 5; k++) sgx3d_free_bo(dev, &s->pds[k]); }
 	sgx3d_free_bo(dev, &s->dpm_temp);
 	sgx3d_free_bo(dev, &s->edm_dpm);
+	sgx3d_free_bo(dev, &s->dst_surf);
+	sgx3d_free_bo(dev, &s->client_ccb);
+	sgx3d_free_bo(dev, &s->hw2dctx);
 	sgx3d_free_bo(dev, &s->edm_status[0]);
 	sgx3d_free_bo(dev, &s->edm_status[1]);
 	sgx3d_free_bo(dev, &s->edm_ctl);
@@ -1243,6 +1270,55 @@ static ssize_t poulsbo_sgx_3d_show(struct device *kdev,
  *  - poll ccb_ctl+4 (ReadOffset) until it catches up -> ukernel consumed it.
  * PROCESS_QUEUES(6) is the most benign first command (no render state needed).
  */
+/* SGX 2D-core command-stream opcodes (from the proven blt-ioctl / psb_reg). */
+#define P2D_FENCE_BH	0x70000000u
+#define P2D_BLIT_BH	0x80000000u
+#define P2D_DST_SURF_BH	0xA0000000u
+#define P2D_FLUSH_BH	0xF0000000u
+#define P2D_DST_8888ARGB 0x00060000u
+#define P2D_USE_FILL	0x00000000u
+#define P2D_ROP3_PATCOPY 0x0000F0F0u
+#define P2D_DST_ADDR_MASK 0x0FFFFFFCu
+
+/*
+ * Build a minimal no-sync 2D solid-fill for the microkernel 2D handler
+ * (derived from the USSE 2D-handler decode). client_ccb = SGXMKIF_2DCMD_SHARED
+ * (0x64B, all-zero = no sync) followed by the 8-dword 2D-core fill stream at
+ * +0x64; hw2dctx +0x04 = client CCB base (the field the handler dereferences),
+ * +0x00 = client CCB (EA base). dst is a 256x64 ARGB8888 surface at low VA.
+ */
+static void sgx3d_build_2d_fill(struct drm_device *dev)
+{
+	struct sgx3d_state *s = &g_sgx3d;
+	u32 pitch = 256u * 4u;			/* bytes */
+	u32 dst = (u32)s->dst_surf.gpu_va & P2D_DST_ADDR_MASK;
+	u32 b = 0x64;				/* stream start (after SHARED hdr) */
+
+	sgx3d_zero(&s->hw2dctx);
+	sgx3d_zero(&s->client_ccb);		/* zeroes the 0x64 SHARED header */
+	sgx3d_zero(&s->dst_surf);
+
+	/* 2D-core fill stream (8 dwords) at client_ccb+0x64. */
+	sgx3d_write_u32(&s->client_ccb, b + 0x00, P2D_FENCE_BH);
+	sgx3d_write_u32(&s->client_ccb, b + 0x04, P2D_DST_SURF_BH | P2D_DST_8888ARGB | pitch);
+	sgx3d_write_u32(&s->client_ccb, b + 0x08, dst);			/* dst addr slot */
+	sgx3d_write_u32(&s->client_ccb, b + 0x0c, P2D_BLIT_BH | P2D_USE_FILL | P2D_ROP3_PATCOPY);
+	sgx3d_write_u32(&s->client_ccb, b + 0x10, 0x00C0FFEEu);		/* fill colour */
+	sgx3d_write_u32(&s->client_ccb, b + 0x14, (32u << 12) | 16u);	/* dst xy */
+	sgx3d_write_u32(&s->client_ccb, b + 0x18, (64u << 12) | 32u);	/* dst wh */
+	sgx3d_write_u32(&s->client_ccb, b + 0x1c, P2D_FLUSH_BH);
+
+	/* HW 2D context: +0x04 = client CCB base (CONFIRMED deref); +0x00 = EA base. */
+	sgx3d_write_u32(&s->hw2dctx, 0x00, (u32)s->client_ccb.gpu_va);
+	sgx3d_write_u32(&s->hw2dctx, 0x04, (u32)s->client_ccb.gpu_va);
+	wmb();
+
+	dev_info(dev->dev,
+		 "sgx3d: 2D fill built (ctx=%#x ccb=%#x dst=%#x[VA %#lx] colour=0x00C0FFEE 64x32@32,16)\n",
+		 (u32)s->hw2dctx.gpu_va, (u32)s->client_ccb.gpu_va, dst,
+		 s->dst_surf.gpu_va);
+}
+
 static int sgx3d_submit_ccb(struct drm_device *dev, u32 cmd_type)
 {
 	struct drm_psb_private *dev_priv = dev->dev_private;
@@ -1274,20 +1350,21 @@ static int sgx3d_submit_ccb(struct drm_device *dev, u32 cmd_type)
 	 * Reuse the (otherwise idle) dpm_temp buffer as the misc buffer. */
 	if (cmd_type == 5) {
 		sgx3d_zero(&s->dpm_temp);		/* clears flags incl. READY */
-		/* Request struct-sizes+features fill (DDK sgxinit.c:1760 sets this
-		 * bit before the ukernel call). Some ukernel builds only write the
-		 * buffer when a request bit is set. */
 		sgx3d_write_u32(&s->dpm_temp, 0x00, 0x2); /* PVRSRV_USSE_MISCINFO_GET_STRUCT_SIZES */
 		data1 = (u32)s->dpm_temp.gpu_va;
 		wmb();
+	} else if (cmd_type == 2) {
+		/* 2D: Data[1] = HW 2D context devVA; Data[0] must be 0. */
+		sgx3d_build_2d_fill(dev);
+		data1 = (u32)s->hw2dctx.gpu_va;
 	}
 
 	sgx3d_read_u32(&s->ccb_ctl, 0, &woff);
 	woff &= 255;
 	sgx3d_write_u32(&s->kccb, woff * 16 + 0x0, svc);		/* ui32ServiceAddress */
 	sgx3d_write_u32(&s->kccb, woff * 16 + 0x4, 0);		/* ui32CacheControl   */
-	/* Data[0] mirrors Data[1] for GETMISCINFO probe (unsure which the ukernel reads). */
-	sgx3d_write_u32(&s->kccb, woff * 16 + 0x8, data1);	/* ui32Data[0]        */
+	/* Data[0]: 0 for 2D (DDK sets only Data[1]); mirror for the GETMISC probe. */
+	sgx3d_write_u32(&s->kccb, woff * 16 + 0x8, (cmd_type == 2) ? 0 : data1);
 	sgx3d_write_u32(&s->kccb, woff * 16 + 0xc, data1);	/* ui32Data[1]        */
 	wmb();
 	woff = (woff + 1) & 255;
@@ -1335,6 +1412,30 @@ static int sgx3d_submit_ccb(struct drm_device *dev, u32 cmd_type)
 						d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
 						PSB_RSGX32(0x0C08), (u32)s->dpm_temp.gpu_va);
 				}
+			} else if (cmd_type == 2) {
+				/* 2D fill: check the 2D core ran + the dst pixels. */
+				u32 p0 = 0, pfill = 0, pborder = 0, blstat, j;
+
+				/* wait for the 2D core to finish the blit. */
+				for (j = 0; j < 5000; j++) {
+					blstat = PSB_RSGX32(0x0E04); /* EUR_CR_2D_BLIT_STATUS */
+					if (!(blstat & 0x01000000u)) /* not BUSY */
+						break;
+					udelay(10);
+				}
+				blstat = PSB_RSGX32(0x0E04);
+				/* dst pixel at fill origin (32,16): byte off = 16*pitch+32*4 */
+				sgx3d_read_u32(&s->dst_surf, 0, &p0);
+				sgx3d_read_u32(&s->dst_surf, 16 * 1024 + 32 * 4, &pfill);
+				sgx3d_read_u32(&s->dst_surf, 0 * 1024 + 0 * 4, &pborder);
+				if (pfill == 0x00C0FFEEu)
+					dev_info(dev->dev,
+						 "sgx3d: *** 2D FILL RENDERED *** dst[32,16]=%#x (==colour!) border=%#x BLIT_STATUS=%#x\n",
+						 pfill, pborder, blstat);
+				else
+					dev_err(dev->dev,
+						"sgx3d: 2D consumed but dst NOT filled: dst[32,16]=%#x dst[0,0]=%#x BLIT_STATUS=%#x BIF_FAULT=%#x\n",
+						pfill, pborder, blstat, PSB_RSGX32(0x0C08));
 			}
 			return 0;
 		}
