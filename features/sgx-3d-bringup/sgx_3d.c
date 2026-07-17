@@ -152,7 +152,8 @@ struct sgx3d_state {
 	struct sgx3d_bo kicker;		/* pui32KernelCCBEventKicker dword */
 	struct sgx3d_bo edm_ctl;	/* TA3D-CTL buffer (blob[5912] points here) */
 	struct sgx3d_bo edm_status[2];	/* EDM status buffers (TA3D-CTL +0xD4/+0xD8) */
-	struct sgx3d_bo dpm_temp;	/* DPM/SPM temp state (TA3D-CTL +0xDC) */
+	struct sgx3d_bo edm_dpm;	/* EDM/DPM private buffer (EDM-CTL +0xDC, >=0x3810) */
+	struct sgx3d_bo dpm_temp;	/* scratch / GETMISCINFO output buffer */
 	struct sgx3d_bo pds[5];		/* init-PDS programs: 0=pds1_evt 1=pds2_elb
 					 * 2=primary1 3=secondary 4=primary2 */
 
@@ -459,14 +460,17 @@ static void sgx3d_relocate(struct drm_device *dev)
 	 * +0x04 scratch(alloc6), +0x08 CCB-CTL(alloc3), +0x60 host-ctl(alloc0),
 	 * +0xDC kernel-CCB ring(alloc0x18). (Prior layout was wrong but init still
 	 * passed; corrected for real command submission.) */
-	/* HW-empirical correction: the ukernel's InitStatus target is at +0x04
-	 * (moving host-ctl to +0x60 broke INIT_COMPLETE). Keep host-ctl at +0x04;
-	 * add the genuinely-needed CCB wiring: +0x08 separate CCB-CTL, +0xDC ring. */
+	/* USSE-decode correction (GETMISCINFO handler RE): the EDM reads command
+	 * BODIES (incl. Data[1]) from the ring at +0x60 (alloc0, 256x16=0x1000);
+	 * +0x04 is host-ctl/InitStatus (alloc6, HW-proven); +0x08 is CCB-CTL
+	 * {Woff,Roff}; +0xDC is a separate EDM/DPM private buffer (alloc0x18,
+	 * >=0x3810), NOT the ring. Previously +0x60/+0xDC were swapped so the EDM
+	 * read a zeroed command -> Data[1]=0 -> handler wrote to a dummy page. */
 	sgx3d_write_u32(&s->edm_ctl, 0x00, edm);			/* self */
 	sgx3d_write_u32(&s->edm_ctl, 0x04, (u32)s->host_ctl.gpu_va);	/* HOST-CTL (InitStatus) */
 	sgx3d_write_u32(&s->edm_ctl, 0x08, (u32)s->ccb_ctl.gpu_va);	/* CCB-CTL {Woff,Roff} */
-	sgx3d_write_u32(&s->edm_ctl, 0x60, (u32)s->host_ctl.gpu_va);	/* HOST-CTL (decomp slot) */
-	sgx3d_write_u32(&s->edm_ctl, 0xDC, (u32)s->kccb.gpu_va);		/* kernel CCB ring */
+	sgx3d_write_u32(&s->edm_ctl, 0x60, (u32)s->kccb.gpu_va);		/* kernel CCB command ring */
+	sgx3d_write_u32(&s->edm_ctl, 0xDC, (u32)s->edm_dpm.gpu_va);	/* EDM/DPM private buf */
 	sgx3d_write_u32(&s->edm_ctl, 0xD0, SGX_KERNEL_DATA_HEAP_BASE);	/* heap base */
 	sgx3d_write_u32(&s->edm_ctl, 0xD4,				/* EDM status 0 */
 			((u32)s->edm_status[0].gpu_va - SGX_KERNEL_DATA_HEAP_BASE) | 0x80000000u);
@@ -567,9 +571,16 @@ static int sgx3d_setup_buffers(struct drm_device *dev)
 			     PAGE_SIZE, SGX_KERNEL_DATA_HEAP_BASE + 0x1C0000);
 	if (ret)
 		goto err_pds;
+	/* EDM/DPM private buffer for EDM-CTL+0xDC (must be >=0x3810, separate from
+	 * the ring and from dpm_temp which is the GETMISCINFO output). */
+	ret = sgx3d_alloc_bo(dev, &s->edm_dpm, 0x4000, "sgx3d_edmdpm",
+			     PAGE_SIZE, SGX_KERNEL_DATA_HEAP_BASE + 0x1D0000);
+	if (ret)
+		goto err_pds;
 	sgx3d_zero(&s->edm_status[0]);
 	sgx3d_zero(&s->edm_status[1]);
 	sgx3d_zero(&s->dpm_temp);
+	sgx3d_zero(&s->edm_dpm);
 
 	/* 5 init-PDS programs uploaded to the KERNEL_CODE heap (after td). */
 	{
@@ -625,6 +636,7 @@ err_pds:
 			sgx3d_free_bo(dev, &s->pds[k]);
 	}
 	sgx3d_free_bo(dev, &s->dpm_temp);
+	sgx3d_free_bo(dev, &s->edm_dpm);
 	sgx3d_free_bo(dev, &s->edm_status[0]);
 	sgx3d_free_bo(dev, &s->edm_status[1]);
 	sgx3d_free_bo(dev, &s->edm_ctl);
@@ -657,6 +669,7 @@ static void sgx3d_teardown_buffers(struct drm_device *dev)
 	s->reset_pd = s->reset_pt = NULL;
 	{ int k; for (k = 0; k < 5; k++) sgx3d_free_bo(dev, &s->pds[k]); }
 	sgx3d_free_bo(dev, &s->dpm_temp);
+	sgx3d_free_bo(dev, &s->edm_dpm);
 	sgx3d_free_bo(dev, &s->edm_status[0]);
 	sgx3d_free_bo(dev, &s->edm_status[1]);
 	sgx3d_free_bo(dev, &s->edm_ctl);
