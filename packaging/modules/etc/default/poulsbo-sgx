@@ -1,0 +1,26 @@
+# Tunables for the Poulsbo SGX driver stack, read by /opt/poulsbo-sgx/load.sh
+# at boot.  After editing, either reboot or re-run:  sudo /opt/poulsbo-sgx/load.sh
+# (a reboot is the reliable way to reload the modules — hot reload can hang the
+# box).  Every value here maps to a kernel module parameter that is also
+# runtime-writable under /sys/module/<mod>/parameters/<name>.
+
+# gma500_gfx.gma_no_sgx — hand the SGX render core to pvrsrvkm (leave at 1).
+GMA_NO_SGX=1
+
+# gma500_gfx.pvr_irq_forward — forward SGX interrupts to pvrsrvkm so GL present
+# is interrupt-driven (~1 ms / ~950 FPS).  Set 0 to fall back to pvrsrvkm's
+# internal ~250 ms poll (~4 FPS) for debugging.
+PVR_IRQ_FORWARD=1
+
+# gma500_gfx.flip_vsync — 0 = present as soon as the buffer is armed (lowest
+# latency, may tear).  1 = wait for the panel frame boundary before completing
+# the present (tear-reduced, but much lower throughput in tight render loops).
+FLIP_VSYNC=0
+
+# gma500dc.flip_enable — 1 = zero-copy hardware page-flip present.  0 = complete
+# presents without moving the scanout (diagnostic).
+FLIP_ENABLE=1
+
+# Run srvinit at boot to bring the SGX microkernel to INIT_COMPLETE so GL apps
+# work immediately.  Set 0 if you only want 2D (the open EXA DDX) acceleration.
+RUN_SRVINIT=1

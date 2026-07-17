@@ -1,0 +1,11 @@
+#!/bin/sh
+# postrm for poulsbo-sgx-userspace
+set -e
+
+case "$1" in
+    remove|purge)
+        ldconfig 2>/dev/null || true
+        ;;
+esac
+
+exit 0

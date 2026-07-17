@@ -1,0 +1,21 @@
+Package: poulsbo-sgx-modules
+Version: 1.0.0
+Section: kernel
+Priority: optional
+Architecture: i386
+Depends: kmod, initramfs-tools
+Recommends: poulsbo-sgx-userspace
+Conflicts: gma500-blt
+Maintainer: Poulsbo project <marcinkeviciusjustinas@gmail.com>
+Description: Poulsbo SGX535 kernel driver stack (prebuilt for 5.4.0-150-generic)
+ Prebuilt kernel modules for the Intel GMA500 / Poulsbo (PowerVR SGX535):
+ pvrsrvkm (SGX render core, ported to kernel 5.4), a gma500_gfx that adds the
+ PVR-over-DRM bridge and the SGX interrupt forwarder, and gma500dc (display-class
+ device backing the zero-copy page-flip present).
+ .
+ The stock gma500_gfx is blacklisted and this stack is loaded by a systemd unit
+ at boot in the correct order.  Together with poulsbo-sgx-userspace this gives
+ accelerated 2D and OpenGL ES on the SGX535 under X11.
+ .
+ These modules are compiled for the 5.4.0-150-generic (i686) kernel.  Installing
+ them on a different kernel will not load; rebuild from the project sources.

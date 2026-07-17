@@ -1,0 +1,16 @@
+#!/bin/sh
+# prerm for poulsbo-sgx-modules
+set -e
+
+case "$1" in
+    remove|deconfigure|upgrade)
+        if [ -d /run/systemd/system ]; then
+            systemctl disable poulsbo-sgx-srvinit.service 2>/dev/null || true
+            systemctl stop poulsbo-sgx-srvinit.service 2>/dev/null || true
+            systemctl disable poulsbo-sgx.service 2>/dev/null || true
+            systemctl stop poulsbo-sgx.service 2>/dev/null || true
+        fi
+        ;;
+esac
+
+exit 0

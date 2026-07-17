@@ -1,0 +1,24 @@
+#!/bin/sh
+# postinst for poulsbo-sgx-userspace
+set -e
+
+case "$1" in
+    configure)
+        # Force the active WSEGL to the zero-copy page-flip build (not the stock
+        # DRI2 build …so.real).  Done explicitly so a stale symlink left on disk
+        # from a previous install/manual change can never shadow it.
+        if [ -e /opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so.1.5.15.3226 ]; then
+            ln -sf libemgdPVR2D_DRIWSEGL.so.1.5.15.3226 \
+                   /opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so
+        fi
+
+        # Register /opt/emgd/lib on the dynamic linker search path.
+        ldconfig 2>/dev/null || true
+        echo "poulsbo-sgx-userspace: installed EMGD GL runtime + gma500blt DDX."
+        echo "  Restart X (or reboot) to use the accelerated X driver."
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+esac
+
+exit 0

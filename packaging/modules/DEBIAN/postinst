@@ -1,0 +1,40 @@
+#!/bin/sh
+# postinst for poulsbo-sgx-modules
+set -e
+
+TARGET_KERNEL=5.4.0-150-generic
+
+case "$1" in
+    configure)
+        chmod 0755 /opt/poulsbo-sgx/load.sh 2>/dev/null || true
+
+        # Refresh module dependency data.
+        depmod -a "$TARGET_KERNEL" 2>/dev/null || depmod -a 2>/dev/null || true
+
+        # Bake the gma500_gfx blacklist into the initramfs so the stock module
+        # does not bind the device during early boot.
+        if [ -x /usr/sbin/update-initramfs ]; then
+            update-initramfs -u 2>/dev/null || true
+        fi
+
+        # Enable the loader service (loads our stack at every boot).
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload 2>/dev/null || true
+            systemctl enable poulsbo-sgx.service 2>/dev/null || true
+            systemctl enable poulsbo-sgx-srvinit.service 2>/dev/null || true
+        fi
+
+        RUNNING="$(uname -r)"
+        if [ "$RUNNING" != "$TARGET_KERNEL" ]; then
+            echo "poulsbo-sgx: WARNING - these modules are built for kernel" >&2
+            echo "  $TARGET_KERNEL but you are running $RUNNING." >&2
+            echo "  They will not load until you boot $TARGET_KERNEL (or rebuild" >&2
+            echo "  from source; see /usr/share/doc/poulsbo-sgx-modules/)." >&2
+        fi
+        echo "poulsbo-sgx: installed. Reboot to load the accelerated driver stack."
+        ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+esac
+
+exit 0

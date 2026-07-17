@@ -1,0 +1,22 @@
+Package: poulsbo-sgx-userspace
+Version: 1.0.0
+Section: x11
+Priority: optional
+Architecture: i386
+Depends: libc6, libx11-6
+Recommends: poulsbo-sgx-modules, xserver-xorg-core-hwe-18.04
+Maintainer: Poulsbo project <marcinkeviciusjustinas@gmail.com>
+Description: Poulsbo SGX535 userspace: EGL/GLES2 runtime, WSEGL, EXA DDX
+ The userspace half of the Poulsbo SGX535 graphics stack:
+  * the closed Intel EMGD 1.18 (DDK 1.5.15.3226) EGL / OpenGL ES 2.0 / OpenVG
+    runtime, installed under /opt/emgd/lib;
+  * the zero-copy page-flip WSEGL (libemgdPVR2D_DRIWSEGL) that presents SGX
+    render straight into the scanned-out buffer via eglSwapBuffers;
+  * srvinit's client libraries; and
+  * the open EXA 2D acceleration X driver xf86-video-gma500blt, plus an
+    xorg.conf.d snippet that selects it.
+ .
+ The EMGD components are proprietary Intel/Imagination binaries redistributed
+ here for personal use on Poulsbo hardware; they are not open source.
+ .
+ Needs the poulsbo-sgx-modules package (the SGX kernel driver) to do anything.

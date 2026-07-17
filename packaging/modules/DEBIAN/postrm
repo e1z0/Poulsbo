@@ -1,0 +1,21 @@
+#!/bin/sh
+# postrm for poulsbo-sgx-modules
+set -e
+
+case "$1" in
+    remove|purge)
+        # The blacklist file ships with the package and is removed by dpkg on
+        # purge; rebuild the initramfs so the stock gma500_gfx can load again.
+        if [ -x /usr/sbin/update-initramfs ]; then
+            update-initramfs -u 2>/dev/null || true
+        fi
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload 2>/dev/null || true
+        fi
+        echo "poulsbo-sgx: removed. Reboot to return to the stock gma500 driver."
+        ;;
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+esac
+
+exit 0

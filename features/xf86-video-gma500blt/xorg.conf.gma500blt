@@ -1,0 +1,43 @@
+# /etc/X11/xorg.conf  (or drop into /etc/X11/xorg.conf.d/20-gma500blt.conf)
+#
+# Forces the gma500blt DDX on the Intel GMA500/Poulsbo (PCI 8086:8108 at
+# 0000:00:02.0). KMS + EXA; software cursor; no DRI2/glamor.
+#
+# Notes:
+#  - The in-kernel gma500 KMS driver must be loaded and own the connectors
+#    (dmesg: "gma500 0000:00:02.0"). Verify with: modetest -M gma500
+#  - Run on a free VT as root (this DDX opens the DRM node itself and calls
+#    drmSetMaster). Under logind/seat management extra plumbing is needed.
+
+Section "ServerFlags"
+    Option "AutoAddGPU"      "false"
+    Option "DontZap"         "false"
+EndSection
+
+Section "Device"
+    Identifier  "GMA500BLT"
+    Driver      "gma500blt"
+    BusID       "PCI:0:2:0"
+    # Option "Debug" "true"
+EndSection
+
+Section "Monitor"
+    Identifier  "Panel"
+    # Modes come from the connector's EDID/KMS mode list; the preferred
+    # mode is used automatically.
+EndSection
+
+Section "Screen"
+    Identifier  "Screen0"
+    Device      "GMA500BLT"
+    Monitor     "Panel"
+    DefaultDepth 24
+    SubSection "Display"
+        Depth   24
+    EndSubSection
+EndSection
+
+Section "ServerLayout"
+    Identifier  "Layout0"
+    Screen      "Screen0"
+EndSection

@@ -1,0 +1,12 @@
+Package: poulsbo-sgx
+Version: 1.0.0
+Section: metapackages
+Priority: optional
+Architecture: all
+Depends: poulsbo-sgx-modules (= 1.0.0), poulsbo-sgx-userspace (= 1.0.0)
+Maintainer: Poulsbo project <marcinkeviciusjustinas@gmail.com>
+Description: Poulsbo GMA500 / SGX535 accelerated graphics stack (metapackage)
+ Installs the complete Poulsbo SGX535 driver: the kernel modules
+ (poulsbo-sgx-modules) and the EGL/GLES2 + EXA userspace
+ (poulsbo-sgx-userspace).  After installing this package and rebooting, the
+ GMA500 comes up with 2D acceleration under X11 and OpenGL ES on the SGX535.

@@ -1,0 +1,15 @@
+[Unit]
+Description=Initialise the SGX535 microkernel (INIT_COMPLETE) for OpenGL ES
+After=poulsbo-sgx.service
+Requires=poulsbo-sgx.service
+# Have GL ready before the login screen / GL apps, but this runs late enough
+# that a failure here never blocks a normal boot (2D X11 accel is independent).
+Before=display-manager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/poulsbo-sgx/srvinit.sh
+
+[Install]
+WantedBy=graphical.target

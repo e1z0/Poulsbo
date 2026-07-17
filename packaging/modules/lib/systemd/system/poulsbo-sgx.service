@@ -1,0 +1,16 @@
+[Unit]
+Description=Load the Poulsbo SGX535 driver stack (pvrsrvkm + gma500_gfx + gma500dc)
+Documentation=file:/usr/share/doc/poulsbo-sgx-modules/README
+# Load very early, before udev coldplug / the display manager, so our modules
+# own the GMA500 device from the start (the stock gma500_gfx is blacklisted).
+After=systemd-modules-load.service
+DefaultDependencies=no
+Before=sysinit.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/poulsbo-sgx/load.sh
+
+[Install]
+WantedBy=sysinit.target

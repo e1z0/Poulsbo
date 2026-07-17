@@ -1,0 +1,31 @@
+# Kbuild for gma500dc.ko - minimal PowerVR SGX display-class module.
+#
+# Builds against the SAME PVR services headers as the pvrsrvkm port and links
+# against pvrsrvkm's exported symbols (PVRGetDisplayClassJTable) via
+# KBUILD_EXTRA_SYMBOLS.
+#
+# PVRSRV_SRC must point at the pvrsrvkm port source root (the dir that contains
+# include4/ and services4/). Overridable from the Makefile / command line.
+
+PVRSRV_SRC ?= /tmp/claude-1000/-Projects-Poulsbo/476a621f-66ff-423a-96f0-a1dca3ae4adf/scratchpad/pvrsrvkm-port/src
+
+obj-m := gma500dc.o
+
+ccflags-y := \
+  -I$(PVRSRV_SRC)/include4 \
+  -I$(PVRSRV_SRC)/services4/include \
+  -I$(PVRSRV_SRC)/services4/srvkm/include \
+  -I$(PVRSRV_SRC)/services4/srvkm/hwdefs \
+  -I$(PVRSRV_SRC)/services4/srvkm/bridged \
+  -I$(PVRSRV_SRC)/services4/srvkm/bridged/sgx \
+  -I$(PVRSRV_SRC)/services4/srvkm/devices/sgx \
+  -I$(PVRSRV_SRC)/services4/srvkm/env/linux \
+  -I$(PVRSRV_SRC)/services4/system/include \
+  -I$(PVRSRV_SRC)/services4/system/plb \
+  -I$(PVRSRV_SRC)/services4/system/common \
+  -DLINUX -DSERVICES4 -DSUPPORT_SGX -DSGX535 -DSGX_CORE_REV=121 -DSUPPORT_SGX535 \
+  -DSUPPORT_PERCONTEXT_PB -DTRANSFER_QUEUE -DSYS_USING_INTERRUPTS \
+  -DSUPPORT_HW_RECOVERY -DSUPPORT_ACTIVE_POWER_MANAGEMENT -DPVR_SECURE_HANDLES \
+  -DSUPPORT_SGX_EVENT_OBJECT -DLDM_PCI -DSUPPORT_SGX_HWPERF -DSUPPORT_LINUX_X86_PAT \
+  -DSUPPORT_CPU_CACHED_BUFFERS -DSUPPORT_CACHEFLUSH_ON_ALLOC -DPVR_PROC_USE_SEQ_FILE \
+  -DPVR_BUILD_DIR=\"pc_i686_poulsbo_d0_linux\" -DPVR_BUILD_TYPE=\"release\" -DRELEASE
