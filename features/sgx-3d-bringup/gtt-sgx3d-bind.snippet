@@ -1,0 +1,34 @@
+
+/* --- SGX 3D bring-up GTT helpers (sgx_3d.c) --- */
+int psb_gtt_sgx3d_bind(struct drm_device *dev, struct gtt_range *gt,
+		       unsigned long gpu_va)
+{
+	struct drm_psb_private *dev_priv = dev->dev_private;
+	int ret;
+
+	if (gt->stolen || !dev_priv->mmu)
+		return -EINVAL;
+
+	mutex_lock(&dev_priv->gtt_mutex);
+	ret = psb_gtt_pin_locked(gt);
+	if (ret)
+		goto out;
+	ret = psb_mmu_insert_pages(psb_mmu_get_default_pd(dev_priv->mmu), gt->pages, gpu_va,
+				   gt->npage, 0, 0, PSB_MMU_CACHED_MEMORY);
+	if (ret)
+		psb_gtt_unpin_locked(gt, false);
+out:
+	mutex_unlock(&dev_priv->gtt_mutex);
+	return ret;
+}
+
+void psb_gtt_sgx3d_unbind(struct drm_device *dev, struct gtt_range *gt,
+			  unsigned long gpu_va)
+{
+	struct drm_psb_private *dev_priv = dev->dev_private;
+
+	mutex_lock(&dev_priv->gtt_mutex);
+	psb_mmu_remove_pages(psb_mmu_get_default_pd(dev_priv->mmu), gpu_va, gt->npage, 0, 0);
+	psb_gtt_unpin_locked(gt, false);
+	mutex_unlock(&dev_priv->gtt_mutex);
+}

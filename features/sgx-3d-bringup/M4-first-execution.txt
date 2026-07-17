@@ -1,0 +1,41 @@
+SGX535 3D bring-up — M4 microkernel FIRST EXECUTION on hardware (2026-07-16)
+Host: devnull-vaio. Module: gma500_gfx + sgx_3d (sgx3d_enable=1), fbcon unbound.
+
+Trigger: echo init > /sys/bus/pci/devices/0000:00:02.0/poulsbo_sgx_3d
+dmesg:
+  sgx3d: uploaded pbuKernelProgram.bin (22552 B) at gpu_va 0xf8000000
+  sgx3d: uploaded pbuKernelTAProgram.bin (21672 B) at gpu_va 0xf8008000
+  sgx3d: uploaded pbuKernel3DProgram.bin (25240 B) at gpu_va 0xf8010000
+  sgx3d: buffers up (code=0xf8000000 ta=0xf8008000 3d=0xf8010000 hostctl=0x807bf000 kccb=0x807c6000 kicker=0x807ce000)
+  sgx3d: SGXReset done
+  sgx3d: service addrs ev=0x20010f kta=0x212a0f (code_base=0xf8000000)
+  sgx3d: boot EVENT_KICK rung, polling InitStatus@0
+  SGX MMU page fault
+  SGX fault: BIF_REQUESTER_FAULT requesters=USSEPDS fault_addr=0x000000
+  SGX BIF: dir0=0x34a6f000 dir1=0x000000 2d_base=0x80000000 3d_base=0x30000000
+  sgx3d: INIT_COMPLETE timeout (last status=0x0) - reset+bail  [box stayed alive]
+
+MILESTONE: microkernel uploaded, reset ok, EVENT_KICK fired, USSE RAN. First real
+SGX 3D execution. Init bounded+recovers gracefully (no crash) -> iteration viable.
+
+DIAGNOSIS (2 issues):
+1. USE_CODE_BASE(15) encoding: code at VA 0xf8000000 but 25-bit ADDR field holds
+   0xf8000000 & 0x01FFFFFF = 0, so USSE fetches at VA 0 -> fault_addr=0x0. Fix:
+   map ukernel code at a device VA < 32MB and write that to USE_CODE_BASE.
+2. MMU context: BIF dir1(ctx1/pf_pd)=0 (not programmed); active context is
+   dir0=0x34a6f000 (default pd). Code mapped in pf_pd may be invisible to the USSE.
+   Likely fix: map ukernel BOs into the ACTIVE context (default pd) or ensure ctx1
+   is programmed and the USSE runs in it.
+
+--- UPDATE: microkernel EXECUTES (init scripts + all fixes) ---
+After implementing the full DDK init scripts (Part1 clkgate + Part2 34 regs),
+USE_CODE_BASE=(base>>7)|(DM3<<25), PDS_EXEC_BASE=0xF6000000, KERNEL_DATA-heap
+buffer placement: the USSEPDS fault_addr=0x0 is ELIMINATED. Diagnostic after
+the boot EVENT_KICK:
+  EDMTask0[0xB10]=0x10000 EDMTask1[0xB1C]=0x10000  (ukernel advanced its task regs)
+  EVENT_STATUS=0 (event consumed), CLKGATE=0x1111111
+  host_ctl: only our own service-addr patches at 0x2c-0x3c; ukernel wrote nothing.
+=> microkernel runs its event handler but does not complete init (writes no
+INIT_COMPLETE) because its internal PDS/data pointers are un-relocated 0xdbeef
+placeholders. INIT_COMPLETE requires the closed microkernel relocation format,
+not recoverable from the available EMGD binaries. This is the boundary.

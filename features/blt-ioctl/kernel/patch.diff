@@ -1,0 +1,200 @@
+--- a/Makefile
++++ b/Makefile
+@@ -14,6 +14,7 @@
+ 	  intel_gmbus.o \
+ 	  mmu.o \
+ 	  blitter.o \
++	  blt_submit.o \
+ 	  power.o \
+ 	  psb_drv.o \
+ 	  gma_display.o \
+--- a/accel_2d.c
++++ b/accel_2d.c
+@@ -432,6 +432,11 @@
+  *	Soft reset the graphics engine and then reload the necessary registers.
+  *	We use this at initialisation time but it will become relevant for
+  *	accelerated X later
++ *
++ *	Must be atomic-safe: every caller that can race the live FIFO holds
++ *	lock_2d with IRQs off (psb_2d_wait_available() here, the
++ *	DRM_PSB_BLT_SUBMIT reset path in blt_submit.c), hence mdelay()
++ *	rather than msleep().
+  */
+ void psb_spank(struct drm_psb_private *dev_priv)
+ {
+@@ -442,7 +447,7 @@
+ 		_PSB_CS_RESET_TWOD_RESET, PSB_CR_SOFT_RESET);
+ 	PSB_RSGX32(PSB_CR_SOFT_RESET);
+ 
+-	msleep(1);
++	mdelay(1);
+ 
+ 	PSB_WSGX32(0, PSB_CR_SOFT_RESET);
+ 	wmb();
+@@ -451,7 +456,7 @@
+ 	wmb();
+ 	(void) PSB_RSGX32(PSB_CR_BIF_CTRL);
+ 
+-	msleep(1);
++	mdelay(1);
+ 	PSB_WSGX32(PSB_RSGX32(PSB_CR_BIF_CTRL) & ~_PSB_CB_CTRL_CLEAR_FAULT,
+ 		   PSB_CR_BIF_CTRL);
+ 	(void) PSB_RSGX32(PSB_CR_BIF_CTRL);
+@@ -520,6 +525,62 @@
+ 	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
+ 	return ret;
+ }
++
++/**
++ *	psb_2d_submit_user	-	submit a validated user 2D command
++ *	@dev_priv: our DRM device
++ *	@cmdbuf: command to issue
++ *	@size: length (in dwords)
++ *
++ *	Entry point for the DRM_PSB_BLT_SUBMIT ioctl (blt_submit.c).
++ *	Mirrors psbfb_2d_submit() above (same lock_2d serialization
++ *	against the live fbcon acceleration, same <= 0x60 dword chunking)
++ *	with one deliberate difference: on a FIFO-space timeout it simply
++ *	returns -EIO instead of going through psb_2d_wait_available(),
++ *	whose psb_spank() call would delay and printk to the fbcon while
++ *	lock_2d is held with IRQs off.  The ioctl caller detects the hang
++ *	and resets the engine from process context instead.
++ *
++ *	The FIFO-room wait runs before each chunk is written, and ioctl
++ *	streams are capped at DRM_PSB_BLT_MAX_DWORDS == 0x60 (a single
++ *	chunk), so a timeout here means no dwords were written: a bail
++ *	can never leave a truncated stream in the FIFO.
++ */
++int psb_2d_submit_user(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
++		       unsigned size)
++{
++	unsigned long flags;
++	int ret = 0;
++	int i;
++	unsigned submit_size;
++
++	spin_lock_irqsave(&dev_priv->lock_2d, flags);
++	while (size > 0) {
++		unsigned long stop = jiffies + HZ;
++
++		submit_size = (size < 0x60) ? size : 0x60;
++
++		/* Bounded wait for FIFO room: never spank under lock_2d */
++		while (PSB_RSGX32(PSB_CR_2D_SOCIF) < submit_size) {
++			if (time_after(jiffies, stop)) {
++				ret = -EIO;
++				goto out_unlock;
++			}
++			cpu_relax();
++		}
++
++		size -= submit_size;
++		submit_size <<= 2;
++
++		for (i = 0; i < submit_size; i += 4)
++			PSB_WSGX32(*cmdbuf++, PSB_SGX_2D_SLAVE_PORT + i);
++
++		(void)PSB_RSGX32(PSB_SGX_2D_SLAVE_PORT + i - 4);
++	}
++out_unlock:
++	spin_unlock_irqrestore(&dev_priv->lock_2d, flags);
++	return ret;
++}
+ 
+ 
+ /**
+--- a/gtt.c
++++ b/gtt.c
+@@ -421,6 +421,27 @@
+ 	mutex_unlock(&dev_priv->gtt_mutex);
+ }
+ 
++/**
++ *	psb_gtt_unpin_idle	-	drop a GTT pin, blitter already quiesced
++ *	@gt: range to unpin
++ *
++ *	As psb_gtt_unpin(), but for callers that have already quiesced (or
++ *	reset) the 2D engine with respect to this range: skips the blitter
++ *	idle wait inside psb_gtt_unpin_locked(), whose silent -EBUSY return
++ *	would otherwise leave in_gart permanently elevated (a pin leak)
++ *	whenever an unrelated workload keeps the engine busy past the 1s
++ *	window.  Used by the DRM_PSB_BLT_SUBMIT unwind path (blt_submit.c).
++ */
++void psb_gtt_unpin_idle(struct gtt_range *gt)
++{
++	struct drm_device *dev = gt->gem.dev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++	mutex_lock(&dev_priv->gtt_mutex);
++	psb_gtt_unpin_locked(gt, true);
++	mutex_unlock(&dev_priv->gtt_mutex);
++}
++
+ /*
+  *	GTT resource allocator - allocate and manage GTT address space
+  */
+--- a/gtt.h
++++ b/gtt.h
+@@ -62,6 +62,7 @@
+ extern void psb_gtt_free_range(struct drm_device *dev, struct gtt_range *gt);
+ extern int psb_gtt_pin(struct gtt_range *gt);
+ extern void psb_gtt_unpin(struct gtt_range *gt);
++extern void psb_gtt_unpin_idle(struct gtt_range *gt);
+ extern void psb_gtt_roll(struct drm_device *dev,
+ 					struct gtt_range *gt, int roll);
+ extern int psb_gtt_restore(struct drm_device *dev);
+--- a/psb_drv.c
++++ b/psb_drv.c
+@@ -33,6 +33,7 @@
+ #include "mid_bios.h"
+ #include "power.h"
+ #include "psb_drm_lab.h"
++#include "gma_blt_drm.h"
+ #include "psb_drv.h"
+ #include "psb_intel_reg.h"
+ #include "psb_reg.h"
+@@ -26488,6 +26489,7 @@
+ 			  psb_ioctl_sgx_lab_object_op, 0),
+ 	DRM_IOCTL_DEF_DRV(PSB_SGX_LAB_SUBMIT_OP,
+ 			  psb_ioctl_sgx_lab_submit_op, 0),
++	DRM_IOCTL_DEF_DRV(PSB_BLT_SUBMIT, psb_blt_submit_ioctl, 0),
+ };
+ 
+ static int psb_do_init(struct drm_device *dev)
+@@ -26624,6 +26626,12 @@
+ 
+ 	dev_priv->ops = (struct psb_ops *)flags;
+ 	dev_priv->dev = dev;
++	/*
++	 * With legacy .load, minors are registered before psb_driver_load
++	 * finishes and an ioctl only checks dev->dev_private for NULL, so
++	 * mutex_2d must be initialized before dev_private is published.
++	 */
++	mutex_init(&dev_priv->mutex_2d);
+ 	dev->dev_private = (void *) dev_priv;
+ 	mutex_init(&dev_priv->sgx_lab_object_mutex);
+ 	INIT_LIST_HEAD(&dev_priv->sgx_lab_object_list);
+--- a/psb_drv.h
++++ b/psb_drv.h
+@@ -653,6 +653,8 @@
+ 
+ 	/* 2D acceleration */
+ 	spinlock_t lock_2d;
++	/* Serializes user blit submits (pin -> submit -> wait -> unpin) */
++	struct mutex mutex_2d;
+ 
+ 	/* Panel brightness */
+ 	int brightness;
+@@ -785,6 +787,12 @@
+ extern ssize_t psb_sgx_dump_state(struct drm_device *dev, char *buf,
+ 				  size_t buf_size);
+ extern void psb_spank(struct drm_psb_private *dev_priv);
++extern int psb_2d_submit_user(struct drm_psb_private *dev_priv,
++			      uint32_t *cmdbuf, unsigned size);
++
++/* blt_submit.c */
++extern int psb_blt_submit_ioctl(struct drm_device *dev, void *data,
++				struct drm_file *file_priv);
+ 
+ /* psb_reset.c */
+ extern void psb_lid_timer_init(struct drm_psb_private *dev_priv);

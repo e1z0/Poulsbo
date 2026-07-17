@@ -1,0 +1,11 @@
+[Unit]
+Description=Load blt-patched gma500 driver onto fresh device
+After=systemd-modules-load.service
+DefaultDependencies=no
+Before=sysinit.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/gma500-blt/load.sh
+[Install]
+WantedBy=sysinit.target
