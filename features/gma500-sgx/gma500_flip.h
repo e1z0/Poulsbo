@@ -37,7 +37,22 @@ int gma500_flip_alloc(u32 width, u32 height, u32 *stride_out,
 /* Unpin + free a buffer from gma500_flip_alloc(). */
 void gma500_flip_free(struct gma_flipbuf *fb);
 
-/* Page-flip pipe 0 scanout to @gtt_offset.  0 on success, -errno on error. */
+/* Page-flip the active pipe's scanout to @gtt_offset.  0 on success, -errno. */
 int gma500_flip_to(u32 gtt_offset);
+
+/* One-time init of the deferred (vsync) flip-completion state. */
+void gma500_flip_init(void);
+
+/* Non-zero when the flip_vsync module parameter is set. */
+int gma500_flip_vsync_on(void);
+
+/*
+ * Defer @cb(@data) ~one refresh period (vsync present throttle).  Returns 0 if
+ * deferred (caller must not complete itself) or -errno if it must complete inline.
+ */
+int gma500_flip_defer_complete(void (*cb)(void *), void *data);
+
+/* Flush any pending deferred completion (call on swap-chain teardown). */
+void gma500_flip_vblank_disable(void);
 
 #endif /* _GMA500_FLIP_H_ */

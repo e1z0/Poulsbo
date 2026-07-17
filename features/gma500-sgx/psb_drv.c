@@ -26659,6 +26659,7 @@ static int psb_driver_load(struct drm_device *dev, unsigned long flags)
 	/* Publish the bound device for the EXPORT_SYMBOL'd flip helpers
 	 * (gma500_flip.c / gma500_get_drm()), used by the gma500dc DC module. */
 	gma500_drm_dev = dev;
+	gma500_flip_init();		/* deferred (vsync) flip-completion state */
 	/*
 	 * With legacy .load, minors are registered before psb_driver_load
 	 * finishes and an ioctl only checks dev->dev_private for NULL, so

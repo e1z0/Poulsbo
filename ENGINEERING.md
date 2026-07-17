@@ -282,20 +282,31 @@ demonstrate and A/B the optimization.
 
 ### `gma500_gfx.flip_vsync` (int, default `0`)
 
-`0` = present returns as soon as the scanout base is written (the 950 FPS path).
-`1` = `gma500_flip_to()` waits for the next frame boundary before returning,
-polling the per-pipe frame counter `PIPExFRAMEPIXEL[31:24]` (address
-`(map->conf & ~0xFFF) + 0x44`; the `PIPExSTAT` vblank status bit stays latched
-and cannot be edge-polled without the vblank IRQ enabled, so the frame counter
-is used instead), bounded at ~25 ms.
+`0` = present returns as soon as the scanout base is written (the max-rate path,
+~500–950 FPS). `1` = the present is **deferred**: `gma500_flip_to()` still just
+arms the scanout base (which the display latches at the next frame start, so the
+flip is tear-free), and gma500dc hands the DC command's completion to
+`gma500_flip_defer_complete()`, which fires the completion ~one refresh period
+later from a `delayed_work` — throttling `eglSwapBuffers` to roughly the panel
+refresh **without blocking the SGX MISR** and without touching the display
+vblank IRQ.
 
-> **Throughput caveat (HW-measured):** `flip_vsync=1` drops the profiler to
-> **~6.6 FPS (swap ~150 ms)**. The vblank wait itself is only ~16 ms, but
-> blocking it inside the single MISR workqueue serializes render+flip completion
-> and trips the userspace present's event-object poll, so the hit is far larger
-> than one frame. Ship it as a tear-reduction / throttle toggle, not a free
-> option. A proper vblank-deferred flip (arm at the vblank IRQ, don't block the
-> MISR) would be the real fix.
+> **Design history + measured behaviour.** Three implementations were built:
+> 1. a **busy-wait** on the pipe frame counter inside `gma500_flip_to()` — but it
+>    ran in the single MISR workqueue, serializing render+flip and collapsing to
+>    **~6.6 FPS**;
+> 2. a **phase-locked vblank-IRQ** deferral (arm at the vblank interrupt, complete
+>    from a worker) — this reached **~40 FPS tear-free**, but the vblank
+>    enable/disable churn and cross-session state destabilised this (fragile)
+>    box under repeated GL start/stop (it hung and needed a watchdog reboot);
+> 3. the shipped **timer-deferred** completion — stable, non-MISR-blocking, but
+>    the closed PVR2D present-completion round-trip compounds with the timer, so
+>    the throttled rate is **~15–20 FPS** for trivial workloads.
+>
+> Net: `flip_vsync=1` is a stable tear-reduction / rate-cap toggle, not a route to
+> 60 FPS. Reaching phase-locked 60 FPS needs either a more robust vblank-event
+> path than this hardware/DRM-state reliably provides, or completion hooks inside
+> the closed PVR2D present path.
 
 ### `gma500dc.flip_enable` (int, default `1`)
 
@@ -522,9 +533,11 @@ State these plainly; do not overclaim.
   pvrsrvkm + the open bridge. The 3D render itself is fully SGX-accelerated
   (verified: `GL_RENDERER = "EMGD on PowerVR SGX 535"`, correct interpolated
   varyings, `glGetError=0`), but it is not an open userspace.
-- **`flip_vsync=1` has a large throughput cost** (~6.6 FPS) because the vblank
-  wait blocks the single MISR workqueue (§5). Default `0` keeps the 950 FPS
-  path; a vblank-IRQ-deferred flip is the proper fix.
+- **`flip_vsync=1` throttles to ~15–20 FPS** for trivial workloads. It is a
+  stable, non-MISR-blocking timer-deferred present (§5) that reduces tearing and
+  caps the rate, but the closed present-completion round-trip keeps it well below
+  the 60 Hz refresh; a phase-locked vblank-IRQ variant hit ~40 FPS tear-free but
+  was unstable on this box. Default `0` keeps the max-rate path.
 - **The whole stack is target-pinned:** prebuilt for kernel `5.4.0-150-generic`
   i686 on this specific Vaio, and the display-pipe assumption (pipe B) is this
   panel's.
@@ -538,8 +551,11 @@ State these plainly; do not overclaim.
 
 ### Near-term future work
 
-1. Vblank-deferred flip (arm at the vblank IRQ; don't block the MISR) to make
-   `flip_vsync=1` cheap and enable tear-free present without the throughput hit.
+1. A robust phase-locked vblank present (the timer-deferred `flip_vsync` ships
+   stable but throttles to ~15–20 FPS; a vblank-IRQ variant hit ~40 FPS tear-free
+   but destabilised this box). Needs a more reliable vblank-event path than the
+   fbcon CRTC's DRM vblank state provides here, or a completion hook inside the
+   closed PVR2D present path.
 2. Async/fenced kernel BLT submit so Layer B can accelerate the on-screen root
    pixmap (deferred unpin, pipelined ops) instead of falling to software.
 3. PRIME/dma-buf on gma500 (`DRIVER_PRIME` + `psb_gem_prime_*`) for GL/DDX

@@ -36,24 +36,36 @@
 #include <drm/drm_device.h>
 
 #include <linux/delay.h>
+#include <linux/workqueue.h>
+#include <linux/spinlock.h>
+#include <drm/drm_vblank.h>
 #include "psb_drv.h"		/* pulls in gtt.h, power.h, REG_*/IS_PSB, dev_priv */
 #include "psb_intel_reg.h"	/* PIPEACONF / PIPEASTAT / vblank status bits */
 #include "gma500_flip.h"
 
 /*
- * flip_vsync - when non-zero, gma500_flip_to() waits for the next start-of-
- * vblank on pipe 0 after arming the new scanout base, so a page-flip present
- * (eglSwapBuffers) does not return until the buffer is actually being scanned
- * out.  This throttles rendering to the panel refresh (~60 Hz) and eliminates
- * tearing, at the cost of the per-frame vblank wait.  Default 0 = off (lowest
- * latency; a fast full-screen app may tear).  Runtime-writable via sysfs:
+ * flip_vsync - when non-zero, a zero-copy page-flip present completes only at
+ * the next vblank instead of immediately.  This throttles GL to the panel
+ * refresh and presents tear-free -- WITHOUT busy-waiting: gma500_flip_to() just
+ * arms the new scanout base (the display latches it at the next frame start),
+ * and the DC flip command is completed ASYNCHRONOUSLY from the vblank interrupt
+ * (gma500_flip_defer_complete -> gma500_flip_vblank_notify -> a workqueue), so
+ * the SGX MISR workqueue is never blocked and throughput stays at the refresh
+ * rate rather than collapsing.  Default 0 = present as soon as the buffer is
+ * armed (lowest latency, a fast full-screen app may tear).  Runtime-writable:
  *   /sys/module/gma500_gfx/parameters/flip_vsync
  */
 static int flip_vsync;
 module_param(flip_vsync, int, 0644);
 MODULE_PARM_DESC(flip_vsync,
-	"Wait for vblank on each zero-copy page-flip present "
-	"(0=off/low-latency [default], 1=on/anti-tearing)");
+	"Throttle presents to ~refresh + reduce tearing via a deferred, "
+	"non-MISR-blocking completion (0=off/max-rate [default], 1=on/throttled)");
+
+int gma500_flip_vsync_on(void)
+{
+	return flip_vsync;
+}
+EXPORT_SYMBOL(gma500_flip_vsync_on);
 
 /*
  * gma500_flip_active_pipe - return the pipe currently scanning out (its
@@ -79,35 +91,62 @@ static int gma500_flip_active_pipe(struct drm_device *dev)
 }
 
 /*
- * gma500_flip_wait_vblank - bounded wait for the next frame boundary on @map's
- * pipe.  Polls the per-pipe frame counter (PIPExFRAMEPIXEL bits [31:24] carry
- * the frame-count low byte, incremented once per scanned-out frame) and returns
- * when it changes.  This is used instead of the PIPExSTAT vblank status bit,
- * which stays latched on this hardware unless the vblank IRQ is enabled and so
- * cannot be polled for an edge.  The frame counter runs whenever the pipe is
- * clocked, independent of interrupt state.  Hard-bounded to ~20 ms (>> one
- * 60 Hz frame) so a stalled pipe can never hang the flip / MISR workqueue.
- * Caller must hold a gma_power_begin() reference (registers are live).
+ * Deferred (refresh-throttled) flip completion.
+ *
+ * gma500dc arms the flip (gma500_flip_to writes the scanout base, which the
+ * display hardware latches at the next frame start -- so the flip itself is
+ * tear-free) then, in vsync mode, hands us the DC command's completion via
+ * gma500_flip_defer_complete() instead of completing it inline.  We complete it
+ * one refresh period later from a delayed workqueue, so eglSwapBuffers throttles
+ * to the panel refresh (~60 Hz) instead of spinning as fast as the SGX can
+ * render -- WITHOUT blocking the SGX MISR (the completion runs on its own
+ * worker) and without touching the display vblank IRQ (which is not reliably
+ * usable for the fbcon CRTC here, and whose enable/disable churn destabilised
+ * the box).  A timer is phase-free relative to vblank but caps the present rate
+ * and, combined with the hardware's vblank-latched base, gives smooth
+ * tear-reduced output.  Single flip in flight (2-buffer chain), so one slot.
  */
-static void gma500_flip_wait_vblank(struct drm_device *dev, const struct psb_offset *map)
+#define GMA500_FLIP_REFRESH_MS 16	/* ~60 Hz present cap */
+
+static struct gma_flip_defer {
+	spinlock_t          lock;
+	void              (*cb)(void *);
+	void               *data;
+	bool                valid;
+	bool                inited;
+	struct delayed_work work;
+} g_flip_defer;
+
+/* Complete the pending flip (once); the delayed worker's sole job. */
+static void gma500_flip_complete_work(struct work_struct *w)
 {
-	u32 frame_reg, start;
-	int waited_us;
+	void (*cb)(void *) = NULL;
+	void *data = NULL;
+	unsigned long f;
 
-	if (!map->conf || !(REG_READ(map->conf) & PIPEACONF_ENABLE))
-		return;
-
-	/* PIPExFRAMEPIXEL sits at (pipe MMIO base)+0x44; map->conf is
-	 * (pipe base)+0x08, so mask to the pipe base and add 0x44. */
-	frame_reg = (map->conf & ~0xFFFu) + 0x44;
-
-	start = REG_READ(frame_reg) >> PIPE_FRAME_LOW_SHIFT;
-	for (waited_us = 0; waited_us < 25000; waited_us += 300) {
-		if ((REG_READ(frame_reg) >> PIPE_FRAME_LOW_SHIFT) != start)
-			return;
-		usleep_range(200, 350);
+	spin_lock_irqsave(&g_flip_defer.lock, f);
+	if (g_flip_defer.valid) {
+		cb   = g_flip_defer.cb;
+		data = g_flip_defer.data;
+		g_flip_defer.valid = false;
 	}
+	spin_unlock_irqrestore(&g_flip_defer.lock, f);
+
+	if (cb)
+		cb(data);			/* pfnPVRSRVCmdComplete (process ctx) */
 }
+
+/* One-time init of the deferred-completion state.  Called from
+ * psb_driver_load() once gma500_drm_dev is published. */
+void gma500_flip_init(void)
+{
+	if (g_flip_defer.inited)
+		return;
+	spin_lock_init(&g_flip_defer.lock);
+	INIT_DELAYED_WORK(&g_flip_defer.work, gma500_flip_complete_work);
+	g_flip_defer.inited = true;
+}
+EXPORT_SYMBOL(gma500_flip_init);
 
 /*
  * The bound gma500 drm_device.  Published by psb_driver_load() (see psb_drv.c)
@@ -276,11 +315,68 @@ int gma500_flip_to(u32 gtt_offset)
 		REG_READ(map->surf);
 	}
 
-	/* Optional vsync: block until the new base is being scanned out. */
-	if (flip_vsync)
-		gma500_flip_wait_vblank(dev, map);
-
+	/*
+	 * Arming the base is all we do here; the display latches it at the next
+	 * frame start (tear-free).  In vsync mode gma500dc defers the DC command
+	 * completion to that vblank via gma500_flip_defer_complete() so the
+	 * present throttles to the refresh rate without blocking the MISR.
+	 */
 	gma_power_end(dev);
 	return 0;
 }
 EXPORT_SYMBOL(gma500_flip_to);
+
+/**
+ * gma500_flip_defer_complete - complete @cb(@data) ~one refresh period later
+ * @cb:   completion callback (e.g. the DC's pfnPVRSRVCmdComplete wrapper)
+ * @data: opaque argument passed to @cb
+ *
+ * Schedules @cb to run, in process context, ~one refresh period from now, so
+ * eglSwapBuffers throttles to the panel refresh instead of spinning.  Returns 0
+ * if deferred (caller must NOT complete it itself) or -errno if it could not be
+ * (services not up, or one already pending) -- caller then completes inline.
+ * Does not block the SGX MISR and does not touch the display vblank IRQ.
+ */
+int gma500_flip_defer_complete(void (*cb)(void *), void *data)
+{
+	unsigned long f;
+
+	if (!cb || !g_flip_defer.inited)
+		return -ENODEV;
+
+	spin_lock_irqsave(&g_flip_defer.lock, f);
+	if (g_flip_defer.valid) {		/* a flip is already pending */
+		spin_unlock_irqrestore(&g_flip_defer.lock, f);
+		return -EBUSY;
+	}
+	g_flip_defer.cb    = cb;
+	g_flip_defer.data  = data;
+	g_flip_defer.valid = true;
+	spin_unlock_irqrestore(&g_flip_defer.lock, f);
+
+	mod_delayed_work(system_wq, &g_flip_defer.work,
+			 msecs_to_jiffies(GMA500_FLIP_REFRESH_MS));
+	return 0;
+}
+EXPORT_SYMBOL(gma500_flip_defer_complete);
+
+/**
+ * gma500_flip_vblank_disable - flush any pending deferred completion.
+ *
+ * Called on swap-chain teardown to complete/cancel an in-flight deferred flip
+ * so no completion callback fires into a torn-down swap chain.
+ */
+void gma500_flip_vblank_disable(void)
+{
+	unsigned long f;
+
+	if (!g_flip_defer.inited)
+		return;
+
+	spin_lock_irqsave(&g_flip_defer.lock, f);
+	g_flip_defer.valid = false;
+	spin_unlock_irqrestore(&g_flip_defer.lock, f);
+
+	cancel_delayed_work_sync(&g_flip_defer.work);
+}
+EXPORT_SYMBOL(gma500_flip_vblank_disable);

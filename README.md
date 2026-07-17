@@ -86,7 +86,7 @@ reload the modules — hot reload can hang the machine).
 | Parameter | Module | Default | Meaning |
 |---|---|---|---|
 | `pvr_irq_forward` | `gma500_gfx` | `1` | Forward SGX interrupts to `pvrsrvkm` so GL present is interrupt-driven (~1 ms, ~950 FPS). Set `0` to fall back to `pvrsrvkm`'s internal ~250 ms poll (~4 FPS) — diagnostic only. |
-| `flip_vsync` | `gma500_gfx` | `0` | `0` = present as soon as the buffer is armed (lowest latency, may tear). `1` = wait for the panel's frame boundary before completing each present (tear-reduced). **Note:** `1` greatly lowers throughput in tight render loops because the wait is synchronous in the present path — use it for tear-sensitive/static content, not for maximum FPS. |
+| `flip_vsync` | `gma500_gfx` | `0` | `0` = present as soon as the buffer is armed (max rate). `1` = throttle presents to roughly the panel refresh and reduce tearing, via a deferred completion that does **not** block the SGX command pipeline. **Note:** on this hardware the closed present-completion path limits the throttled rate to ~15–20 FPS for trivial workloads, so `1` is for tear-sensitive/static content, not maximum FPS. (A phase-locked vblank-IRQ variant reached ~40 FPS tear-free but proved unstable on this box, so the stable timer-based throttle is shipped.) |
 | `flip_enable` | `gma500dc` | `1` | `1` = zero-copy hardware page-flip present. `0` = complete presents without moving the scanout (diagnostic). |
 | `gma_no_sgx` | `gma500_gfx` | `1` | Hand the SGX render core to `pvrsrvkm` (leave at 1). |
 

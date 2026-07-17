@@ -75,6 +75,9 @@ extern int  gma500_flip_alloc(u32 width, u32 height, u32 *stride_out,
 			      struct gma_flipbuf *out);
 extern void gma500_flip_free(struct gma_flipbuf *fb);
 extern int  gma500_flip_to(u32 gtt_offset);
+extern int  gma500_flip_vsync_on(void);
+extern int  gma500_flip_defer_complete(void (*cb)(void *), void *data);
+extern void gma500_flip_vblank_disable(void);
 
 /*
  * flip_enable - when non-zero (default), a PVR2D present page-flips the display
@@ -466,6 +469,9 @@ static PVRSRV_ERROR DestroyDCSwapChain(IMG_HANDLE device_h,
 	if (!is_valid_swap_chain(dev, sc))
 		return PVRSRV_ERROR_INVALID_PARAMS;
 
+	/* Release the deferred-flip vblank IRQ held for this session's presents. */
+	gma500_flip_vblank_disable();
+
 	/* Flip scanout back to the system buffer (buffer 0) before tearing the
 	 * GTT-pinned buffers down. */
 	if (sc->buffer_count && sc->buffers[0].is_flip)
@@ -594,6 +600,16 @@ static PVRSRV_ERROR SwapToDCSystem(IMG_HANDLE device_h,
  * command unpack + pfnPVRSRVCmdComplete handshake, minus the vblank-deferred
  * queue (we flip immediately, i.e. swap-interval 0 semantics).
  */
+/* Completion callback for a vblank-deferred flip: complete the DC command that
+ * gma500_flip_defer_complete() is holding.  Runs in process context (workqueue),
+ * so pfnPVRSRVCmdComplete is called from the same kind of context as usual. */
+static void gma500dc_flip_complete_cb(void *cmd_cookie_h)
+{
+	if (g_devinfo)
+		g_devinfo->pvr_jtable.pfnPVRSRVCmdComplete(
+			(IMG_HANDLE) cmd_cookie_h, IMG_TRUE);
+}
+
 static IMG_BOOL gma500dc_process_flip(IMG_HANDLE cmd_cookie_h,
 	IMG_UINT32 data_size,
 	IMG_VOID *data)
@@ -602,6 +618,7 @@ static IMG_BOOL gma500dc_process_flip(IMG_HANDLE cmd_cookie_h,
 	gma500dc_devinfo_t   *dev;
 	gma500dc_buffer_t    *buf;
 	gma500dc_swapchain_t *sc;
+	IMG_BOOL flipped = IMG_FALSE;
 
 	if (!cmd_cookie_h || !data)
 		return IMG_FALSE;
@@ -615,11 +632,22 @@ static IMG_BOOL gma500dc_process_flip(IMG_HANDLE cmd_cookie_h,
 
 	/* Perform the flip when we have a valid GTT-pinned target. */
 	if (dev == g_devinfo && is_valid_swap_chain(dev, sc) &&
-	    buf && buf->is_flip)
-		gma500dc_do_flip(buf->gtt_offset);
+	    buf && buf->is_flip) {
+		if (gma500dc_do_flip(buf->gtt_offset) == 0)
+			flipped = IMG_TRUE;
+	}
 
-	/* Always complete the command so services never stalls (matches the
-	 * emgd behaviour even on the error/ignore paths). */
+	/*
+	 * vsync: if a flip was armed and flip_vsync is on, defer completing the
+	 * command to the next vblank so the present throttles to the refresh
+	 * rate and stays tear-free -- without blocking this (MISR) context.  If
+	 * the defer is declined (no pipe, one already pending), fall through and
+	 * complete now.  Otherwise complete immediately.
+	 */
+	if (flipped && gma500_flip_vsync_on() &&
+	    gma500_flip_defer_complete(gma500dc_flip_complete_cb, cmd_cookie_h) == 0)
+		return IMG_TRUE;	/* completion fires from the vblank IRQ */
+
 	g_devinfo->pvr_jtable.pfnPVRSRVCmdComplete(cmd_cookie_h, IMG_TRUE);
 	return IMG_TRUE;
 }
