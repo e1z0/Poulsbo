@@ -1261,6 +1261,10 @@ static int sgx3d_submit_ccb(struct drm_device *dev, u32 cmd_type)
 	 * Reuse the (otherwise idle) dpm_temp buffer as the misc buffer. */
 	if (cmd_type == 5) {
 		sgx3d_zero(&s->dpm_temp);		/* clears flags incl. READY */
+		/* Request struct-sizes+features fill (DDK sgxinit.c:1760 sets this
+		 * bit before the ukernel call). Some ukernel builds only write the
+		 * buffer when a request bit is set. */
+		sgx3d_write_u32(&s->dpm_temp, 0x00, 0x2); /* PVRSRV_USSE_MISCINFO_GET_STRUCT_SIZES */
 		data1 = (u32)s->dpm_temp.gpu_va;
 		wmb();
 	}
