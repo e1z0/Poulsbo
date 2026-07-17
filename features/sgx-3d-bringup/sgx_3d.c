@@ -1287,36 +1287,86 @@ static ssize_t poulsbo_sgx_3d_show(struct device *kdev,
  * +0x64; hw2dctx +0x04 = client CCB base (the field the handler dereferences),
  * +0x00 = client CCB (EA base). dst is a 256x64 ARGB8888 surface at low VA.
  */
+static int sgx2d_variant;
+module_param(sgx2d_variant, int, 0644);
+MODULE_PARM_DESC(sgx2d_variant, "2D HW-context layout variant to probe (0..N)");
+
+/* Emit the 8-dword PSB fill stream into @bo at @off. */
+static void sgx3d_write_fill_stream(struct sgx3d_bo *bo, u32 off, u32 dst, u32 pitch)
+{
+	sgx3d_write_u32(bo, off + 0x00, P2D_FENCE_BH);
+	sgx3d_write_u32(bo, off + 0x04, P2D_DST_SURF_BH | P2D_DST_8888ARGB | pitch);
+	sgx3d_write_u32(bo, off + 0x08, dst);
+	sgx3d_write_u32(bo, off + 0x0c, P2D_BLIT_BH | P2D_USE_FILL | P2D_ROP3_PATCOPY);
+	sgx3d_write_u32(bo, off + 0x10, 0x00C0FFEEu);
+	sgx3d_write_u32(bo, off + 0x14, (32u << 12) | 16u);
+	sgx3d_write_u32(bo, off + 0x18, (64u << 12) | 32u);
+	sgx3d_write_u32(bo, off + 0x1c, P2D_FLUSH_BH);
+}
+
+/*
+ * Brute-force probe for the HW-2D-context byte layout. Decoded facts: the 2D
+ * handler makes two DMA emits to the 2D core - emit#1 = 5 units from ctx+0
+ * (R1=Data[1]), emit#2 = 2 units from *(ctx+0x04). We don't have the exact DDK
+ * descriptor format, so try candidate layouts (module param sgx2d_variant) and
+ * read BLIT_STATUS/BIF_FAULT/dst per variant to converge.
+ */
 static void sgx3d_build_2d_fill(struct drm_device *dev)
 {
 	struct sgx3d_state *s = &g_sgx3d;
-	u32 pitch = 256u * 4u;			/* bytes */
+	u32 pitch = 256u * 4u;
 	u32 dst = (u32)s->dst_surf.gpu_va & P2D_DST_ADDR_MASK;
-	u32 b = 0x64;				/* stream start (after SHARED hdr) */
+	u32 ctx = (u32)s->hw2dctx.gpu_va;
+	u32 ccb = (u32)s->client_ccb.gpu_va;
+	u32 aux = (u32)s->dpm_temp.gpu_va;	/* spare mapped buffer for pointer targets */
+	int v = sgx2d_variant;
 
 	sgx3d_zero(&s->hw2dctx);
-	sgx3d_zero(&s->client_ccb);		/* zeroes the 0x64 SHARED header */
+	sgx3d_zero(&s->client_ccb);
 	sgx3d_zero(&s->dst_surf);
+	sgx3d_zero(&s->dpm_temp);
+	/* full stream always available at client_ccb+0 and aux+0 for emit#2 targets */
+	sgx3d_write_fill_stream(&s->client_ccb, 0, dst, pitch);
+	sgx3d_write_fill_stream(&s->dpm_temp, 0, dst, pitch);
 
-	/* 2D-core fill stream (8 dwords) at client_ccb+0x64. */
-	sgx3d_write_u32(&s->client_ccb, b + 0x00, P2D_FENCE_BH);
-	sgx3d_write_u32(&s->client_ccb, b + 0x04, P2D_DST_SURF_BH | P2D_DST_8888ARGB | pitch);
-	sgx3d_write_u32(&s->client_ccb, b + 0x08, dst);			/* dst addr slot */
-	sgx3d_write_u32(&s->client_ccb, b + 0x0c, P2D_BLIT_BH | P2D_USE_FILL | P2D_ROP3_PATCOPY);
-	sgx3d_write_u32(&s->client_ccb, b + 0x10, 0x00C0FFEEu);		/* fill colour */
-	sgx3d_write_u32(&s->client_ccb, b + 0x14, (32u << 12) | 16u);	/* dst xy */
-	sgx3d_write_u32(&s->client_ccb, b + 0x18, (64u << 12) | 32u);	/* dst wh */
-	sgx3d_write_u32(&s->client_ccb, b + 0x1c, P2D_FLUSH_BH);
-
-	/* HW 2D context: +0x04 = client CCB base (CONFIRMED deref); +0x00 = EA base. */
-	sgx3d_write_u32(&s->hw2dctx, 0x00, (u32)s->client_ccb.gpu_va);
-	sgx3d_write_u32(&s->hw2dctx, 0x04, (u32)s->client_ccb.gpu_va);
+	switch (v) {
+	default:
+	case 0:	/* full 8dw stream at ctx+0; +0x04 stays the DST_SURF dword */
+		sgx3d_write_fill_stream(&s->hw2dctx, 0, dst, pitch);
+		break;
+	case 1:	/* full stream at ctx+0, but +0x04 overwritten to point at ccb (emit#2 gets a full stream) */
+		sgx3d_write_fill_stream(&s->hw2dctx, 0, dst, pitch);
+		sgx3d_write_u32(&s->hw2dctx, 0x04, ccb);
+		break;
+	case 2:	/* stream at ctx+0, +0x04 -> ctx+0x14 (cs5: xy/wh for emit#2) */
+		sgx3d_write_fill_stream(&s->hw2dctx, 0, dst, pitch);
+		sgx3d_write_u32(&s->hw2dctx, 0x04, ctx + 0x14);
+		break;
+	case 3:	/* structured: +0x00 header, +0x04 -> stream(aux); rest of ctx = stream body */
+		sgx3d_write_u32(&s->hw2dctx, 0x00, P2D_FENCE_BH);
+		sgx3d_write_u32(&s->hw2dctx, 0x04, aux);
+		sgx3d_write_u32(&s->hw2dctx, 0x08, P2D_DST_SURF_BH | P2D_DST_8888ARGB | pitch);
+		sgx3d_write_u32(&s->hw2dctx, 0x0c, dst);
+		sgx3d_write_u32(&s->hw2dctx, 0x10, P2D_BLIT_BH | P2D_USE_FILL | P2D_ROP3_PATCOPY);
+		break;
+	case 4:	/* stream starts at DST_SURF (no FENCE): ctx[1]=dst_addr doubles as P->dst */
+		sgx3d_write_u32(&s->hw2dctx, 0x00, P2D_DST_SURF_BH | P2D_DST_8888ARGB | pitch);
+		sgx3d_write_u32(&s->hw2dctx, 0x04, dst);	/* = P, points at dst surface */
+		sgx3d_write_u32(&s->hw2dctx, 0x08, P2D_BLIT_BH | P2D_USE_FILL | P2D_ROP3_PATCOPY);
+		sgx3d_write_u32(&s->hw2dctx, 0x0c, 0x00C0FFEEu);
+		sgx3d_write_u32(&s->hw2dctx, 0x10, (32u << 12) | 16u);
+		break;
+	case 5:	/* ctx = {ccb_ctl-like Woff/Roff, ptr}; +0x04 -> ccb stream; emit#1 gets control block */
+		sgx3d_write_u32(&s->hw2dctx, 0x00, 0x20);	/* WriteOffset (bytes) */
+		sgx3d_write_u32(&s->hw2dctx, 0x04, ccb);	/* pointer */
+		sgx3d_write_u32(&s->hw2dctx, 0x08, 0);		/* ReadOffset */
+		break;
+	}
 	wmb();
 
 	dev_info(dev->dev,
-		 "sgx3d: 2D fill built (ctx=%#x ccb=%#x dst=%#x[VA %#lx] colour=0x00C0FFEE 64x32@32,16)\n",
-		 (u32)s->hw2dctx.gpu_va, (u32)s->client_ccb.gpu_va, dst,
-		 s->dst_surf.gpu_va);
+		 "sgx3d: 2D fill v%d built (ctx=%#x ccb=%#x aux=%#x dst=%#x[VA %#lx])\n",
+		 v, ctx, ccb, aux, dst, s->dst_surf.gpu_va);
 }
 
 static int sgx3d_submit_ccb(struct drm_device *dev, u32 cmd_type)
