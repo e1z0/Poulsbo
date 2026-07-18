@@ -94,6 +94,21 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	PVR2DERROR e;
 	int cpp = (format ? format : draw->bitsPerPixel) / 8;
 	unsigned int pitch, size;
+	unsigned int ret_attach = attachment;
+
+	/*
+	 * emgd_dri.so requests a "special" buffer with the 0x80 bit OR'd into the
+	 * attachment (its getBuffers wrapper does `attach | 0x80`, e.g. back|0x80 =
+	 * 0x81). Its buffer-matching loop, however, only recognises 0/1/7 (front/
+	 * back/fake-front) and 0x90 — where 0x90 is a metadata buffer whose returned
+	 * `name`'s low 2 bits carry drawable flags. emgd's own DDX answers the
+	 * 0x80-flagged request with attachment 0x90; a generic DRI2 server that
+	 * echoes 0x81 leaves it unmatched, so emgd never slots its render buffers
+	 * and later NULL-derefs. Mirror emgd's DDX: map any 0x80-flagged request to
+	 * 0x90 and hand back name&3 == 0 (no rotation/extra flags).
+	 */
+	if (attachment & 0x80)
+		ret_attach = 0x90;
 
 	if (cpp < 1) cpp = 4;
 	if (!ctx) return NULL;
@@ -119,8 +134,11 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	priv->size   = size;
 	priv->refcnt = 1;
 
-	buf->attachment    = attachment;
-	buf->name          = priv->name;	/* PVR2D export handle */
+	buf->attachment    = ret_attach;
+	/* For emgd's 0x90 metadata buffer only name&3 is read (drawable flags);
+	 * clear the low bits so emgd sees flags==0. Render buffers keep the real
+	 * PVR2D export handle so emgd's PVR2DMemMap(name) resolves them. */
+	buf->name          = (ret_attach == 0x90) ? (priv->name & ~3u) : priv->name;
 	buf->pitch         = pitch;
 	buf->cpp           = cpp;
 	buf->flags         = 0;
