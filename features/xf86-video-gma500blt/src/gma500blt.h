@@ -97,4 +97,7 @@ static inline uint32_t gma_pixmap_stride(PixmapPtr pPix)
 /* gma500blt_exa.c */
 void gma500blt_exa_init_accel(ExaDriverPtr exa);
 
+/* gma500blt_dri2.c - DRI2/GLX (loads the closed emgd_dri.so client driver). */
+Bool gma500blt_dri2_screen_init(ScreenPtr pScreen);
+
 #endif /* _GMA500BLT_H_ */

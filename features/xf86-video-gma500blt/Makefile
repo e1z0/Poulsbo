@@ -27,7 +27,8 @@ LIBS     := $(DRM_LIBS)
 MODULE   := gma500blt_drv.so
 SRCS     := src/gma500blt_driver.c \
             src/gma500blt_drmmode.c \
-            src/gma500blt_exa.c
+            src/gma500blt_exa.c \
+            src/gma500blt_dri2.c
 OBJS     := $(SRCS:.c=.o)
 
 # Install location (video ABI 24 driver dir on Ubuntu 18.04 / i686).

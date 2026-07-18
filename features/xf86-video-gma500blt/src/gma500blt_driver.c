@@ -375,6 +375,12 @@ static Bool gma_screen_init(ScreenPtr pScreen, int argc, char **argv)
 	if (!xf86DPMSInit(pScreen, xf86DPMSSet, 0))
 		xf86DrvMsg(pScrn->scrnIndex, X_WARNING, "DPMS init failed\n");
 
+	/* DRI2 (loads the closed emgd_dri.so for HW-accelerated GLX/OpenGL).
+	 * Non-fatal: X still runs 2D-accelerated if DRI2/GLX fails to come up. */
+	if (!gma500blt_dri2_screen_init(pScreen))
+		xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
+			   "DRI2 init failed; GLX will be unaccelerated\n");
+
 	pScrn->vtSema = TRUE;
 
 	b->CloseScreen = pScreen->CloseScreen;
