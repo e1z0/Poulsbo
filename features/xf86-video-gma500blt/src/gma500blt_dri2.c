@@ -1,23 +1,20 @@
 /*
- * gma500blt_dri2.c - DRI2 support for the GMA500 open DDX, so the closed PVR
- * DRI2 driver (emgd_dri.so) provides hardware-accelerated desktop OpenGL / GLX.
+ * gma500blt_dri2.c - DRI2 for the GMA500 open DDX, providing HW-accelerated
+ * desktop OpenGL/GLX via the closed PVR DRI2 driver (emgd_dri.so).
  *
- * Architecture (see memory glx-dri2-effort):
- *   - We advertise DRI2 driverName "emgd"; Mesa's libGL then loads
- *     /usr/lib/<triplet>/dri/emgd_dri.so as the client GL driver.  emgd_dri.so
- *     renders via libEMGDOGL on the SGX (reaching pvrsrvkm through the gma500
- *     PVR-DRM bridge on this same card0 fd) into buffers it maps by GEM flink
- *     name.
- *   - DRI2 buffers here are plain gma500 GEM dumb buffers (CREATE_DUMB); we hand
- *     the client their global flink name.  The client imports them (PVR2DMemMap
- *     of the flink'd handle) and renders into them.
- *   - DRI2CopyRegion blits the client's back buffer into the window's front
- *     buffer using the SGX 2D BLT engine (the same GMA_BLT_SUBMIT path EXA uses).
+ * Buffer model (the crux): emgd maps each DRI2 buffer with PVR2DMemMap(), so the
+ * buffer MUST be a PVR-services object, not a plain gma500 GEM buffer (that
+ * failed with PVR2DERROR_MAPPING_FAILED).  So the DDX itself is a PVR2D client:
+ * it PVR2DMemAllocs each DRI2 buffer and PVR2DMemExports it, handing the client
+ * the export handle as the DRI2 buffer "name".  emgd's PVR2DMemMap(name) then
+ * maps the same SGX allocation -> renders into it.  DRI2CopyRegion presents by
+ * copying the PVR2D buffer to the target (the buffers carry a CPU mapping).
  *
- * This is the server (DDX) half of GLX; the DRI2 extension itself is built into
- * the Xorg 1.20 server (DRI2ScreenInit).
+ * The DDX links libEMGD2d (PVR2D) and needs PVR services up (srvinit) before the
+ * first buffer is created; PVR2D init is lazy on first CreateBuffer.
  */
 #include <sys/ioctl.h>
+#include <string.h>
 #include <errno.h>
 #include <xorg-server.h>
 #include <xf86.h>
@@ -25,164 +22,144 @@
 #include <dri2.h>
 #include <fb.h>
 #include "gma500blt.h"
-#include "gma_blt_drm.h"
 
-/* PSB 2D-core opcodes (must match gma500blt_exa.c / the proven blt-ioctl). */
-#define P2D_FENCE_BH	0x70000000u
-#define P2D_BLIT_BH	0x80000000u
-#define P2D_DST_SURF_BH	0xA0000000u
-#define P2D_SRC_SURF_BH	0xC0000000u
-#define P2D_FLUSH_BH	0xF0000000u
-#define P2D_USE_PAT	0x00000010u
-#define P2D_ROP3_SRCCOPY 0x0000CCCCu
-#define P2D_FMT_8888	0x00060000u	/* ARGB8888 surface format */
-
-/* Per-DRI2-buffer private: the backing gma500 GEM dumb buffer. */
+/* ---- PVR2D v1 ABI (SGX DDK 1.x), matching features/emgd-wsegl/wsegl_win.c ---- */
+typedef void *PVR2DCONTEXTHANDLE;
+typedef void *PVR2DHANDLE;
+typedef long  PVR2DERROR;
+#define PVR2D_OK 0
+#define PVR2D_MAX_DEVICE_NAME 20
+typedef struct { unsigned long ulDevID; char szDeviceName[PVR2D_MAX_DEVICE_NAME]; } PVR2DDEVICEINFO;
 typedef struct {
-	uint32_t handle;	/* GEM handle (this DDX's fd)          */
-	uint32_t name;		/* GEM global (flink) name for clients */
-	uint32_t pitch;		/* bytes                               */
-	uint32_t size;
-	int      refcnt;
+	void         *pBase;		/* CPU virtual address                 */
+	unsigned long ui32MemSize;
+	unsigned long ui32DevAddr;	/* SGX device virtual address          */
+	unsigned long ulFlags;
+	void         *hPrivateData;
+	void         *hPrivateMapData;
+} PVR2DMEMINFO;
+#define PVR2D_MEM_WRITECOMBINE 0x00000004UL
+
+extern int        PVR2DEnumerateDevices(PVR2DDEVICEINFO *);
+extern PVR2DERROR PVR2DCreateDeviceContext(unsigned long, PVR2DCONTEXTHANDLE *, unsigned long);
+extern PVR2DERROR PVR2DMemAlloc(PVR2DCONTEXTHANDLE, unsigned long, unsigned long, unsigned long, PVR2DMEMINFO **);
+extern PVR2DERROR PVR2DMemFree(PVR2DCONTEXTHANDLE, PVR2DMEMINFO *);
+extern PVR2DERROR PVR2DMemExport(PVR2DCONTEXTHANDLE, unsigned long, PVR2DMEMINFO *, PVR2DHANDLE *);
+
+/* Per-DRI2-buffer private: the backing PVR2D allocation + its export handle. */
+typedef struct {
+	PVR2DMEMINFO *mem;	/* PVR2D allocation (pBase = CPU VA)            */
+	unsigned long name;	/* PVR2D export handle handed to the client    */
+	unsigned int  size;
+	int           refcnt;
 } GmaDri2Buf;
 
-static uint32_t gma_gem_create(int fd, int w, int h, int cpp,
-			       uint32_t *pitch, uint32_t *size)
+static PVR2DCONTEXTHANDLE g_pvr2d;	/* the DDX's PVR2D device context */
+
+/* Lazily create the DDX's PVR2D context (PVR services must be up by now). */
+static PVR2DCONTEXTHANDLE gma_dri2_pvr2d(ScrnInfoPtr scrn)
 {
-	struct drm_mode_create_dumb c;
-	memset(&c, 0, sizeof c);
-	c.width = w; c.height = h; c.bpp = cpp * 8;
-	if (drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &c) != 0)
-		return 0;
-	*pitch = c.pitch; *size = c.size;
-	return c.handle;
+	PVR2DDEVICEINFO *arr; int n; PVR2DERROR e;
+
+	if (g_pvr2d)
+		return g_pvr2d;
+	n = PVR2DEnumerateDevices(0);
+	if (n < 1) {
+		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: no PVR2D device (%d)\n", n);
+		return NULL;
+	}
+	arr = calloc(n, sizeof(*arr));
+	if (!arr || PVR2DEnumerateDevices(arr) < 0) { free(arr); return NULL; }
+	e = PVR2DCreateDeviceContext(arr[0].ulDevID, &g_pvr2d, 0);
+	free(arr);
+	if (e != PVR2D_OK) {
+		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DCreateDeviceContext=%ld\n", (long)e);
+		return NULL;
+	}
+	xf86DrvMsg(scrn->scrnIndex, X_INFO, "DRI2: PVR2D context up (%s)\n", arr ? "" : "");
+	return g_pvr2d;
 }
 
-static uint32_t gma_gem_flink(int fd, uint32_t handle)
-{
-	struct drm_gem_flink f;
-	memset(&f, 0, sizeof f);
-	f.handle = handle;
-	if (drmIoctl(fd, DRM_IOCTL_GEM_FLINK, &f) != 0)
-		return 0;
-	return f.name;
-}
-
-static void gma_gem_close(int fd, uint32_t handle)
-{
-	struct drm_gem_close cl;
-	memset(&cl, 0, sizeof cl);
-	cl.handle = handle;
-	drmIoctl(fd, DRM_IOCTL_GEM_CLOSE, &cl);
-}
-
-/* DRI2 CreateBuffer: allocate a GEM buffer for the requested attachment and
- * hand back its flink name so emgd_dri.so can map it. */
+/* DRI2 CreateBuffer: allocate the buffer through PVR2D and export it, so the
+ * client (emgd) can PVR2DMemMap the same SGX allocation. */
 static DRI2Buffer2Ptr
 gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 		       unsigned int format)
 {
-	ScreenPtr pScreen = draw->pScreen;
-	ScrnInfoPtr scrn = xf86ScreenToScrn(pScreen);
-	GMA500BLTPtr b = GMA500BLT_PRIV(scrn);
+	ScrnInfoPtr scrn = xf86ScreenToScrn(draw->pScreen);
 	DRI2Buffer2Ptr buf;
 	GmaDri2Buf *priv;
-	/* cpp from the actual pixel storage (depth-24 windows are 32bpp), NOT from
-	 * depth: the SGX renders ARGB8888, so a 24bpp (cpp=3) buffer is unusable and
-	 * emgd rejects it.  format (when non-zero) is the requested bit depth. */
+	PVR2DCONTEXTHANDLE ctx = gma_dri2_pvr2d(scrn);
+	PVR2DHANDLE hexport = NULL;
+	PVR2DERROR e;
 	int cpp = (format ? format : draw->bitsPerPixel) / 8;
+	unsigned int pitch, size;
+
 	if (cpp < 1) cpp = 4;
+	if (!ctx) return NULL;
+
+	pitch = (draw->width * cpp + 7) & ~7u;		/* small alignment */
+	size  = pitch * draw->height;
 
 	buf  = calloc(1, sizeof *buf);
 	priv = calloc(1, sizeof *priv);
 	if (!buf || !priv) { free(buf); free(priv); return NULL; }
 
-	priv->handle = gma_gem_create(b->drm_fd, draw->width, draw->height, cpp,
-				      &priv->pitch, &priv->size);
-	if (!priv->handle) { free(buf); free(priv); return NULL; }
-	priv->name = gma_gem_flink(b->drm_fd, priv->handle);
+	e = PVR2DMemAlloc(ctx, size, 0, PVR2D_MEM_WRITECOMBINE, &priv->mem);
+	if (e != PVR2D_OK || !priv->mem) {
+		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemAlloc=%ld\n", (long)e);
+		free(buf); free(priv); return NULL;
+	}
+	e = PVR2DMemExport(ctx, 0, priv->mem, &hexport);
+	if (e != PVR2D_OK) {
+		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemExport=%ld\n", (long)e);
+		PVR2DMemFree(ctx, priv->mem); free(buf); free(priv); return NULL;
+	}
+	priv->name   = (unsigned long) hexport;
+	priv->size   = size;
 	priv->refcnt = 1;
 
-	buf->attachment  = attachment;
-	buf->name        = priv->name;
-	buf->pitch       = priv->pitch;
-	buf->cpp         = cpp;
-	buf->flags       = 0;
-	buf->format      = format;
+	buf->attachment    = attachment;
+	buf->name          = priv->name;	/* PVR2D export handle */
+	buf->pitch         = pitch;
+	buf->cpp           = cpp;
+	buf->flags         = 0;
+	buf->format        = format;
 	buf->driverPrivate = priv;
+
 	xf86DrvMsg(scrn->scrnIndex, X_INFO,
-		   "DRI2 CreateBuffer: attach=%u format=0x%x %dx%d cpp=%d pitch=%u name=%u\n",
-		   attachment, format, draw->width, draw->height, cpp, priv->pitch, priv->name);
+		   "DRI2 CreateBuffer: attach=%u %dx%d cpp=%d pitch=%u pvr2d=%p devaddr=%#lx name=%#lx\n",
+		   attachment, draw->width, draw->height, cpp, pitch,
+		   (void *)priv->mem, priv->mem->ui32DevAddr, priv->name);
 	return buf;
 }
 
 static void gma_dri2_destroy_buffer(DrawablePtr draw, DRI2Buffer2Ptr buf)
 {
-	ScrnInfoPtr scrn;
-	GMA500BLTPtr b;
 	GmaDri2Buf *priv;
 	if (!buf) return;
 	priv = buf->driverPrivate;
 	if (priv && --priv->refcnt <= 0) {
-		if (draw) {
-			scrn = xf86ScreenToScrn(draw->pScreen);
-			b = GMA500BLT_PRIV(scrn);
-			gma_gem_close(b->drm_fd, priv->handle);
-		}
+		if (g_pvr2d && priv->mem)
+			PVR2DMemFree(g_pvr2d, priv->mem);
 		free(priv);
 	}
 	free(buf);
 }
 
-/* Blit a full drawable-sized region from src GEM buffer to dst GEM buffer via
- * the SGX 2D BLT engine (GMA_BLT_SUBMIT), used for DRI2CopyRegion. */
-static void gma_dri2_blit(int fd, GmaDri2Buf *dst, GmaDri2Buf *src,
-			  int w, int h)
-{
-	uint32_t cs[10];
-	struct drm_psb_blt_reloc r[2];
-	struct drm_psb_blt_submit s;
-
-	/* Full-surface src-copy, byte-identical stream shape to EXA gma_Copy():
-	 * FENCE, SRC_SURF(addr@2), DST_SURF(addr@4), BLIT, srcXY, dstXY, wh, FLUSH */
-	cs[0] = P2D_FENCE_BH;
-	cs[1] = P2D_SRC_SURF_BH | P2D_FMT_8888 | (src->pitch & 0x7fff);
-	cs[2] = 0;					/* src addr (reloc 0)  */
-	cs[3] = P2D_DST_SURF_BH | P2D_FMT_8888 | (dst->pitch & 0x7fff);
-	cs[4] = 0;					/* dst addr (reloc 1)  */
-	cs[5] = P2D_BLIT_BH | P2D_USE_PAT | P2D_ROP3_SRCCOPY;
-	cs[6] = 0;					/* srcX,srcY = 0,0     */
-	cs[7] = 0;					/* dstX,dstY = 0,0     */
-	cs[8] = ((uint32_t)w << 12) | (uint32_t)h;	/* width,height        */
-	cs[9] = P2D_FLUSH_BH;
-
-	memset(r, 0, sizeof r);
-	r[0].offset_dw = 2; r[0].handle = src->handle; r[0].delta = 0;
-	r[1].offset_dw = 4; r[1].handle = dst->handle; r[1].delta = 0;
-
-	memset(&s, 0, sizeof s);
-	s.size        = sizeof s;
-	s.flags       = DRM_PSB_BLT_SUBMIT_WAIT;
-	s.cmd_ptr     = (uintptr_t) cs;
-	s.relocs_ptr  = (uintptr_t) r;
-	s.cmd_dwords  = 10;
-	s.nr_relocs   = 2;
-	(void) ioctl(fd, DRM_IOCTL_PSB_BLT_SUBMIT, &s);
-}
-
+/* Present: copy the source PVR2D buffer to the destination (both carry a CPU
+ * mapping via PVR2DMEMINFO.pBase).  A CPU copy for now; the SGX 2D BLT path can
+ * replace it once buffers expose GEM handles. */
 static void
 gma_dri2_copy_region(DrawablePtr draw, RegionPtr region,
 		     DRI2BufferPtr dst, DRI2BufferPtr src)
 {
-	ScrnInfoPtr scrn = xf86ScreenToScrn(draw->pScreen);
-	GMA500BLTPtr b = GMA500BLT_PRIV(scrn);
 	GmaDri2Buf *sd = src->driverPrivate, *dd = dst->driverPrivate;
 
-	/* Synchronous blit only.  Do NOT call DRI2SwapComplete here: with no
-	 * ScheduleSwap, DRI2 drives swaps through CopyRegion, and DRI2SwapComplete
-	 * re-enters DRI2CopyRegion -> this function -> infinite recursion. */
-	if (sd && dd)
-		gma_dri2_blit(b->drm_fd, dd, sd, draw->width, draw->height);
+	if (sd && dd && sd->mem && dd->mem && sd->mem->pBase && dd->mem->pBase) {
+		unsigned int n = sd->size < dd->size ? sd->size : dd->size;
+		memcpy(dd->mem->pBase, sd->mem->pBase, n);
+	}
 }
 
 Bool gma500blt_dri2_screen_init(ScreenPtr pScreen)
@@ -195,7 +172,7 @@ Bool gma500blt_dri2_screen_init(ScreenPtr pScreen)
 	memset(&info, 0, sizeof info);
 	info.version       = 4;
 	info.fd            = b->drm_fd;
-	info.driverName    = "emgd";		/* -> loads emgd_dri.so       */
+	info.driverName    = "emgd";
 	dev = drmGetDeviceNameFromFd2(b->drm_fd);
 	info.deviceName    = dev ? dev : drmGetDeviceNameFromFd(b->drm_fd);
 	info.CreateBuffer  = gma_dri2_create_buffer;
@@ -207,7 +184,7 @@ Bool gma500blt_dri2_screen_init(ScreenPtr pScreen)
 		return FALSE;
 	}
 	xf86DrvMsg(scrn->scrnIndex, X_INFO,
-		   "DRI2: enabled, driver \"emgd\", device %s\n",
+		   "DRI2: enabled, driver \"emgd\", device %s (PVR2D buffers)\n",
 		   info.deviceName ? info.deviceName : "?");
 	return TRUE;
 }

@@ -5,6 +5,46 @@ what was validated, and what conclusion was established at each step.
 
 ## 2026-05-16
 
+### Uncommitted carry note: SGX submit TA submit-op request-endpoint cleanup
+
+- Updated:
+  - `third_party/linux-ubuntu-5.4/drivers/gpu/drm/gma500/psb_drv.c`
+- Removed the now-redundant shared top request wrapper layer:
+  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint`
+  - `poulsbo_sgx_execute_submit_sgx_ta_submit_op_request_endpoint()`
+- The shared top request path is now unified:
+  - the parsed sysfs `issue` path now uses
+    `sgx_ta_submit_op_request_frontend`
+  - the parsed sysfs `transition` path now uses
+    `sgx_ta_submit_op_request_frontend`
+  - the parsed sysfs submit-store seam now sits directly on
+    `sgx_ta_submit_op_request_frontend`
+  - the ioctl `ISSUE` path now uses `sgx_ta_submit_op_request_frontend`
+  - the ioctl `TRANSITION` path now uses
+    `sgx_ta_submit_op_request_frontend`
+- The live top request boundary is now one object smaller and fully unified:
+  - `request_frontend` owns the parsed-sysfs seam, the ioctl seam, and the
+    copied request / response / outcome return boundary
+- This batch is not committed yet. It is only a carry note for the next
+  session.
+- Guarded deploy plus recovery completed successfully in:
+  - `logs/vaio-plan/20260516-091311-sgx-ta-submit-op-request-endpoint-cleanup-deploy`
+  - final live override:
+    - `driver_srcversion=E3FF2FBD2A5915FB93A17F2`
+    - `override_module_size=506156`
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+- Still pending before this can move into the real progress log:
+  - exact no-redeploy `plan` proof at `complete`
+  - focused typed submit proof
+  - typed multi-submit proof
+  - patch refresh
+  - kernel subrepo commit
+  - top-level docs commit
+- Documented in:
+  - `docs/276-sgx-submit-ta-submit-op-request-endpoint-cleanup.md`
+
 ### SGX submit TA submit-op request-gateway cleanup
 
 - Updated:

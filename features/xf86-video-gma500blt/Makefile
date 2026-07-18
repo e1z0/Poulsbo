@@ -21,8 +21,14 @@ CFLAGS   ?= -O2 -g
 CFLAGS   += -std=gnu99 -fPIC -fvisibility=hidden $(WARNINGS) \
             $(XORG_CFLAGS) $(DRM_CFLAGS) -Isrc
 
+# The DDX is itself a PVR2D client (it allocates+exports DRI2 buffers so the
+# closed emgd_dri.so can PVR2DMemMap them). Link the closed PVR2D lib; it lives
+# in /opt/emgd/lib (already on the runtime loader path via ld.so.conf.d/emgd).
+EMGD_LIBDIR ?= /opt/emgd/lib
+EMGD_LIBS   := -L$(EMGD_LIBDIR) -l:libEMGD2d.so
+
 LDFLAGS  += -shared
-LIBS     := $(DRM_LIBS)
+LIBS     := $(DRM_LIBS) $(EMGD_LIBS)
 
 MODULE   := gma500blt_drv.so
 SRCS     := src/gma500blt_driver.c \

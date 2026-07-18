@@ -1,0 +1,6 @@
+deploy_rc=4
+deploy_session_dir=/root/Poulsbo/logs/vaio-plan/20260515-081214-sgx-ta-submit-op-request-bridge-deploy/children/20260515-081214-guarded-deploy
+deploy_result_file=/root/Poulsbo/logs/vaio-plan/20260515-081214-sgx-ta-submit-op-request-bridge-deploy/children/20260515-081214-guarded-deploy/session-result.env
+deploy_outcome=deploy_failed
+deploy_last_state=remote_usable
+deploy_final_driver_srcversion=unknown

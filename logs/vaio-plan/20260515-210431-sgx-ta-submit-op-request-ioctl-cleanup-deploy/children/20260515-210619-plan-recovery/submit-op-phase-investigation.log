@@ -1,0 +1,3 @@
+session_dir=/root/Poulsbo/logs/vaio-plan/20260515-210431-sgx-ta-submit-op-request-ioctl-cleanup-deploy/children/20260515-210626-plan-recovery
+summary_log=/root/Poulsbo/logs/vaio-plan/20260515-210431-sgx-ta-submit-op-request-ioctl-cleanup-deploy/children/20260515-210626-plan-recovery/summary.log
+result_file=/root/Poulsbo/logs/vaio-plan/20260515-210431-sgx-ta-submit-op-request-ioctl-cleanup-deploy/children/20260515-210626-plan-recovery/session-result.env

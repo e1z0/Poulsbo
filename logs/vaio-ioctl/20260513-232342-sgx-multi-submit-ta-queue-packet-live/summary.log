@@ -1,0 +1,8 @@
+Direct run-vaio-sgx-multi-submit.sh execution is blocked for the legacy/sysfs path.
+
+Use one of:
+  ./scripts/run-vaio-sgx-multi-submit-default.sh
+  ./scripts/run-vaio-sgx-multi-submit-typed.sh
+
+If you intentionally need the raw legacy implementation, opt in explicitly:
+  ALLOW_DIRECT_LEGACY_MULTI_SUBMIT=1 ./scripts/run-vaio-sgx-multi-submit.sh

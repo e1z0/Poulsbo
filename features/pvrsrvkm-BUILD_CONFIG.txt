@@ -1,0 +1,18 @@
+EMGD 1.18 / DDK 1.5.15.3226 build config (extracted from libemgdsrv_init.so)
+target: pc_i686_poulsbo_d0_linux_release  (Poulsbo D0, i686, release; Apr 2013)
+
+Kernel-relevant -D flags for pvrsrvkm (MUST match for userspace ABI):
+  -DLINUX -DSERVICES4 -DSUPPORT_SGX -DSGX535 -DSGX_CORE_REV=121 -DSUPPORT_SGX535
+  -DSUPPORT_PERCONTEXT_PB -DTRANSFER_QUEUE -DSUPPORT_DRI_DRM -DSYS_USING_INTERRUPTS
+  -DSUPPORT_HW_RECOVERY -DSUPPORT_ACTIVE_POWER_MANAGEMENT
+  -DPVR_SECURE_HANDLES -DPVR_SECURE_DRM_AUTH_EXPORT -DSUPPORT_SGX_EVENT_OBJECT
+  -DLDM_PCI -DSUPPORT_SGX_HWPERF -DSUPPORT_LINUX_X86_PAT
+  -DSUPPORT_CPU_CACHED_BUFFERS -DSUPPORT_CACHEFLUSH_ON_ALLOC
+  -DPVR_PROC_USE_SEQ_FILE -DPVR_BUILD_DIR="pc_i686_poulsbo_d0_linux"
+  -DPVR_BUILD_TYPE="release" -DRELEASE
+SGX535 auto-defines (sgxfeaturedefs.h): SGX_FEATURE_MULTIPLE_MEM_CONTEXTS,
+  BIF_NUM_DIRLISTS=16, 2D_HARDWARE, AUTOCLOCKGATING, GENERAL_MAPPING_HEAP, VIDEO_HEAP,
+  ADDRESS_SPACE_SIZE=32.
+NOTE: -DSUPPORT_DRI_DRM => userspace connects via the DRM node (pvr_drm.c), not raw
+  /dev/pvrsrv. Port must provide a DRM-node connect path compatible with modern DRM,
+  OR verify the char-dev path still works for this userspace. RESOLVE in C2.1.

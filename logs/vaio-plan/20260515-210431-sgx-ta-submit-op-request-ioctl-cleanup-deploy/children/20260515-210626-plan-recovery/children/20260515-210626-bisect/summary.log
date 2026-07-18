@@ -1,0 +1,37 @@
+probe=1 phase=plan_query_config
+probe_1_phase=plan_query_config
+probe_1_status=good
+probe_1_reason=ok
+probe_1_phase_rc=0
+probe_1_health_rc=0
+probe_1_health=remote_usable
+probe_1_failed_step=
+probe_1_failed_rc=
+probe_1_failed_log=
+probe_1_remote_tmpdir=
+probe_1_authoritative_terminal=0
+probe=2 phase=emit
+probe_2_phase=emit
+probe_2_status=good
+probe_2_reason=ok
+probe_2_phase_rc=0
+probe_2_health_rc=0
+probe_2_health=remote_usable
+probe_2_failed_step=
+probe_2_failed_rc=
+probe_2_failed_log=
+probe_2_remote_tmpdir=
+probe_2_authoritative_terminal=0
+probe=3 phase=issue
+probe_3_phase=issue
+probe_3_status=good
+probe_3_reason=ok
+probe_3_phase_rc=0
+probe_3_health_rc=0
+probe_3_health=remote_usable
+probe_3_failed_step=
+probe_3_failed_rc=
+probe_3_failed_log=
+probe_3_remote_tmpdir=
+probe_3_authoritative_terminal=0
+probe=4 phase=running

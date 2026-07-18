@@ -1,0 +1,14 @@
+bisect_rc=0
+bisect_session_dir=/root/Poulsbo/logs/vaio-stability/20260514-083309-sgx-stable-soak/children/cycle1/plan-session/20260514-083314-sgx-stable-plan-cycle1/children/20260514-083326-recovery/children/20260514-083326-bisect
+bisect_result_file=/root/Poulsbo/logs/vaio-stability/20260514-083309-sgx-stable-soak/children/cycle1/plan-session/20260514-083314-sgx-stable-plan-cycle1/children/20260514-083326-recovery/children/20260514-083326-bisect/session-result.env
+bisect_outcome=all_prefixes_healthy
+bisect_last_good_phase=complete
+bisect_first_bad_phase=none
+bisect_first_bad_reason=none
+bisect_first_bad_failed_step=
+bisect_first_bad_failed_rc=
+bisect_first_bad_failed_log=
+bisect_first_bad_remote_tmpdir=
+bisect_last_overall=remote_usable
+bisect_preflight_overall=remote_usable
+bisect_final_driver_srcversion=92CB8FBC111248DC82C2825

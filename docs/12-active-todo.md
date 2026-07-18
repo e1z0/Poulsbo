@@ -68,14 +68,34 @@ implementation if it materially changes scope.
   - `complete`
 - canonical bundles for that fixed-module line:
   - `logs/vaio-plan-session/20260516-015719-sgx-plan-session`
-- the newest internal `ta-submit-op-request-gateway-cleanup` batch is now
-  hardware-validated:
+- the last committed validated internal batch is
+  `ta-submit-op-request-gateway-cleanup`:
+  - deploy bundle:
+    - `logs/vaio-plan/20260516-015443-sgx-ta-submit-op-request-gateway-cleanup-deploy`
   - exact proof:
     - `logs/vaio-plan-session/20260516-015719-sgx-plan-session`
   - focused bundle:
     - `logs/vaio-ioctl/20260516-015719-sgx-submit-ta-submit-op-request-gateway-cleanup-live/summary.log`
   - typed multi-submit bundle:
     - `logs/vaio-ioctl/20260516-015719-sgx-multi-submit-ta-submit-op-request-gateway-cleanup-live/summary.log`
+- the current in-progress uncommitted batch is
+  `ta-submit-op-request-endpoint-cleanup`:
+  - local/live candidate:
+    - `srcversion=E3FF2FBD2A5915FB93A17F2`
+    - `override_module_size=506156`
+  - live deploy bundle:
+    - `logs/vaio-plan/20260516-091311-sgx-ta-submit-op-request-endpoint-cleanup-deploy`
+  - current target state after deploy:
+    - `overall=remote_usable`
+    - `lightdm_active=inactive`
+    - `kdump_service_active=active`
+  - still pending:
+    - exact `complete`
+    - focused typed submit
+    - typed multi-submit
+    - patch refresh
+    - kernel subrepo commit
+    - top-level docs commit
 - the shared current-boundary resolver now advances from successful exact
   evidence rows, so the current saved recovery boundary is:
   - `resolved_profile=complete`
@@ -273,7 +293,6 @@ implementation if it materially changes scope.
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_report`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_trace`
   - `psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend`
-  - `psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint`
 
 ## Current Priority
 
@@ -292,12 +311,20 @@ implementation if it materially changes scope.
   - the shared resolver now lands on terminal `complete`
   - use `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
     as the exact regression check after risky kernel changes
-- use the new `ta-submit-op-request-gateway-cleanup` validation bundles as the active typed-submit
-  validation surface:
+- use the last committed `ta-submit-op-request-gateway-cleanup` bundles as the
+  current typed-submit baseline until the in-progress endpoint cleanup is
+  proven:
   - focused proof:
     `logs/vaio-ioctl/20260516-015719-sgx-submit-ta-submit-op-request-gateway-cleanup-live/summary.log`
   - typed multi-submit proof:
     `logs/vaio-ioctl/20260516-015719-sgx-multi-submit-ta-submit-op-request-gateway-cleanup-live/summary.log`
+- next resume commands for the in-progress endpoint cleanup:
+  - exact:
+    `PLAN_SESSION_MODE=recovery PLAN_PHASE_PROFILE=complete ./scripts/run-vaio-sgx-plan-session.sh`
+  - focused:
+    `d=$(./scripts/allocate-session-dir.sh /root/Poulsbo/logs/vaio-ioctl sgx-submit-ta-submit-op-request-endpoint-cleanup-live $(date +%Y%m%d-%H%M%S)); ./scripts/run-vaio-sgx-submit.sh >"$d/summary.log" 2>&1; printf '%s\n' "$d"`
+  - multi-submit:
+    `d=$(./scripts/allocate-session-dir.sh /root/Poulsbo/logs/vaio-ioctl sgx-multi-submit-ta-submit-op-request-endpoint-cleanup-live $(date +%Y%m%d-%H%M%S)); ./scripts/run-vaio-sgx-multi-submit-typed.sh >"$d/summary.log" 2>&1; printf '%s\n' "$d"`
 - keep the new phase-profile defaults unless a session is intentionally trying
   to re-check earlier stages:
   - `PLAN_PHASE_PROFILE=auto`
@@ -314,7 +341,7 @@ implementation if it materially changes scope.
   - stop adding more request-wrapper layers and move into the first
     more hardware-facing SGX execution-side change above the now-cleaned
     top request split rooted at
-    `psb_sgx_lab_submit_sgx_ta_submit_op_request_endpoint`,
+    `psb_sgx_lab_submit_sgx_ta_submit_op_request_frontend`,
     and stop further wrapper churn on this path
 - read the saved parent result with the newer semantics:
   - `selected_phase_selection=explicit` is the operator choice

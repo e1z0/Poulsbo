@@ -1,0 +1,6 @@
+deploy_rc=0
+deploy_session_dir=/root/Poulsbo/logs/vaio-plan/20260515-210431-sgx-ta-submit-op-request-ioctl-cleanup-deploy/children/20260515-210431-guarded-deploy
+deploy_result_file=/root/Poulsbo/logs/vaio-plan/20260515-210431-sgx-ta-submit-op-request-ioctl-cleanup-deploy/children/20260515-210431-guarded-deploy/session-result.env
+deploy_outcome=completed
+deploy_last_state=remote_usable
+deploy_final_driver_srcversion=9C46B6BC078AC87963DFEF7

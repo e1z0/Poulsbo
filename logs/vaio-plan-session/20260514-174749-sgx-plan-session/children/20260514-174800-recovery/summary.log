@@ -1,0 +1,14 @@
+bisect_rc=0
+bisect_session_dir=/root/Poulsbo/logs/vaio-plan-session/20260514-174749-sgx-plan-session/children/20260514-174800-recovery/children/20260514-174800-bisect
+bisect_result_file=/root/Poulsbo/logs/vaio-plan-session/20260514-174749-sgx-plan-session/children/20260514-174800-recovery/children/20260514-174800-bisect/session-result.env
+bisect_outcome=all_prefixes_healthy
+bisect_last_good_phase=complete
+bisect_first_bad_phase=none
+bisect_first_bad_reason=none
+bisect_first_bad_failed_step=
+bisect_first_bad_failed_rc=
+bisect_first_bad_failed_log=
+bisect_first_bad_remote_tmpdir=
+bisect_last_overall=remote_usable
+bisect_preflight_overall=remote_usable
+bisect_final_driver_srcversion=C582E9B3D60213B4F150F67
