@@ -128,9 +128,9 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	buf->driverPrivate = priv;
 
 	xf86DrvMsg(scrn->scrnIndex, X_INFO,
-		   "DRI2 CreateBuffer: attach=%u %dx%d cpp=%d pitch=%u pvr2d=%p devaddr=%#lx name=%#lx\n",
-		   attachment, draw->width, draw->height, cpp, pitch,
-		   (void *)priv->mem, priv->mem->ui32DevAddr, priv->name);
+		   "DRI2 CreateBuffer: attach=%#x(%u) format=%#x %dx%d cpp=%d pitch=%u devaddr=%#lx name=%#lx\n",
+		   attachment, attachment, format, draw->width, draw->height, cpp, pitch,
+		   priv->mem->ui32DevAddr, priv->name);
 	return buf;
 }
 
