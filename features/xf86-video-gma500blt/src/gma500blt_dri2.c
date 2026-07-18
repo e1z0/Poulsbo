@@ -87,7 +87,10 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	GMA500BLTPtr b = GMA500BLT_PRIV(scrn);
 	DRI2Buffer2Ptr buf;
 	GmaDri2Buf *priv;
-	int cpp = (format ? format : draw->depth + 7) / 8;
+	/* cpp from the actual pixel storage (depth-24 windows are 32bpp), NOT from
+	 * depth: the SGX renders ARGB8888, so a 24bpp (cpp=3) buffer is unusable and
+	 * emgd rejects it.  format (when non-zero) is the requested bit depth. */
+	int cpp = (format ? format : draw->bitsPerPixel) / 8;
 	if (cpp < 1) cpp = 4;
 
 	buf  = calloc(1, sizeof *buf);
@@ -107,6 +110,9 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	buf->flags       = 0;
 	buf->format      = format;
 	buf->driverPrivate = priv;
+	xf86DrvMsg(scrn->scrnIndex, X_INFO,
+		   "DRI2 CreateBuffer: attach=%u format=0x%x %dx%d cpp=%d pitch=%u name=%u\n",
+		   attachment, format, draw->width, draw->height, cpp, priv->pitch, priv->name);
 	return buf;
 }
 
