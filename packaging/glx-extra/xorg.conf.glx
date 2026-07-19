@@ -1,0 +1,13 @@
+Section "ServerFlags"
+    Option "AutoAddGPU" "false"
+    Option "AIGLX" "true"
+EndSection
+Section "Device"
+    Identifier "GMA500"
+    Driver     "gma500blt"
+    BusID      "PCI:0:2:0"
+EndSection
+Section "Module"
+    Load "glx"
+    Load "dri2"
+EndSection

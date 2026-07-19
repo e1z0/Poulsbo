@@ -67,6 +67,15 @@ ln -sf libemgdPVR2D_DRIWSEGL.so.1.5.15.3226 \
        "$U/opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so.1"
 install -m 0644 "$ARTIFACTS/gma500blt_drv.so" \
         "$U/usr/lib/xorg/modules/drivers/gma500blt_drv.so"
+# GLX payload staged under /opt/poulsbo-sgx-glx; glx-enable.sh (run by postinst)
+# installs the glapi-patched emgd DRI driver on the Mesa path, sets the loader
+# override, patches libGLX_mesa, and installs the AIGLX/DRI2 X config.
+install -D -m 0755 "$HERE/glx-extra/glx-enable.sh" \
+        "$U/opt/poulsbo-sgx-glx/glx-enable.sh"
+install -D -m 0644 "$HERE/glx-extra/emgd_dri.so" \
+        "$U/opt/poulsbo-sgx-glx/emgd_dri.so"
+install -D -m 0644 "$HERE/glx-extra/xorg.conf.glx" \
+        "$U/opt/poulsbo-sgx-glx/xorg.conf.glx"
 chmod 0755 "$U/DEBIAN/postinst" "$U/DEBIAN/postrm"
 
 # --- stamp versions/arch into every control file -----------------------------

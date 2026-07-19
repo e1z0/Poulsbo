@@ -122,6 +122,16 @@ static u64 psb_blt_last_byte(u32 delta, u32 x, u32 y, u32 w, u32 h,
 #define PSB_BLT_HANG_WINDOW	(HZ)
 /* Overall cap on one drain wait, even with a busy-but-healthy engine */
 #define PSB_BLT_WAIT_CAP	(4 * HZ)
+/*
+ * Small 2D blits (window fills, glyph strips, compositor damage) drain in a few
+ * microseconds, but usleep_range(100,500) sleeps >=100us and, once the
+ * scheduler is involved, typically ~1ms -- so a 2D-heavy load (Compiz + a MATE
+ * panel does thousands of tiny fills) spends the X server almost entirely in
+ * these idle waits, starving client requests.  Spin-poll the engine status for
+ * a short window first: a quick blit is caught in microseconds with no sleep,
+ * and only genuinely long drains fall through to the sleeping wait.
+ */
+#define PSB_BLT_SPIN_TRIES	64
 
 /*
  * psb_blt_wait_idle_progress - sleeping engine drain with hang detection
@@ -148,7 +158,8 @@ static int psb_blt_wait_idle_progress(struct drm_psb_private *dev_priv)
 	u32 status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
 
 	for (;;) {
-		u32 new_socif, new_status;
+		u32 new_socif = socif, new_status = status;
+		int spins;
 
 		if (socif == _PSB_C2_SOCIF_EMPTY &&
 		    !(status & _PSB_C2B_STATUS_BUSY))
@@ -158,10 +169,24 @@ static int psb_blt_wait_idle_progress(struct drm_psb_private *dev_priv)
 		if (time_after_eq(jiffies, cap))
 			return -EBUSY;
 
-		usleep_range(100, 500);
+		/*
+		 * Fast path: spin-poll the engine for a short window so a small
+		 * blit that drains in microseconds returns without a sleep.
+		 */
+		for (spins = 0; spins < PSB_BLT_SPIN_TRIES; spins++) {
+			new_socif  = PSB_RSGX32(PSB_CR_2D_SOCIF);
+			new_status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
+			if (new_socif == _PSB_C2_SOCIF_EMPTY &&
+			    !(new_status & _PSB_C2B_STATUS_BUSY))
+				return 0;
+			cpu_relax();
+		}
 
+		/* Still draining after the spin window: back off to a sleep. */
+		usleep_range(50, 150);
 		new_socif = PSB_RSGX32(PSB_CR_2D_SOCIF);
 		new_status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
+
 		if (new_socif != socif || new_status != status)
 			hang = jiffies + PSB_BLT_HANG_WINDOW;
 		socif = new_socif;

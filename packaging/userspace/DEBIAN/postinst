@@ -14,7 +14,14 @@ case "$1" in
 
         # Register /opt/emgd/lib on the dynamic linker search path.
         ldconfig 2>/dev/null || true
-        echo "poulsbo-sgx-userspace: installed EMGD GL runtime + gma500blt DDX."
+
+        # Finish HW OpenGL/GLX/DRI2 enablement (emgd DRI driver on the Mesa
+        # path, loader override, libGLX_mesa patch, AIGLX/DRI2 X config).
+        if [ -x /opt/poulsbo-sgx-glx/glx-enable.sh ]; then
+            /opt/poulsbo-sgx-glx/glx-enable.sh || true
+        fi
+
+        echo "poulsbo-sgx-userspace: installed EMGD GL runtime + gma500blt DDX + GLX."
         echo "  Restart X (or reboot) to use the accelerated X driver."
         ;;
     abort-upgrade|abort-remove|abort-deconfigure)

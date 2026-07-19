@@ -14,3 +14,14 @@ module/.cache.mk
 module/Module.symvers
 module/modules.order
 module/.tmp_versions/
+
+# build byproducts
+features/gma500-sgx/.*.cmd
+features/gma500-sgx/*.o
+features/gma500-sgx/*.mod*
+features/gma500-sgx/*.ko
+features/gma500-sgx/Module.symvers
+features/gma500-sgx/modules.order
+features/gma500-sgx/*.symvers
+# large patched closed binary (build input, regenerate: patchelf --add-needed libglapi.so.0 emgd_dri.so from the EMGD RPM)
+packaging/glx-extra/emgd_dri.so
