@@ -42,6 +42,8 @@ M="$HERE/build/modules"
 install -m 0644 "$ARTIFACTS/pvrsrvkm.ko"   "$M/opt/poulsbo-sgx/pvrsrvkm.ko"
 install -m 0644 "$ARTIFACTS/gma500_gfx.ko" "$M/opt/poulsbo-sgx/gma500_gfx.ko"
 install -m 0644 "$ARTIFACTS/gma500dc.ko"   "$M/opt/poulsbo-sgx/gma500dc.ko"
+# proc_dri_compat: /proc/dri/0/name shim the closed emgd_dri.so needs for GLX.
+install -m 0644 "$ARTIFACTS/proc_dri_compat.ko" "$M/opt/poulsbo-sgx/proc_dri_compat.ko"
 install -m 0755 "$ARTIFACTS/srvinit"       "$M/opt/poulsbo-sgx/srvinit"
 chmod 0755 "$M/opt/poulsbo-sgx/load.sh" "$M/opt/poulsbo-sgx/srvinit.sh" \
           "$M/DEBIAN/postinst" "$M/DEBIAN/prerm" "$M/DEBIAN/postrm"
@@ -50,14 +52,19 @@ chmod 0755 "$M/opt/poulsbo-sgx/load.sh" "$M/opt/poulsbo-sgx/srvinit.sh" \
 U="$HERE/build/userspace"
 mkdir -p "$U/opt/emgd" "$U/usr/lib/xorg/modules/drivers"
 tar xzf "$ARTIFACTS/emgd-lib.tgz" -C "$U/opt/emgd"          # -> opt/emgd/lib/*
-# Drop the stray stock WSEGL backup: its SONAME is "libemgdPVR2D_DRIWSEGL.so",
-# so ldconfig would recreate the base symlink pointing at IT (the DRI2 build)
-# on every run, shadowing our zero-copy flip WSEGL.  With it gone, no library
-# claims that SONAME and the base symlink we set below stays put.
+# WSEGL: HW-accelerated OpenGL/GLX under X needs the ORIGINAL DDK window WSEGL
+# (it creates the window render surface via WSEGL_CreateWindowDrawable); the
+# custom offscreen/flip stub cannot and makes glXMakeCurrent NULL-deref. Install
+# the recovered DDK build (features/emgd-wsegl/orig-ddk/) as the canonical
+# libemgdPVR2D_DRIWSEGL.so.1.5.15.3226 and drop any .real backup so ldconfig
+# does not repoint the SONAME symlink elsewhere.
 rm -f "$U/opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so.real"
-# Point the base symlink at the zero-copy page-flip WSEGL (…so.1.5.15.3226).
+install -m 0644 "$HERE/../features/emgd-wsegl/orig-ddk/libemgdPVR2D_DRIWSEGL.so.1.5.15.3226" \
+        "$U/opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so.1.5.15.3226"
 ln -sf libemgdPVR2D_DRIWSEGL.so.1.5.15.3226 \
        "$U/opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so"
+ln -sf libemgdPVR2D_DRIWSEGL.so.1.5.15.3226 \
+       "$U/opt/emgd/lib/libemgdPVR2D_DRIWSEGL.so.1"
 install -m 0644 "$ARTIFACTS/gma500blt_drv.so" \
         "$U/usr/lib/xorg/modules/drivers/gma500blt_drv.so"
 chmod 0755 "$U/DEBIAN/postinst" "$U/DEBIAN/postrm"

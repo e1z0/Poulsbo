@@ -41,9 +41,15 @@ insmod "$DIR/gma500_gfx.ko" gma_no_sgx="$GMA_NO_SGX" \
        pvr_irq_forward="$PVR_IRQ_FORWARD" flip_vsync="$FLIP_VSYNC";     grc=$?
 insmod "$DIR/gma500dc.ko" flip_enable="$FLIP_ENABLE";                   drc=$?
 
+# proc_dri_compat: recreates the legacy /proc/dri/0/name interface (removed from
+# modern kernels) that the closed emgd_dri.so requires to initialise DRI2/GLX.
+# Proc-only, so it is safe to insmod live and cannot wedge boot. Needed only for
+# HW OpenGL/GLX under X; 2D EXA does not use it.
+[ -f "$DIR/proc_dri_compat.ko" ] && insmod "$DIR/proc_dri_compat.ko";   pdc=$?
+
 # NOTE: srvinit (SGX microkernel INIT_COMPLETE, needed only for GL) is run
 # later by poulsbo-sgx-srvinit.service so it can never wedge early boot.
 
 rm -f "$MARK"; sync
-logger -t poulsbo-sgx "pvrsrvkm=$prc gma500_gfx=$grc gma500dc=$drc"
+logger -t poulsbo-sgx "pvrsrvkm=$prc gma500_gfx=$grc gma500dc=$drc proc_dri=${pdc:-skip}"
 exit 0
