@@ -83,10 +83,52 @@ typedef struct {
 	PVR2DMEMINFO *mem;	/* PVR2D allocation (pBase = CPU VA)            */
 	unsigned long name;	/* PVR2D export handle handed to the client    */
 	unsigned int  size;
+	unsigned int  pitch;
+	unsigned int  attachment;	/* cache key: the RETURNED attachment  */
+	int           w, h;		/* cache key: drawable dimensions      */
+	int           cpp;
 	int           refcnt;
 } GmaDri2Buf;
 
 static PVR2DCONTEXTHANDLE g_pvr2d;	/* the DDX's PVR2D device context */
+
+/*
+ * DRI2 buffer reuse cache.  The X server's DRI2 core destroys + recreates a
+ * drawable's buffers on every SwapBuffers, so without this each frame would
+ * re-run PVR2DMemAlloc + PVR2DMemExport + descriptor write (services round-trips)
+ * and hand the client a new name (triggering GEM flink/auth X round-trips).  On
+ * DestroyBuffer we retain the PVR2D allocation on a free list keyed by
+ * (attachment, w, h); CreateBuffer reuses a match instead of allocating, giving
+ * stable buffers/names across frames.  Buffers are freed for real only when the
+ * list overflows (or the PVR2D context is torn down).
+ */
+#define GMA_DRI2_CACHE_MAX 32
+static GmaDri2Buf *g_bufcache[GMA_DRI2_CACHE_MAX];
+static int         g_bufcache_n;
+
+static GmaDri2Buf *gma_dri2_cache_get(unsigned int attach, int w, int h)
+{
+	int i;
+	for (i = 0; i < g_bufcache_n; i++) {
+		GmaDri2Buf *p = g_bufcache[i];
+		if (p->attachment == attach && p->w == w && p->h == h) {
+			g_bufcache[i] = g_bufcache[--g_bufcache_n];	/* unlink */
+			return p;
+		}
+	}
+	return NULL;
+}
+
+static void gma_dri2_cache_put(GmaDri2Buf *p)
+{
+	if (g_bufcache_n < GMA_DRI2_CACHE_MAX) {
+		g_bufcache[g_bufcache_n++] = p;
+		return;
+	}
+	if (g_pvr2d && p->mem)		/* cache full: free for real */
+		PVR2DMemFree(g_pvr2d, p->mem);
+	free(p);
+}
 
 /* Lazily create the DDX's PVR2D context (PVR services must be up by now). */
 static PVR2DCONTEXTHANDLE gma_dri2_pvr2d(ScrnInfoPtr scrn)
@@ -148,71 +190,65 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	pitch = (draw->width * cpp + 7) & ~7u;		/* small alignment */
 	size  = pitch * draw->height;
 
-	buf  = calloc(1, sizeof *buf);
-	priv = calloc(1, sizeof *priv);
-	if (!buf || !priv) { free(buf); free(priv); return NULL; }
-
-	e = PVR2DMemAlloc(ctx, size, 0, PVR2D_MEM_WRITECOMBINE, &priv->mem);
-	if (e != PVR2D_OK || !priv->mem) {
-		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemAlloc=%ld\n", (long)e);
-		free(buf); free(priv); return NULL;
-	}
 	/*
-	 * Zero the freshly-allocated buffer. PVR2DMemAlloc does not clear memory,
-	 * and emgd_dri.so's geometry query (its 0x1c3b0) DEREFERENCES the mapped
-	 * buffer's contents: it reads *(pBase) as a descriptor type (1/2) and
-	 * *(pBase+0x10) into the drawable's 0x3c "surface present" field. On
-	 * uninitialised memory that garbage makes KEGLGetDrawableParameters take the
-	 * buffer-array path before the WSEGL surface exists -> NULL deref. Zeroing
-	 * makes it read type 0 / 0x3c==0 -> the graceful pre-surface path. (A proper
-	 * emgd descriptor may still be needed; this is the minimal correct baseline.)
+	 * Reuse a cached (previously-freed) buffer of the same shape; otherwise
+	 * allocate + export a fresh one and zero it (PVR2DMemAlloc doesn't clear).
 	 */
-	if (priv->mem->pBase)
-		memset(priv->mem->pBase, 0, size);	/* PVR2DMemAlloc doesn't clear */
-
-	e = PVR2DMemExport(ctx, 0, priv->mem, &hexport);
-	if (e != PVR2D_OK) {
-		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemExport=%ld\n", (long)e);
-		PVR2DMemFree(ctx, priv->mem); free(buf); free(priv); return NULL;
+	priv = gma_dri2_cache_get(ret_attach, draw->width, draw->height);
+	if (!priv) {
+		priv = calloc(1, sizeof *priv);
+		if (!priv) return NULL;
+		e = PVR2DMemAlloc(ctx, size, 0, PVR2D_MEM_WRITECOMBINE, &priv->mem);
+		if (e != PVR2D_OK || !priv->mem) {
+			xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemAlloc=%ld\n", (long)e);
+			free(priv); return NULL;
+		}
+		if (priv->mem->pBase)
+			memset(priv->mem->pBase, 0, size);
+		e = PVR2DMemExport(ctx, 0, priv->mem, &hexport);
+		if (e != PVR2D_OK) {
+			xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemExport=%ld\n", (long)e);
+			PVR2DMemFree(ctx, priv->mem); free(priv); return NULL;
+		}
+		priv->name       = (unsigned long) hexport;
+		priv->size       = size;
+		priv->pitch      = pitch;
+		priv->cpp        = cpp;
+		priv->attachment = ret_attach;
+		priv->w          = draw->width;
+		priv->h          = draw->height;
 	}
-	priv->name   = (unsigned long) hexport;
-	priv->size   = size;
 	priv->refcnt = 1;
 
 	/*
-	 * emgd_dri.so's geometry query (0x1c3b0) reads a descriptor from the FRONT
-	 * of the mapped buffer: dword0=type(1), dword1..3 = PVR2D buffer HANDLES
-	 * (0x1c480 PVR2DMemMaps each into the drawable buffer array drawable+0x24[]
-	 * that KEGLGetDrawableParameters then needs), dword4 = buffer count. An
-	 * empty descriptor => count 0 => array never populated => NULL deref. Write
-	 * a self-describing descriptor with THIS buffer's export handle, count 1.
-	 * (Must run AFTER priv->name = hexport is assigned; otherwise the handles
-	 * are written as 0 and emgd's map loop skips them.)
+	 * (Re)write emgd's descriptor {type=1, handle x3, count=1} at the front of
+	 * the buffer.  emgd's 0x1c3b0 reads dword0 as type and dword1..3 as PVR2D
+	 * handles it PVR2DMemMaps into drawable+0x24[] (dword4=count); an empty
+	 * descriptor => NULL deref.  emgd's 0x1c480 PVRSRVMemSet-zeroes the buffer
+	 * while processing it, wiping the descriptor, so it MUST be rewritten on
+	 * every CreateBuffer -- including cache reuses -- not just fresh allocation.
 	 */
 	if (priv->mem->pBase) {
 		uint32_t *d = priv->mem->pBase;
-		d[0] = 1;			/* descriptor type */
-		d[1] = (uint32_t)priv->name;	/* handle0 */
-		d[2] = (uint32_t)priv->name;	/* handle1 */
-		d[3] = (uint32_t)priv->name;	/* handle2 */
-		d[4] = 1;			/* buffer count */
+		d[0] = 1;
+		d[1] = (uint32_t)priv->name;
+		d[2] = (uint32_t)priv->name;
+		d[3] = (uint32_t)priv->name;
+		d[4] = 1;
 	}
 
+	buf = calloc(1, sizeof *buf);
+	if (!buf) { gma_dri2_cache_put(priv); return NULL; }
 	buf->attachment    = ret_attach;
 	/* For emgd's 0x90 metadata buffer only name&3 is read (drawable flags);
 	 * clear the low bits so emgd sees flags==0. Render buffers keep the real
 	 * PVR2D export handle so emgd's PVR2DMemMap(name) resolves them. */
 	buf->name          = (ret_attach == 0x90) ? (priv->name & ~3u) : priv->name;
-	buf->pitch         = pitch;
-	buf->cpp           = cpp;
+	buf->pitch         = priv->pitch;
+	buf->cpp           = priv->cpp;
 	buf->flags         = 0;
 	buf->format        = format;
 	buf->driverPrivate = priv;
-
-	xf86DrvMsg(scrn->scrnIndex, X_INFO,
-		   "DRI2 CreateBuffer: attach=%#x(%u) format=%#x %dx%d cpp=%d pitch=%u devaddr=%#lx name=%#lx\n",
-		   attachment, attachment, format, draw->width, draw->height, cpp, pitch,
-		   priv->mem->ui32DevAddr, priv->name);
 	return buf;
 }
 
@@ -221,11 +257,8 @@ static void gma_dri2_destroy_buffer(DrawablePtr draw, DRI2Buffer2Ptr buf)
 	GmaDri2Buf *priv;
 	if (!buf) return;
 	priv = buf->driverPrivate;
-	if (priv && --priv->refcnt <= 0) {
-		if (g_pvr2d && priv->mem)
-			PVR2DMemFree(g_pvr2d, priv->mem);
-		free(priv);
-	}
+	if (priv && --priv->refcnt <= 0)
+		gma_dri2_cache_put(priv);	/* retain the PVR2D alloc for reuse */
 	free(buf);
 }
 
