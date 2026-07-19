@@ -1,48 +1,39 @@
-# One-shot diagnostic for the glXMakeCurrent crash in emgd_dri.so.
-# Goal: capture, in a single (fragile-box) session, every runtime value the
-# static analysis could not resolve, to decide the real fix.
-#
-# Symbol-relative so it survives load-base changes; run with randomize_va_space=0.
 set pagination off
+set height 0
 set breakpoint pending on
-set $base = (unsigned)&KEGLGetDrawableParameters - 0x1eb40
+break PVRDRIInitialiseBuffer
+run
+set $base = (unsigned)&PVRDRIInitialiseBuffer - 0x1da60
+printf "\n### base=%#x ###\n", $base
+delete 1
 
-# --- geometry query 0x1c3b0: what buffer does emgd map, and what does it read? ---
-break *($base + 0x1c40c)     
-# just before PVR2DMemMap; $edi = the buffer handle it maps
+# geometry query — report handle + meminfo/pBase (no deref; pBase may be WC/unreadable by gdb)
+break *($base + 0x1c418)
 commands
-  printf "\n[1c3b0] mapping DRI2 buffer handle=%#x\n", $edi
-  finish
-  printf "[1c3b0] PVR2DMemMap ret=%d\n", $eax
-end
-break *($base + 0x1c418)      
-# after PVR2DMemMap: -0x1c(ebp) = &meminfo
-commands
+  silent
   set $mi = *(unsigned*)($ebp-0x1c)
   set $pb = *(unsigned*)$mi
-  printf "[1c3b0] meminfo=%#x pBase=%#x  *(pBase)=%#x  *(pBase+0x10)=%#x\n", $mi, $pb, *(unsigned*)$pb, *(unsigned*)($pb+0x10)
+  printf "\n[geom] meminfo=%#x pBase=%#x\n", $mi, $pb
   continue
 end
 
-# --- KEGLGetDrawableParameters: dump the drawable/surface state each call ---
+# THE crash site state
 break KEGLGetDrawableParameters
 commands
-  set $drw = *(unsigned*)($esp+4)
+  silent
+  set $drw = *(unsigned*)($ebp+8)
   set $X = *(unsigned*)($drw+0x1c)
-  printf "\n[KEGLGetDP] arg1=%#x arg3=%#x  X(=arg1->0x1c)=%#x\n", $drw, *(unsigned*)($esp+0xc), $X
-  printf "   X->0x70(state)=%#x  X->0x34=%#x  X->0x3c=%#x  X->0x38=%#x  X->0x4=%#x\n", *(unsigned*)($X+0x70), *(unsigned*)($X+0x34), *(unsigned*)($X+0x3c), *(unsigned*)($X+0x38), *(unsigned*)($X+4)
   set $x4 = *(unsigned*)($X+4)
-  printf "   (X->0x4)->0x24=%#x  ->0x28=%#x   X->0x24[0..2]=%#x %#x %#x\n", *(unsigned*)($x4+0x24), *(unsigned*)($x4+0x28), *(unsigned*)($X+0x24), *(unsigned*)($X+0x28), *(unsigned*)($X+0x2c)
+  printf "\n[KEGLGetDP] arg3=%#x X=%#x | 0x70=%#x 0x34=%#x 0x3c=%#x 0x38=%#x | (X4)->24=%#x 28=%#x | X24[0..2]=%#x %#x %#x\n", *(unsigned*)($ebp+0x10), $X, *(unsigned*)($X+0x70), *(unsigned*)($X+0x34), *(unsigned*)($X+0x3c), *(unsigned*)($X+0x38), *(unsigned*)($x4+0x24), *(unsigned*)($x4+0x28), *(unsigned*)($X+0x24), *(unsigned*)($X+0x28), *(unsigned*)($X+0x2c)
   continue
 end
 
-# --- does the surface-creating path run at all before the crash? ---
 break PVRDRIMakeCurrentGC
 commands
-  printf "\n[MakeCurrentGC] REACHED (surface-create) ctx=%#x draw=%#x read=%#x\n", *(unsigned*)($esp+4), *(unsigned*)($esp+8), *(unsigned*)($esp+0xc)
+  silent
+  printf "\n[MakeCurrentGC] REACHED (surface create)\n"
   continue
 end
 
-run
-printf "\n=== if we get here without SIGSEGV, MakeCurrent progressed ===\n"
-bt 6
+continue
+printf "\n### glx_probe finished — NO SIGSEGV ###\n"
