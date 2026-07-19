@@ -125,6 +125,18 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemAlloc=%ld\n", (long)e);
 		free(buf); free(priv); return NULL;
 	}
+	/*
+	 * Zero the freshly-allocated buffer. PVR2DMemAlloc does not clear memory,
+	 * and emgd_dri.so's geometry query (its 0x1c3b0) DEREFERENCES the mapped
+	 * buffer's contents: it reads *(pBase) as a descriptor type (1/2) and
+	 * *(pBase+0x10) into the drawable's 0x3c "surface present" field. On
+	 * uninitialised memory that garbage makes KEGLGetDrawableParameters take the
+	 * buffer-array path before the WSEGL surface exists -> NULL deref. Zeroing
+	 * makes it read type 0 / 0x3c==0 -> the graceful pre-surface path. (A proper
+	 * emgd descriptor may still be needed; this is the minimal correct baseline.)
+	 */
+	if (priv->mem->pBase)
+		memset(priv->mem->pBase, 0, size);
 	e = PVR2DMemExport(ctx, 0, priv->mem, &hexport);
 	if (e != PVR2D_OK) {
 		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemExport=%ld\n", (long)e);
