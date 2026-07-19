@@ -13,9 +13,12 @@ PCI `8086:8108`) on a Sony Vaio running Ubuntu 18.04 LTS, kernel
 > `INIT_COMPLETE` from an open hand-written loader, and the closed
 > Imagination/EMGD GLES2 userspace renders true programmable-shader 3D — into an
 > X11 window, zero-copy, interrupt-driven, at ~950 FPS — on top of an open
-> kernel PVR-over-DRM bridge. The reverse-engineering plan, register database,
-> and clean-room rules that made this possible are retained below as engineering
-> notes rather than as a roadmap.
+> kernel PVR-over-DRM bridge. **Desktop OpenGL now works too: full
+> hardware-accelerated GLX/DRI2 (`glxinfo`: direct rendering Yes, *EMGD on
+> PowerVR SGX535*, OpenGL 2.1; `glxgears` ~105 FPS) for ordinary X apps, with a
+> MATE + Compiz composited desktop running on the GPU — reboot-persistent.** The
+> reverse-engineering plan, register database, and clean-room rules that made
+> this possible are retained below as engineering notes rather than as a roadmap.
 
 All results below were measured on the target host `root@10.1.11.218` (the
 "Vaio") unless noted. Dated milestones come from the project memory log; the
@@ -33,6 +36,7 @@ mainline `gma500_gfx` DRM driver:
 | **A** | 2D acceleration on the fbcon | `GMA_BLT_SUBMIT` DRM ioctl → dedicated SGX 2D BLIT core (slave port `SGX+0x4000`) | **Working, 12/12 HW tests.** Real GPU pixels, verified via aperture + `/dev/fb0` readback. |
 | **B** | Open X11 2D EXA DDX | `xf86-video-gma500blt`: KMS modeset (LVDS-1 @ 1600x768) + EXA Solid/Copy over the 2D BLIT core | **Working + stable X.** Xorg 1.20 (HWE ABI 24.1), `x11perf` clean. |
 | **C** | 3D (GLES2 / EGL) | Closed EMGD/Imagination userspace (DDK 1.5.15.3226) on ported `pvrsrvkm`, coexisting with `gma500` via an open PVR-over-DRM bridge | **Working: SGX535 renders programmable-shader GLES2 into an X11 window,** zero-copy page-flip present, interrupt-driven, ~950 FPS. |
+| **C2** | Desktop OpenGL (GLX / DRI2) on X | Closed EMGD `emgd_dri.so` DRI2 driver bridged into Mesa-20's GLX, on the open `gma500blt` DDX (which is itself a PVR2D client providing the DRI2 buffers) | **Working: `glxinfo` = direct rendering Yes / EMGD on PowerVR SGX535 / OpenGL 2.1; `glxgears` ~105 FPS; MATE + Compiz composited desktop on the GPU. Reboot-persistent.** See [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-the-5105-fps-fixes). |
 
 A parallel, fully-open **microkernel bring-up track** (`sgx_3d.c`, no closed
 userspace) independently reached `INIT_COMPLETE` and host↔microkernel CCB
@@ -267,6 +271,119 @@ the `PVR2DPresentFlip` waiter.
 recovery / oops, display healthy.** This is a general fix — the whole GL stack
 is now interrupt-driven instead of poll-bound.
 
+### 4.3 GLX/DRI2 desktop OpenGL: the buffer bridge and the 5→105 FPS fixes
+
+Layer C above is **GLES2/EGL** — an app links `libEMGDegl` and presents through
+our WSEGL flip chain. Layer **C2** is **desktop OpenGL under X via GLX/DRI2**, so
+that *ordinary* GL applications (glxgears, GL compositors, generic `libGL`
+programs) run hardware-accelerated with no app changes. `glxinfo` reports
+**direct rendering: Yes**, **OpenGL renderer: EMGD on PowerVR SGX535**, **OpenGL
+version: 2.1**.
+
+The pieces:
+
+- The closed EMGD `emgd_dri.so` (`/opt/emgd/lib/dri/`) is a **DRI2 desktop-GL
+  driver** (`libEMGDOGL`) that renders into PVR2D flip chains on our gma500dc
+  display-class device via the card0 PVR-over-DRM bridge. It is bridged into
+  **Mesa 20's** GLX (Xorg 1.20): Mesa still keeps the DRI2-v2 GLX fallback path,
+  and `emgd_dri.so` exports `__driDriverExtensions = { DRI_Core, DRI_DRI2 }`.
+- The **open `gma500blt` DDX provides DRI2** (`gma500blt_dri2.c`:
+  `DRI2ScreenInit(driverName="emgd", …)`, `CreateBuffer` / `DestroyBuffer` /
+  `CopyRegion`). Xorg then loads `emgd_dri.so` as `<driverName>_dri.so`, and
+  AIGLX logs *"Loaded and initialized emgd" / "GLX: Initialized DRI2 GL provider
+  for screen 0."*
+
+**The buffer bridge (the crux).** gma500 and pvrsrvkm are a **split kernel**:
+gma500 owns GEM/GTT memory, pvrsrvkm owns SGX/PVR memory, and neither manages the
+other's. So a plain gma500 GEM-flink name handed to `emgd_dri.so` cannot be
+mapped by it (`PVR2DMemMap(name)` returned `-11 MAPPING_FAILED`). The fix makes
+the **DDX itself a PVR2D client**: `CreateBuffer` does `PVR2DMemAlloc +
+PVR2DMemExport` and returns the **export handle** as the DRI2 buffer name.
+`emgd_dri.so`'s `PVR2DMemMap(name)` then maps the *same SGX allocation* and
+returns 0 — the buffer is simultaneously SGX-renderable and (via gma500) present.
+
+**emgd's private descriptor.** Beyond mapping, `emgd_dri.so` reads a descriptor
+out of each buffer's **first 20 bytes** (its geometry-query `0x1c3b0`
+dereferences the mapped buffer's `pBase`). So `CreateBuffer` writes, into each
+buffer, `uint32 d[] = { type=1, export-handle ×3, count=1 }` — **after**
+`priv->name = hexport` is assigned (writing it before left the handles zero and
+emgd's map loop `0x1c480` skipped the buffers). emgd then `PVR2DMemMap`s those
+handles into the drawable's buffer-object array (`drawable+0x24[]`), which
+`KEGLGetDrawableParameters` reads. Attachment **`0x81` (= `back | 0x80`)** is
+returned as emgd's metadata type **`0x90`** with `name & 3 == 0`.
+
+**Two userspace pieces the DDX can't substitute for:**
+
+- The **original DDK** `libemgdPVR2D_DRIWSEGL.so.1.5.15.3226` (recovered from the
+  in-repo RPM into `features/emgd-wsegl/orig-ddk/`, md5 `61dc7af8`). The custom
+  flip stub used by the GLES2 window path (`wsegl_win.c`) does **not** create a
+  window render surface for the DRI2 path; the DDK WSEGL does. This was proven by
+  A/B: with the stub, `glXMakeCurrent` crashed in `KEGLGetDrawableParameters+446`
+  (the context's render surface `context->0x34/0x3c` never bound); with the DDK
+  WSEGL it completes.
+- **`proc_dri_compat.ko`** (`features/glx-dri2/proc_dri_compat.c`) — a proc-only
+  module (no device bind, so it insmods live) that recreates the legacy
+  `/proc/dri/0/name` interface removed from modern kernels. `emgd_dri.so`
+  enumerates/identifies its device through that path; without it PVR services
+  init fails and Mesa falls back to swrast. Param `name="emgd 0000:00:02.0"`.
+
+**Three Mesa-side tweaks** (applied by `glx-enable.sh` at package install, §
+PACKAGING.md):
+
+1. `patchelf --add-needed libglapi.so.0` on the DRI-path copy of `emgd_dri.so`
+   (it references `_glapi_Dispatch` but doesn't list glapi as NEEDED).
+2. `MESA_LOADER_DRIVER_OVERRIDE=emgd` — the PCI-id→driver map has no Poulsbo
+   entry, so the loader otherwise picks the kernel `gma500` name and falls to
+   llvmpipe.
+3. A **binary patch of `libGLX_mesa.so.0`**: Mesa 20 calls an optional
+   `DRI2_Config_Query` screen hook unconditionally (`emgd` doesn't provide it),
+   NULL-derefing at `dri2CreateScreen`. The two unguarded `call *0x8(%eax)`
+   (`ff 50 08`) inside `ff 75 30 ff 50 08 83 c4 10` are neutralised to
+   `xor %eax,%eax; nop` (`31 c0 90`); a `.orig` backup is kept.
+
+**Performance: 5 → 105 FPS (21×).** The first working GLX render was correct but
+~5 FPS. `strace -T` showed one `nanosleep(~160 ms)` per frame: the EMGD GL client
+waits its full event-object timeout each frame because a 3D render raises no host
+`SW_EVENT`, so the MISR never signals that particular event object (this is a
+*different* event than the flip fix of §4.2 woke). Three stacked fixes:
+
+1. **`pvrsrvkm.event_timeout_ms`** (new param, default **2**, was a hard 100 ms)
+   — shortens that per-frame event re-check interval. 5 → 10 FPS.
+2. **`pvrsrvkm.sgx_apm_latency_ms`** (new param, default **500**; the Poulsbo
+   `SYS_SGX_ACTIVE_POWER_LATENCY_MS_PLB` default was **1 ms**) — the SGX powered
+   down after 1 ms idle and paid a power-up penalty every frame; keeping it awake
+   gave 10 → 17 FPS. `0` disables active PM. (`sysconfig.c` sets
+   `bEnableActivePM = (sgx_apm_latency_ms != 0)`.)
+3. **A DDX buffer cache** (`gma500blt_dri2.c`) — DRI2 recreates buffers on every
+   swap; the cache reuses freed PVR2D allocations keyed by `{attachment,w,h}` and
+   just rewrites the descriptor per `CreateBuffer` (emgd zeroes the buffer). The
+   X-protocol / alloc churn disappears: 17 → **105 FPS**.
+
+Both `pvrsrvkm` params are `0644` and runtime-tunable via
+`/sys/module/pvrsrvkm/parameters/`. Separately, `blt_submit.c` in gma500 gained a
+**spin-first fast path** in `psb_blt_wait_idle_progress()`: a small 2D fill that
+drains in microseconds returns from a short spin-poll (`PSB_BLT_SPIN_TRIES`)
+without sleeping, so the X server is not starved by synchronous 2D fills under a
+compositor.
+
+`glxgears` ~105 FPS is **uncapped**; real GL apps vsync-cap to the 60 Hz LVDS
+panel. A **MATE + Compiz** desktop runs with the `composite` + `opengl` (+
+`decor`/`move`/`resize`/`place`) plugins on the SGX535 and is stable; GL apps
+render accelerated inside it.
+
+**Persistence.** The whole GLX path survives a clean reboot with zero manual
+steps (reboot-verified): `poulsbo-sgx.service` → `load.sh` loads the modules
+including `proc_dri_compat`; `poulsbo-sgx-srvinit.service` brings PVR services up;
+`/etc/environment` sets `MESA_LOADER_DRIVER_OVERRIDE=emgd`; and `xorg.conf.glx`
+(gma500blt + AIGLX + glx/dri2) is the default X config. After reboot, `startx` →
+`glxinfo` shows direct rendering on the SGX535.
+
+New sources: `features/xf86-video-gma500blt/src/gma500blt_dri2.c` (DDX DRI2 +
+PVR2D buffer bridge + descriptor + buffer cache), `features/glx-dri2/`
+(`proc_dri_compat.c`), `features/emgd-wsegl/orig-ddk/` (recovered DDK WSEGL), the
+`pvrsrvkm` `event_timeout_ms` / `sgx_apm_latency_ms` params, and the gma500
+`blt_submit.c` spin-first path.
+
 ---
 
 ## 5. Module parameters reference
@@ -313,6 +430,22 @@ vblank IRQ.
 `1` = the DC flip processor moves the scanout on present. `0` = present
 completes (sync/plumbing runs) **without** moving the scanout — useful for
 isolating render vs. scanout.
+
+### `pvrsrvkm.event_timeout_ms` (int, default `2`) — GLX frame-wait
+
+The re-check interval for `EVENT_OBJECT_TIMEOUT_MS` in the PVR event-object wait
+(`osfunc.c`). The stock value was a hard **100 ms**, which the EMGD desktop-GL
+client paid *per frame* because a 3D render raises no host `SW_EVENT` for the
+MISR to signal. `2` collapses that wait; see [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-the-5105-fps-fixes).
+Clamped to a `1 ms` floor.
+
+### `pvrsrvkm.sgx_apm_latency_ms` (int, default `500`) — SGX power-down latency
+
+The SGX active-power-management idle latency (`sysconfig.c`). The Poulsbo default
+(`SYS_SGX_ACTIVE_POWER_LATENCY_MS_PLB`) was **1 ms**, so the SGX powered down
+after every frame and paid a power-up penalty on the next. `500` keeps it awake
+under load; `0` disables active PM entirely
+(`bEnableActivePM = (sgx_apm_latency_ms != 0)`).
 
 ### `gma500_gfx.gma_no_sgx` (int) — pre-existing, display-only split
 
@@ -541,11 +674,16 @@ State these plainly; do not overclaim.
 - **The whole stack is target-pinned:** prebuilt for kernel `5.4.0-150-generic`
   i686 on this specific Vaio, and the display-pipe assumption (pipe B) is this
   panel's.
-- **On-screen zero-copy under a real X DDX is still open.** The visible
-  windowed-GL path uses Xvfb for the EGL X connection + the flip chain to the
-  live scanout; a fully composited desktop GL would want DRI2/PRIME or a
-  period-correct emgd DDX (Xorg ~1.9 in an i386 chroot) — the closed emgd DDX is
-  Xorg-1.20-incompatible with no source.
+- **Desktop OpenGL under X (GLX/DRI2) now works** (this was previously listed as
+  open). `emgd_dri.so` is bridged into Mesa-20 GLX on our open `gma500blt` DDX
+  (§4.3): `glxinfo` = direct rendering Yes / EMGD on PowerVR SGX535 / OpenGL 2.1,
+  `glxgears` ~105 FPS, MATE + Compiz composites on the GPU, reboot-persistent.
+  Honest caveats that remain: OpenGL is **2.1** (fixed-function + GLSL 1.20, what
+  SGX535 realistically does); the DRI2 `CopyRegion` present is a 2D-BLT copy of
+  the client back-buffer to the window (not the zero-copy scanout flip the GLES2
+  path uses), so it is fast but not zero-copy; and the whole GLX enablement leans
+  on a binary `libGLX_mesa` patch + a patchelf + a `/proc/dri` compat shim to
+  reconcile the 2010-era emgd DRI2 driver with the Mesa-20 loader.
 - **Layer A/C are mutually exclusive on the SGX** (fbcon 2D accel vs. pvrsrvkm
   render); this is by design and matches the historical EMGD split.
 
@@ -558,8 +696,11 @@ State these plainly; do not overclaim.
    closed PVR2D present path.
 2. Async/fenced kernel BLT submit so Layer B can accelerate the on-screen root
    pixmap (deferred unpin, pipelined ops) instead of falling to software.
-3. PRIME/dma-buf on gma500 (`DRIVER_PRIME` + `psb_gem_prime_*`) for GL/DDX
-   buffer sharing and a path toward DRI2 windowed GL.
+3. Zero-copy DRI2 present: the GLX `CopyRegion` path (§4.3) currently 2D-BLTs the
+   client back-buffer to the window. Routing it through the gma500dc scanout flip
+   (as the GLES2 path does) or a PVR2D flip chain would drop the copy. (Basic
+   GL/DDX buffer sharing is already solved by the PVR2D export bridge; full
+   PRIME/dma-buf on gma500 would generalise it.)
 4. Continue the open render track only if the EMGD userspace render package
    (`libpvr2d` etc.) can be sourced or the USSE ISA is more fully reversed — the
    HW-2D-context byte layout is the single remaining gate.
@@ -576,6 +717,15 @@ Real, on-disk locations (all paths relative to the repo root).
   `HARDWARE_PROOF_2026-07-17.txt` (12/12).
 - **Layer B — EXA DDX:** `features/xf86-video-gma500blt/src/`
   (`gma500blt_exa.c`, `gma500blt_driver.c`, `gma500blt.h`).
+- **Layer C2 — GLX/DRI2 desktop GL:**
+  `features/xf86-video-gma500blt/src/gma500blt_dri2.c` (DDX DRI2 + PVR2D
+  buffer-export bridge + emgd descriptor + buffer cache);
+  `features/glx-dri2/proc_dri_compat.c` (+ `Kbuild`) the `/proc/dri/0/name`
+  compat module; `features/emgd-wsegl/orig-ddk/libemgdPVR2D_DRIWSEGL.so.1.5.15.3226`
+  the recovered DDK window WSEGL; the `event_timeout_ms` (`osfunc.c`) /
+  `sgx_apm_latency_ms` (`sysconfig.c`) pvrsrvkm params; the `blt_submit.c`
+  spin-first fast path. Package-side enablement: `packaging/glx-extra/`
+  (`glx-enable.sh`, `xorg.conf.glx`).
 - **Layer C — ported render module:** `features/pvrsrvkm-port/src` (+ `Kbuild`);
   build config `features/pvrsrvkm-BUILD_CONFIG.txt`, `features/pvrsrvkm-Kbuild`.
   The PVR-over-DRM bridge shim (`pvr_gma_bridge.c/.h`) and gma500 bridge/IRQ/flip

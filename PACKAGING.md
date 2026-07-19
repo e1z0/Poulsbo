@@ -4,6 +4,9 @@ This describes how to rebuild the three `.deb` packages from source — both the
 kernel modules and the package assembly. Everything lives under `packaging/`,
 with the module sources under `features/`.
 
+The current release is **1.0-rc1** (the first release with hardware-accelerated
+desktop OpenGL / GLX/DRI2; see ENGINEERING.md §4.3).
+
 ```
 packaging/
   build-modules.sh   # compile the 3 kernel modules from ../features
@@ -11,6 +14,7 @@ packaging/
   modules/           # dpkg tree for poulsbo-sgx-modules (control, scripts, configs)
   userspace/         # dpkg tree for poulsbo-sgx-userspace (ld/xorg config)
   meta/              # dpkg tree for the poulsbo-sgx metapackage
+  glx-extra/         # GLX/DRI2 enablement: glx-enable.sh, xorg.conf.glx, emgd_dri.so
   out/               # built .deb files land here
 ```
 
@@ -69,7 +73,18 @@ This compiles, **in dependency order**:
    pvrsrvkm + gma500 symbols. The display-class device that backs the PVR2D flip
    chain; carries the `flip_enable` parameter.
 
+`pvrsrvkm.ko` also now carries the two GLX-speed module parameters
+`event_timeout_ms` (default 2) and `sgx_apm_latency_ms` (default 500) — see
+ENGINEERING.md §4.3 / §5.
+
 The `.ko` files land in `packaging/artifacts/`.
+
+**A fourth module — `proc_dri_compat.ko`** — is also needed (it recreates the
+legacy `/proc/dri/0/name` interface the closed `emgd_dri.so` requires for GLX).
+It is proc-only and kernel-header-built from `features/glx-dri2` (has its own
+`Kbuild`); build it in the same i386 container and drop the resulting
+`proc_dri_compat.ko` into `packaging/artifacts/` alongside the other three.
+`build-debs.sh` installs it into `poulsbo-sgx-modules`.
 
 > Why Docker + out-of-tree: the target is a slow i686 netbook. Building in a
 > matching i386 container on a fast host and copying the `.ko` over is far
@@ -85,15 +100,27 @@ The `.ko` files land in `packaging/artifacts/`.
 | File | Where it comes from |
 |---|---|
 | `pvrsrvkm.ko`, `gma500_gfx.ko`, `gma500dc.ko` | step 1 above |
+| `proc_dri_compat.ko` | step 1 above (`features/glx-dri2`) — the `/proc/dri` compat shim for GLX |
 | `srvinit` | the SGX services init helper (i386 ELF) — from the EMGD userspace |
-| `gma500blt_drv.so` | build `features/xf86-video-gma500blt` against the Xorg 1.20 (HWE, ABI 24) SDK; the result installs to `/usr/lib/xorg/modules/drivers/` |
-| `emgd-lib.tgz` | `tar czf emgd-lib.tgz lib` from a provisioned `/opt/emgd` — the EMGD 1.18 (DDK 1.5.15.3226) EGL/GLES/OpenVG runtime plus the flip WSEGL |
+| `gma500blt_drv.so` | build `features/xf86-video-gma500blt` against the Xorg 1.20 (HWE, ABI 24) SDK; the result installs to `/usr/lib/xorg/modules/drivers/`. This DDX now also provides DRI2 (`gma500blt_dri2.c`), which is what enables GLX. |
+| `emgd-lib.tgz` | `tar czf emgd-lib.tgz lib` from a provisioned `/opt/emgd` — the EMGD 1.18 (DDK 1.5.15.3226) EGL/GLES/OpenVG runtime; must include `dri/emgd_dri.so` (the desktop-GL DRI2 driver) |
+
+Two more GLX inputs feed `build-debs.sh`. The recovered DDK window WSEGL
+`features/emgd-wsegl/orig-ddk/libemgdPVR2D_DRIWSEGL.so.1.5.15.3226` is **committed
+in-repo** and used directly. The glapi-patched DRI driver
+`packaging/glx-extra/emgd_dri.so` (placed on the Mesa loader path) is a closed
+binary and is **gitignored — stage it before building**: copy `emgd_dri.so` from
+`/opt/emgd/lib/dri/` and `patchelf --add-needed libglapi.so.0` it into
+`packaging/glx-extra/emgd_dri.so`.
 
 The EMGD runtime is the closed Intel/Imagination userspace (see
 `firmware/` and `research/external/` in this repo, and ENGINEERING.md for the
-provenance). `build-debs.sh` repoints the `libemgdPVR2D_DRIWSEGL.so` symlink at
-the **zero-copy flip** WSEGL (`…so.1.5.15.3226`), not the stock DRI2 build
-(`…so.real`), so window presents page-flip.
+provenance). For GLX, `build-debs.sh` installs the **original DDK** window WSEGL
+(`features/emgd-wsegl/orig-ddk/…so.1.5.15.3226`) as
+`libemgdPVR2D_DRIWSEGL.so.1.5.15.3226` and points the `libemgdPVR2D_DRIWSEGL.so`
+symlink at it (dropping any `…so.real` backup). The DDK WSEGL — not the earlier
+custom flip stub — is what creates the window render surface the emgd DRI2 path
+needs (ENGINEERING.md §4.3).
 
 Building the EXA X driver (`gma500blt_drv.so`) — a plain `make`, no autotools,
 built against the installed Xorg SDK (do this on the target or a matching i386
@@ -112,19 +139,21 @@ make                      # -> gma500blt_drv.so
 
 ```bash
 cd packaging
-ARTIFACTS=/path/to/artifacts ./build-debs.sh
+VERSION=1.0-rc1 ARCH=i386 ARTIFACTS=/path/to/artifacts ./build-debs.sh
 ```
 
 Produces in `packaging/out/`:
 
 ```
-poulsbo-sgx-modules_1.0.0_i386.deb
-poulsbo-sgx-userspace_1.0.0_i386.deb
-poulsbo-sgx_1.0.0_all.deb
+poulsbo-sgx-modules_1.0-rc1_i386.deb
+poulsbo-sgx-userspace_1.0-rc1_i386.deb
+poulsbo-sgx_1.0-rc1_all.deb
 ```
 
-Override `VERSION=`, `ARCH=`, `KERNEL=` as needed. The script stamps the version
-into each `control` file and records `Installed-Size`.
+`VERSION=` / `ARCH=` / `KERNEL=` override the defaults (the script's built-in
+default `VERSION` is still `1.0.0`, so pass `VERSION=1.0-rc1` for the release
+build). The script stamps the version into each `control` file — including the
+meta package's `(= $VERSION)` dependencies — and records `Installed-Size`.
 
 Inspect a result with `dpkg-deb --info` / `dpkg-deb --contents`.
 
@@ -136,6 +165,7 @@ Inspect a result with `dpkg-deb --info` / `dpkg-deb --contents`.
 
 ```
 /opt/poulsbo-sgx/{pvrsrvkm,gma500_gfx,gma500dc}.ko   the driver stack
+/opt/poulsbo-sgx/proc_dri_compat.ko                  /proc/dri/0/name shim (for GLX)
 /opt/poulsbo-sgx/load.sh                             insmods them in order
 /opt/poulsbo-sgx/srvinit, srvinit.sh                 SGX INIT_COMPLETE (for GL)
 /lib/systemd/system/poulsbo-sgx.service              loads the stack at sysinit
@@ -147,32 +177,70 @@ Inspect a result with `dpkg-deb --info` / `dpkg-deb --contents`.
 `postinst` runs `depmod`, `update-initramfs -u` (so the blacklist takes effect
 in early boot), and `systemctl enable` on both units. `load.sh` insmods
 `pvrsrvkm` → `gma500_gfx gma_no_sgx=1 …` → `gma500dc` by absolute path (a
-blacklist does not block an explicit `insmod`), passing the parameters from
+blacklist does not block an explicit `insmod`), then insmods
+`proc_dri_compat.ko` (proc-only, needed for GLX), passing the parameters from
 `/etc/default/poulsbo-sgx`. `srvinit` runs later so it can never wedge early
-boot; 2D X acceleration does not need it.
+boot; 2D X acceleration does not need it (but GLX does — it brings PVR services
+up).
 
 **`poulsbo-sgx-userspace`**
 
 ```
-/opt/emgd/lib/*                                      EMGD EGL/GLES2 + flip WSEGL
+/opt/emgd/lib/*                                      EMGD EGL/GLES2 + dri/emgd_dri.so + DDK WSEGL
 /etc/ld.so.conf.d/poulsbo-emgd.conf                  adds /opt/emgd/lib to ld path
-/usr/lib/xorg/modules/drivers/gma500blt_drv.so       the EXA 2D X driver
+/usr/lib/xorg/modules/drivers/gma500blt_drv.so       the EXA 2D + DRI2 X driver
 /usr/share/X11/xorg.conf.d/20-poulsbo-gma500.conf    selects gma500blt for the GPU
+/opt/poulsbo-sgx-glx/{glx-enable.sh,emgd_dri.so,xorg.conf.glx}   GLX payload
 ```
 
-`postinst` runs `ldconfig`. On the next X start the server loads `gma500blt`,
-initialises EXA, and 2D is accelerated; EGL/GLES2 apps get the SGX535 via the
-EMGD runtime.
+`postinst` runs `ldconfig`, forces the `libemgdPVR2D_DRIWSEGL.so` symlink to the
+DDK WSEGL, then runs **`/opt/poulsbo-sgx-glx/glx-enable.sh`** to finish GLX/DRI2
+enablement (the parts that live outside `/opt/emgd`, on the system Mesa paths).
+`glx-enable.sh` (idempotent, re-runnable):
+
+1. installs the glapi-patched `emgd_dri.so` to
+   `/usr/lib/i386-linux-gnu/dri/emgd_dri.so` (the Mesa DRI loader path);
+2. adds `MESA_LOADER_DRIVER_OVERRIDE=emgd` to `/etc/environment` (otherwise the
+   PCI-id→driver map picks the kernel `gma500` name and falls to llvmpipe);
+3. binary-patches `libGLX_mesa.so.0` to neutralise an unguarded
+   `DRI2_Config_Query` call that NULL-derefs with the emgd driver (keeps a
+   `.orig` backup; skipped if already patched);
+4. installs `xorg.conf.glx` (gma500blt + AIGLX + glx/dri2) to `/etc/X11/`, making
+   it the default `xorg.conf` if none exists.
+
+On the next X start the server loads `gma500blt`, initialises EXA + DRI2, 2D is
+accelerated, and desktop **OpenGL (GLX/DRI2) runs on the SGX535** — `glxinfo`
+shows direct rendering on *EMGD on PowerVR SGX535* (OpenGL 2.1). EGL/GLES2 apps
+get the SGX535 via the EMGD runtime as before.
+
+### Tunable kernel parameters
+
+Load-time module parameters are set in **`/etc/default/poulsbo-sgx`** (read by
+`load.sh`) — see README.md. The two GLX-speed `pvrsrvkm` knobs already default to
+their fast values and are additionally **runtime-tunable** via sysfs (`0644`), no
+reload needed:
+
+```bash
+cat  /sys/module/pvrsrvkm/parameters/event_timeout_ms     # default 2  (was hard 100 ms)
+cat  /sys/module/pvrsrvkm/parameters/sgx_apm_latency_ms    # default 500 (Poulsbo default was 1 ms)
+echo 500 | sudo tee /sys/module/pvrsrvkm/parameters/sgx_apm_latency_ms
+```
+
+See ENGINEERING.md §4.3 for what these fix (glxgears 5 → 105 FPS).
 
 ---
 
 ## Notes
 
-- Prebuilt binary artifacts (`.ko`, the EMGD `.so`s) are intentionally **not**
-  committed to git; the scripts stage them at build time. The C sources that
-  produce the `.ko` are under `features/`.
-- Kernel-version coupling lives only in `poulsbo-sgx-modules`
-  (`TARGET_KERNEL` in its `postinst`, and the compiled vermagic). The userspace
-  package is kernel-independent.
+- Prebuilt binary artifacts (`.ko`, the EMGD `.so`s including
+  `glx-extra/emgd_dri.so`) are intentionally **not** committed to git; the
+  scripts stage them at build time. The C sources that produce the `.ko` are
+  under `features/` (including `features/glx-dri2/proc_dri_compat.c` and the DDX
+  DRI2 `gma500blt_dri2.c`). The recovered DDK WSEGL under
+  `features/emgd-wsegl/orig-ddk/` is the one binary that *is* committed.
+- Kernel-version coupling lives in `poulsbo-sgx-modules`
+  (`TARGET_KERNEL` in its `postinst`, and the compiled vermagic) — the four
+  `.ko`s, `proc_dri_compat.ko` included. The userspace package (EMGD runtime,
+  DDX, GLX enablement) is kernel-independent.
 - For the internals — the interrupt forwarding, the flip chain, the SGX
   microkernel bring-up — see [ENGINEERING.md](ENGINEERING.md).
