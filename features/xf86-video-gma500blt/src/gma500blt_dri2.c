@@ -46,6 +46,38 @@ extern PVR2DERROR PVR2DMemAlloc(PVR2DCONTEXTHANDLE, unsigned long, unsigned long
 extern PVR2DERROR PVR2DMemFree(PVR2DCONTEXTHANDLE, PVR2DMEMINFO *);
 extern PVR2DERROR PVR2DMemExport(PVR2DCONTEXTHANDLE, unsigned long, PVR2DMEMINFO *, PVR2DHANDLE *);
 
+/* PVR2D 2D-blit (SGX 2D engine) — used to present without a slow uncached CPU
+ * copy of write-combine memory. Struct is the SGX DDK 1.x PVR2DBLTINFO. */
+#define PVR2D_ARGB8888   4
+#define PVR2DROPcopy     0xCC		/* ROP3 SRCCOPY */
+typedef struct {
+	unsigned long  CopyCode;
+	unsigned long  Colour;
+	unsigned long  ColourKey;
+	unsigned char  GlobalAlphaValue;
+	unsigned char  AlphaBlendingFunc;
+	unsigned long  BlitFlags;
+	PVR2DMEMINFO  *pDstMemInfo;
+	unsigned long  DstOffset;
+	long           DstStride;
+	unsigned long  DstFormat;
+	long           DstSurfWidth, DstSurfHeight;
+	long           DstX, DstY, DSizeX, DSizeY;
+	PVR2DMEMINFO  *pSrcMemInfo;
+	unsigned long  SrcOffset;
+	long           SrcStride;
+	unsigned long  SrcFormat;
+	long           SrcSurfWidth, SrcSurfHeight;
+	long           SrcX, SrcY, SizeX, SizeY;
+	PVR2DMEMINFO  *pMaskMemInfo;
+	unsigned long  MaskOffset;
+	long           MaskStride;
+	long           MaskSurfWidth, MaskSurfHeight;
+	long           MaskX, MaskY;
+} PVR2DBLTINFO;
+extern PVR2DERROR PVR2DBlt(PVR2DCONTEXTHANDLE, PVR2DBLTINFO *);
+extern PVR2DERROR PVR2DQueryBlitsComplete(PVR2DCONTEXTHANDLE, PVR2DMEMINFO *, unsigned int);
+
 /* Per-DRI2-buffer private: the backing PVR2D allocation + its export handle. */
 typedef struct {
 	PVR2DMEMINFO *mem;	/* PVR2D allocation (pBase = CPU VA)            */
@@ -205,8 +237,37 @@ gma_dri2_copy_region(DrawablePtr draw, RegionPtr region,
 		     DRI2BufferPtr dst, DRI2BufferPtr src)
 {
 	GmaDri2Buf *sd = src->driverPrivate, *dd = dst->driverPrivate;
+	PVR2DBLTINFO b;
+	int w = draw->width, h = draw->height;
 
-	if (sd && dd && sd->mem && dd->mem && sd->mem->pBase && dd->mem->pBase) {
+	if (!sd || !dd || !sd->mem || !dd->mem)
+		return;
+
+	/*
+	 * Present via the SGX 2D engine (PVR2DBlt) rather than a CPU memcpy: the
+	 * buffers are write-combine, so a CPU read of the source is uncached and
+	 * cripplingly slow (~5 FPS). The GPU blit reads/writes device-side.
+	 */
+	if (g_pvr2d) {
+		memset(&b, 0, sizeof b);
+		b.CopyCode     = PVR2DROPcopy;
+		b.pDstMemInfo  = dd->mem;
+		b.DstStride    = dst->pitch;
+		b.DstFormat    = PVR2D_ARGB8888;
+		b.DstSurfWidth = w; b.DstSurfHeight = h;
+		b.DstX = 0; b.DstY = 0; b.DSizeX = w; b.DSizeY = h;
+		b.pSrcMemInfo  = sd->mem;
+		b.SrcStride    = src->pitch;
+		b.SrcFormat    = PVR2D_ARGB8888;
+		b.SrcSurfWidth = w; b.SrcSurfHeight = h;
+		b.SrcX = 0; b.SrcY = 0; b.SizeX = w; b.SizeY = h;
+		if (PVR2DBlt(g_pvr2d, &b) == PVR2D_OK) {
+			PVR2DQueryBlitsComplete(g_pvr2d, dd->mem, 1);	/* wait for present */
+			return;
+		}
+		/* fall through to CPU copy if the blit was rejected */
+	}
+	if (sd->mem->pBase && dd->mem->pBase) {
 		unsigned int n = sd->size < dd->size ? sd->size : dd->size;
 		memcpy(dd->mem->pBase, sd->mem->pBase, n);
 	}
