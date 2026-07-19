@@ -96,7 +96,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define VM_DONTDUMP VM_RESERVED
 #endif
 
-#define EVENT_OBJECT_TIMEOUT_MS		(100)
+#include <linux/moduleparam.h>
+/*
+ * Event-object wait re-check interval (ms).  The closed EMGD GL client waits on
+ * the global event object for SGX render-complete, but a 3D render does NOT
+ * raise a host SW_EVENT (only SW_EVENTs schedule the MISR -> event signal), so
+ * the wait is never woken and blocks the FULL timeout every frame.  With the
+ * stock 100 ms that caps GL at ~5 FPS.  This is a re-check interval, not a hard
+ * deadline (the caller loops and re-tests the in-memory completion status), so
+ * a small value simply makes completion detection fine-grained -> much higher
+ * FPS at the cost of a few wakeups per frame while waiting.  Runtime-tunable via
+ * /sys/module/pvrsrvkm/parameters/event_timeout_ms.
+ */
+int event_timeout_ms = 2;
+module_param(event_timeout_ms, int, 0644);
+MODULE_PARM_DESC(event_timeout_ms,
+	"PVR event-object wait re-check interval in ms (default 2; lower=smoother GL, more CPU; 100=stock)");
+#define EVENT_OBJECT_TIMEOUT_MS		(event_timeout_ms > 0 ? event_timeout_ms : 1)
 
 #if defined(SUPPORT_CPU_CACHED_BUFFERS) || \
 	defined(SUPPORT_CACHEFLUSH_ON_ALLOC)

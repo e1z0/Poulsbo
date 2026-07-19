@@ -1045,6 +1045,7 @@ deps_/work/services4/srvkm/env/linux/osfunc.o := \
   arch/x86/include/asm/swiotlb.h \
   include/linux/swiotlb.h \
   include/linux/dma-contiguous.h \
+  include/linux/pm_runtime.h \
   /work/include4/img_types.h \
   /work/include4/img_defs.h \
   /work/include4/img_types.h \
@@ -1086,6 +1087,9 @@ deps_/work/services4/srvkm/env/linux/osfunc.o := \
   /work/services4/srvkm/env/linux/mutex.h \
   /work/services4/srvkm/env/linux/event.h \
   /work/services4/srvkm/env/linux/linkage.h \
+  include/linux/moduleparam.h \
+    $(wildcard include/config/alpha.h) \
+    $(wildcard include/config/ppc64.h) \
 
 /work/services4/srvkm/env/linux/osfunc.o: $(deps_/work/services4/srvkm/env/linux/osfunc.o)
 

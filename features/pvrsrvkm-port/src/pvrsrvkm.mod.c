@@ -29,9 +29,11 @@ __used __section(__versions) = {
 	{ 0xa0c1b9ea, "kmem_cache_destroy" },
 	{ 0xd9fe29ea, "kmalloc_caches" },
 	{ 0x2d6fcc06, "__kmalloc" },
+	{ 0x70538484, "__pm_runtime_idle" },
 	{ 0x29f3a126, "up_read" },
 	{ 0xf20d5589, "pci_release_region" },
 	{ 0x562cae, "single_open" },
+	{ 0x399d7dc2, "param_ops_int" },
 	{ 0xa17d9352, "seq_open" },
 	{ 0xad73041f, "autoremove_wake_function" },
 	{ 0x78e340f9, "__x86_indirect_thunk_ebx" },
@@ -44,7 +46,10 @@ __used __section(__versions) = {
 	{ 0x36e91934, "__register_chrdev" },
 	{ 0xc6f46339, "init_timer_key" },
 	{ 0x99b76c81, "mutex_unlock" },
+	{ 0x88ce1c15, "__pm_runtime_resume" },
 	{ 0x999e8297, "vfree" },
+	{ 0xe8cac288, "pm_runtime_allow" },
+	{ 0xe2724a34, "pm_runtime_forbid" },
 	{ 0x4629334c, "__preempt_count" },
 	{ 0x3c3ff9fd, "sprintf" },
 	{ 0x5dba6cb0, "seq_read" },
@@ -98,7 +103,6 @@ __used __section(__versions) = {
 	{ 0xe3460c96, "__x86_indirect_thunk_ecx" },
 	{ 0xbdfb6dbb, "__fentry__" },
 	{ 0xcbd4898c, "fortify_panic" },
-	{ 0x9dec7b90, "pci_unregister_driver" },
 	{ 0x97dee519, "__x86_indirect_thunk_edx" },
 	{ 0xf0df950a, "kmem_cache_alloc_trace" },
 	{ 0xdbf17652, "_raw_spin_lock" },
@@ -118,7 +122,6 @@ __used __section(__versions) = {
 	{ 0xb343581, "pci_disable_msi" },
 	{ 0xedc03953, "iounmap" },
 	{ 0x556422b3, "ioremap_cache" },
-	{ 0xae80a1b9, "__pci_register_driver" },
 	{ 0xd5ed41b1, "class_destroy" },
 	{ 0xe1ed698d, "_raw_write_lock_bh" },
 	{ 0xe7a87ea1, "pci_get_device" },
@@ -146,4 +149,4 @@ MODULE_INFO(depends, "");
 MODULE_ALIAS("pci:v00008086d00008108sv*sd*bc*sc*i*");
 MODULE_ALIAS("pci:v00008086d00004108sv*sd*bc*sc*i*");
 
-MODULE_INFO(srcversion, "8DE3B6C91D1495B0F3D1070");
+MODULE_INFO(srcversion, "7B4CF6E5580290634B47BC6");
