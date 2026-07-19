@@ -135,26 +135,9 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	 * makes it read type 0 / 0x3c==0 -> the graceful pre-surface path. (A proper
 	 * emgd descriptor may still be needed; this is the minimal correct baseline.)
 	 */
-	if (priv->mem->pBase) {
-		memset(priv->mem->pBase, 0, size);
-		/*
-		 * emgd_dri.so's geometry query (0x1c3b0) reads a descriptor from the
-		 * FRONT of the mapped buffer: dword0=type(1), dword1..3 = PVR2D buffer
-		 * HANDLES (it PVR2DMemMaps each into the drawable's buffer array in
-		 * 0x1c480), dword4 = buffer count. An all-zero descriptor => count 0 =>
-		 * the buffer array is never populated => KEGLGetDrawableParameters NULL-
-		 * derefs. Write a self-describing descriptor (this buffer's own export
-		 * handle, count 1) so emgd maps it and populates its array.
-		 */
-		{
-			uint32_t *d = priv->mem->pBase;
-			d[0] = 1;			/* descriptor type */
-			d[1] = (uint32_t)priv->name;	/* handle0 */
-			d[2] = (uint32_t)priv->name;	/* handle1 */
-			d[3] = (uint32_t)priv->name;	/* handle2 */
-			d[4] = 1;			/* buffer count */
-		}
-	}
+	if (priv->mem->pBase)
+		memset(priv->mem->pBase, 0, size);	/* PVR2DMemAlloc doesn't clear */
+
 	e = PVR2DMemExport(ctx, 0, priv->mem, &hexport);
 	if (e != PVR2D_OK) {
 		xf86DrvMsg(scrn->scrnIndex, X_ERROR, "DRI2: PVR2DMemExport=%ld\n", (long)e);
@@ -163,6 +146,25 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	priv->name   = (unsigned long) hexport;
 	priv->size   = size;
 	priv->refcnt = 1;
+
+	/*
+	 * emgd_dri.so's geometry query (0x1c3b0) reads a descriptor from the FRONT
+	 * of the mapped buffer: dword0=type(1), dword1..3 = PVR2D buffer HANDLES
+	 * (0x1c480 PVR2DMemMaps each into the drawable buffer array drawable+0x24[]
+	 * that KEGLGetDrawableParameters then needs), dword4 = buffer count. An
+	 * empty descriptor => count 0 => array never populated => NULL deref. Write
+	 * a self-describing descriptor with THIS buffer's export handle, count 1.
+	 * (Must run AFTER priv->name = hexport is assigned; otherwise the handles
+	 * are written as 0 and emgd's map loop skips them.)
+	 */
+	if (priv->mem->pBase) {
+		uint32_t *d = priv->mem->pBase;
+		d[0] = 1;			/* descriptor type */
+		d[1] = (uint32_t)priv->name;	/* handle0 */
+		d[2] = (uint32_t)priv->name;	/* handle1 */
+		d[3] = (uint32_t)priv->name;	/* handle2 */
+		d[4] = 1;			/* buffer count */
+	}
 
 	buf->attachment    = ret_attach;
 	/* For emgd's 0x90 metadata buffer only name&3 is read (drawable flags);
