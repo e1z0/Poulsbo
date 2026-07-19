@@ -1015,6 +1015,9 @@ deps_/work/services4/system/common/sysconfig.o := \
   /work/services4/srvkm/include/pdump_km.h \
   /work/services4/srvkm/include/pdump_osfunc.h \
   /work/services4/system/include/syslocal.h \
+  include/linux/moduleparam.h \
+    $(wildcard include/config/alpha.h) \
+    $(wildcard include/config/ppc64.h) \
 
 /work/services4/system/common/sysconfig.o: $(deps_/work/services4/system/common/sysconfig.o)
 

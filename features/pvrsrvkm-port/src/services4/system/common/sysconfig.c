@@ -69,6 +69,24 @@ extern IMG_BOOL g_bGmaPvrISRReady;
 /* --------------------------------------------------------------------------*/
 SYS_PLATFORM_INTERFACE *gpsSysPlatformInterface = (SYS_PLATFORM_INTERFACE*)IMG_NULL;
 
+#if defined(__linux__)
+#include <linux/moduleparam.h>
+/*
+ * SGX active-power-management idle latency (ms) before the ukernel powers the
+ * SGX down.  The Poulsbo platform default is 1 ms, so the SGX powers down
+ * between EVERY GL frame and pays a full power-up penalty on the next frame
+ * (~80 ms), dominating the frame time once the event-object timeout was fixed.
+ * Keep the SGX awake through active rendering (frames arrive every 16-100 ms)
+ * by defaulting the latency to 500 ms; it still powers down after a genuine
+ * idle period.  0 disables active PM entirely (SGX always on).  Runtime-tunable
+ * via /sys/module/pvrsrvkm/parameters/sgx_apm_latency_ms.
+ */
+int sgx_apm_latency_ms = 500;
+module_param(sgx_apm_latency_ms, int, 0644);
+MODULE_PARM_DESC(sgx_apm_latency_ms,
+	"SGX active-PM idle latency in ms before power-down (default 500; stock 1 stalls GL; 0=disable APM)");
+#endif
+
 
 /* --------------------------------------------------------------------------*/
 /**
@@ -685,11 +703,14 @@ PVRSRV_ERROR SysInitialise(IMG_VOID)
 	psTimingInfo->ui32CoreClockSpeed = SYS_SGX_CLOCK_SPEED;
 	psTimingInfo->ui32HWRecoveryFreq = SYS_SGX_HWRECOVERY_TIMEOUT_FREQ;
 #if defined(SUPPORT_ACTIVE_POWER_MANAGEMENT)
-	psTimingInfo->bEnableActivePM = IMG_TRUE;
+	/* sgx_apm_latency_ms == 0 disables active PM (SGX stays powered on). */
+	psTimingInfo->bEnableActivePM = (sgx_apm_latency_ms != 0) ? IMG_TRUE : IMG_FALSE;
 #else
 	psTimingInfo->bEnableActivePM = IMG_FALSE;
 #endif
-	psTimingInfo->ui32ActivePowManLatencyms = SYS_SGX_ACTIVE_POWER_LATENCY_MS;
+	psTimingInfo->ui32ActivePowManLatencyms =
+		(sgx_apm_latency_ms > 0) ? (IMG_UINT32)sgx_apm_latency_ms
+					 : SYS_SGX_ACTIVE_POWER_LATENCY_MS;
 	psTimingInfo->ui32uKernelFreq = SYS_SGX_PDS_TIMER_FREQ;
 
 #ifdef __linux__
