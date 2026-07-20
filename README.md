@@ -78,9 +78,9 @@ What the packages do on install:
   patch, and install the AIGLX/DRI2 `xorg.conf` (so X comes up with accelerated
   OpenGL);
 - bring the SGX up (`srvinit`) before the login screen so GL apps work;
-- install the auto-start desktop unit (`poulsbo-desktop.service` + a marco
-  session xinitrc, commit `d2dfbe64`) that starts the accelerated **marco**
-  desktop on boot — deliberately **without** compiz.
+- set up the auto-start desktop (getty autologin on tty1 → `startx` on vt7 via
+  root's `.bash_profile` + a marco session xinitrc) so the box boots straight to
+  the accelerated **marco** desktop — deliberately **without** compiz.
 
 The three packages:
 
@@ -120,8 +120,8 @@ glxgears        # renders AND displays, ~66 FPS (measured on HW)
 
 ## Running the accelerated desktop (MATE + marco)
 
-After install + reboot the desktop comes up automatically via
-`poulsbo-desktop.service` (marco window manager, HW 2D for offscreen pixmaps via
+After install + reboot the box boots straight to the desktop (getty autologin on
+tty1 → `startx`; marco window manager, HW 2D for offscreen pixmaps via
 `PVR2DBlt`, HW OpenGL). To start it by hand from a bare session, make sure the
 Mesa override is in the environment (the package sets it in `/etc/environment`, so
 a fresh login already has it):

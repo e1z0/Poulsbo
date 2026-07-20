@@ -456,9 +456,9 @@ steps (reboot-verified): `poulsbo-sgx.service` → `load.sh` loads the modules
 including `proc_dri_compat`; `poulsbo-sgx-srvinit.service` brings PVR services up;
 `/etc/environment` sets `MESA_LOADER_DRIVER_OVERRIDE=emgd`; `xorg.conf.glx`
 (gma500blt + AIGLX + glx/dri2) is the default X config; and
-`poulsbo-desktop.service` (+ a marco session xinitrc, `packaging/desktop/`, commit
-`d2dfbe64`) starts the accelerated **marco** desktop on boot — deliberately
-without compiz. After reboot the marco + HW-2D-pixmap + HW-GL desktop comes up and
+the getty autologin on tty1 (→ root's `.bash_profile` → `startx` on vt7 → a marco
+session xinitrc, `packaging/desktop/`) starts the accelerated **marco** desktop
+on boot — deliberately without compiz. After reboot the marco + HW-2D-pixmap + HW-GL desktop comes up and
 `glxinfo` shows direct rendering on the SGX535.
 
 New sources: `features/xf86-video-gma500blt/src/gma500blt_dri2.c` (DDX DRI2 +

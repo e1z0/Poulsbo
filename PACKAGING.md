@@ -19,7 +19,7 @@ packaging/
   userspace/         # dpkg tree for poulsbo-sgx-userspace (ld/xorg config)
   meta/              # dpkg tree for the poulsbo-sgx metapackage
   glx-extra/         # GLX/DRI2 enablement: glx-enable.sh, xorg.conf.glx, emgd_dri.so
-  desktop/           # poulsbo-desktop.service + marco session xinitrc (auto-start, no compiz)
+  desktop/           # getty-autologin.conf + bash_profile + marco xinitrc (auto-start, no compiz)
   out/               # built .deb files land here
 ```
 
@@ -175,13 +175,15 @@ Inspect a result with `dpkg-deb --info` / `dpkg-deb --contents`.
 /opt/poulsbo-sgx/srvinit, srvinit.sh                 SGX INIT_COMPLETE (for GL)
 /lib/systemd/system/poulsbo-sgx.service              loads the stack at sysinit
 /lib/systemd/system/poulsbo-sgx-srvinit.service      runs srvinit before login
-/lib/systemd/system/poulsbo-desktop.service          starts the marco desktop (commit d2dfbe64)
+/etc/systemd/system/getty@tty1.service.d/autologin.conf  autologin root on tty1
+/root/.bash_profile, /root/.xinitrc                  login -> startx marco desktop on vt7 (no compiz)
 /etc/modprobe.d/poulsbo-sgx.conf                     blacklists stock gma500_gfx
 /etc/default/poulsbo-sgx                             module-parameter tunables
 ```
 
-The `poulsbo-desktop.service` unit (with a marco session xinitrc, sources under
-`packaging/desktop/`) brings up the accelerated desktop on boot using **marco**,
+The auto-start (getty autologin on tty1 → root's `.bash_profile` runs `startx`
+on vt7 → the marco session xinitrc; sources under `packaging/desktop/`) brings up
+the accelerated desktop on boot using **marco**,
 the non-compositing window manager — deliberately **without compiz**, which does
 not work and can hard-hang the box (README.md *What does not work*; ENGINEERING.md
 §9).
