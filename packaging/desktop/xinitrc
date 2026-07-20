@@ -3,6 +3,11 @@
 # marco (non-compositing) + hardware 2D (PVR2DBlt) + hardware OpenGL (emgd).
 # NOTE: do NOT enable compiz here -- GL compositing hard-hangs this box.
 export MESA_LOADER_DRIVER_OVERRIDE=emgd
+# X runs on vt7 (vt1 is owned by the autologin getty), but startx does not
+# switch the physical console to vt7 in that case -- so bring the display to
+# X's VT ourselves, with a retry once X has fully grabbed it.  Without this the
+# desktop runs but the panel shows the console instead.
+(chvt 7 2>/dev/null; sleep 2; chvt 7 2>/dev/null) &
 # Force marco as the window manager and keep the software compositor off
 # (a leftover dconf setting could otherwise launch the unstable compiz).
 gsettings set org.mate.session.required-components windowmanager marco 2>/dev/null || true

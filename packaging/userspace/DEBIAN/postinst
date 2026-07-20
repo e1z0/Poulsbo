@@ -21,11 +21,11 @@ case "$1" in
             /opt/poulsbo-sgx-glx/glx-enable.sh || true
         fi
 
-        # Enable the accelerated desktop auto-start (Xorg + marco on vt7).
-        if [ -e /lib/systemd/system/poulsbo-desktop.service ]; then
-            systemctl daemon-reload 2>/dev/null || true
-            systemctl enable poulsbo-desktop.service 2>/dev/null || true
-        fi
+        # Accelerated desktop auto-start = getty autologin on tty1 -> startx.
+        # Pick up the getty drop-in; retire any earlier (non-working) startx svc.
+        systemctl disable poulsbo-desktop.service 2>/dev/null || true
+        rm -f /lib/systemd/system/poulsbo-desktop.service 2>/dev/null || true
+        systemctl daemon-reload 2>/dev/null || true
 
         echo "poulsbo-sgx-userspace: installed EMGD GL runtime + gma500blt DDX (PVR2D 2D) + GLX."
         echo "  Reboot to bring up the accelerated marco desktop (HW 2D + HW OpenGL)."

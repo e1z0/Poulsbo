@@ -1,0 +1,8 @@
+# Poulsbo: on the tty1 autologin, start the accelerated MATE desktop.
+# startx runs X on vt7 (a free VT -- vt1 is the getty); the session xinitrc
+# switches the display to vt7.  This path (login shell -> startx) gives X the
+# logind session it needs to actually drive the panel.
+[ -f ~/.profile ] && . ~/.profile 2>/dev/null
+if [ "$(tty)" = "/dev/tty1" ] && [ -z "$DISPLAY" ] && [ "$XDG_VTNR" = "1" ]; then
+    exec startx -- :0 vt7 -nolisten tcp
+fi

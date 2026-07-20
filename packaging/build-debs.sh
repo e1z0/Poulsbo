@@ -76,13 +76,17 @@ install -D -m 0644 "$HERE/glx-extra/emgd_dri.so" \
         "$U/opt/poulsbo-sgx-glx/emgd_dri.so"
 install -D -m 0644 "$HERE/glx-extra/xorg.conf.glx" \
         "$U/opt/poulsbo-sgx-glx/xorg.conf.glx"
-# Desktop auto-start: a systemd service runs startx on vt7 (after the SGX
-# modules + srvinit) into the marco session xinitrc -- marco (non-compositing)
-# + HW 2D (PVR2DBlt) + HW OpenGL.  Deliberately NO compiz: GL compositing on
-# this stack renders black and has hard-hung the box.
-install -D -m 0644 "$HERE/desktop/poulsbo-desktop.service" \
-        "$U/lib/systemd/system/poulsbo-desktop.service"
-install -D -m 0755 "$HERE/desktop/xinitrc" "$U/root/.xinitrc"
+# Desktop auto-start: getty autologin on tty1 -> root's .bash_profile runs
+# startx (X on vt7; the xinitrc switches the display to vt7).  marco (non-
+# compositing) + HW 2D (PVR2DBlt) + HW OpenGL; deliberately NO compiz (GL
+# compositing renders black and hard-hangs this box).  The login-shell path is
+# used because it gives X the logind session it needs to actually drive the
+# panel -- a bare systemd `startx` service does not (no session -> black, or no
+# DRM on a non-active VT -> "no screens found").
+install -D -m 0644 "$HERE/desktop/getty-autologin.conf" \
+        "$U/etc/systemd/system/getty@tty1.service.d/autologin.conf"
+install -D -m 0644 "$HERE/desktop/bash_profile" "$U/root/.bash_profile"
+install -D -m 0755 "$HERE/desktop/xinitrc"      "$U/root/.xinitrc"
 chmod 0755 "$U/DEBIAN/postinst" "$U/DEBIAN/postrm"
 
 # --- stamp versions/arch into every control file -----------------------------
