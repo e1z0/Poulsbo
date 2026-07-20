@@ -3,8 +3,9 @@ Version: 1.0.0
 Section: x11
 Priority: optional
 Architecture: i386
-Depends: libc6, libx11-6
-Recommends: poulsbo-sgx-modules, xserver-xorg-core-hwe-18.04
+Depends: libc6, libx11-6, xinit, dbus-x11
+Recommends: poulsbo-sgx-modules, xserver-xorg-core-hwe-18.04,
+ marco, mate-session-manager, mate-panel, caja
 Maintainer: Poulsbo project <marcinkeviciusjustinas@gmail.com>
 Description: Poulsbo SGX535 userspace: EGL/GLES2 runtime, WSEGL, EXA DDX
  The userspace half of the Poulsbo SGX535 graphics stack:
