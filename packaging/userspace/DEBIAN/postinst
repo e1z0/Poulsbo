@@ -21,8 +21,15 @@ case "$1" in
             /opt/poulsbo-sgx-glx/glx-enable.sh || true
         fi
 
-        echo "poulsbo-sgx-userspace: installed EMGD GL runtime + gma500blt DDX + GLX."
-        echo "  Restart X (or reboot) to use the accelerated X driver."
+        # Enable the accelerated desktop auto-start (Xorg + marco on vt7).
+        if [ -e /lib/systemd/system/poulsbo-desktop.service ]; then
+            systemctl daemon-reload 2>/dev/null || true
+            systemctl enable poulsbo-desktop.service 2>/dev/null || true
+        fi
+
+        echo "poulsbo-sgx-userspace: installed EMGD GL runtime + gma500blt DDX (PVR2D 2D) + GLX."
+        echo "  Reboot to bring up the accelerated marco desktop (HW 2D + HW OpenGL)."
+        echo "  NOTE: do not enable compiz/GL compositing -- it hard-hangs this hardware."
         ;;
     abort-upgrade|abort-remove|abort-deconfigure)
         ;;

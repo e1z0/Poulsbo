@@ -76,6 +76,13 @@ install -D -m 0644 "$HERE/glx-extra/emgd_dri.so" \
         "$U/opt/poulsbo-sgx-glx/emgd_dri.so"
 install -D -m 0644 "$HERE/glx-extra/xorg.conf.glx" \
         "$U/opt/poulsbo-sgx-glx/xorg.conf.glx"
+# Desktop auto-start: a systemd service runs startx on vt7 (after the SGX
+# modules + srvinit) into the marco session xinitrc -- marco (non-compositing)
+# + HW 2D (PVR2DBlt) + HW OpenGL.  Deliberately NO compiz: GL compositing on
+# this stack renders black and has hard-hung the box.
+install -D -m 0644 "$HERE/desktop/poulsbo-desktop.service" \
+        "$U/lib/systemd/system/poulsbo-desktop.service"
+install -D -m 0755 "$HERE/desktop/xinitrc" "$U/root/.xinitrc"
 chmod 0755 "$U/DEBIAN/postinst" "$U/DEBIAN/postrm"
 
 # --- stamp versions/arch into every control file -----------------------------
