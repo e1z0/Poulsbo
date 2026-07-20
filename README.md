@@ -9,11 +9,11 @@ verified 2026-07-20 — blitter hangs 0, SGX faults 0):
   **OpenGL 2.1** on the SGX535 for ordinary X apps. `glxinfo` reports
   *direct rendering: Yes* and *renderer: EMGD on PowerVR SGX535*; `glxgears`
   renders **and displays** in a window at **~66 FPS** (measured on hardware).
-- **Hardware 2D for offscreen X pixmaps** — the EXA driver
-  (`xf86-video-gma500blt`) allocates offscreen pixmaps with `PVR2DMemAlloc` and
-  fills/copies them with **`PVR2DBlt`** — the SGX microkernel's *own* 2D path,
-  which coexists with OpenGL by design. See the important caveat below: **on-screen
-  (scanout) 2D is still CPU**, so window dragging is not smooth.
+- **Hardware 2D acceleration** — the EXA driver (`xf86-video-gma500blt`) fills
+  and copies via **`PVR2DBlt`** — the SGX microkernel's *own* 2D path, which
+  coexists with OpenGL by design. Both **offscreen pixmaps** (`PVR2DMemAlloc`)
+  and the **on-screen scanout** (`PVR2DMemWrap` of the KMS front buffer) are
+  hardware-accelerated, so window drawing and dragging are hardware blits.
 - **A stable MATE desktop** using **marco** (the non-compositing window manager).
   **Compiz / GL compositing does NOT work on this stack and must not be run** — it
   renders black and has hard-hung the machine (see *What does not work*).
@@ -138,11 +138,6 @@ GL apps (e.g. `glxgears`) render and display accelerated on this desktop.
 
 ## What does not work / known limitations
 
-- **On-screen (scanout) 2D is CPU, not accelerated.** The KMS front buffer is not
-  SGX-mapped, so `PVR2DBlt` cannot target it; screen-to-screen copies (e.g.
-  dragging a window) fall back to the CPU on uncached memory. Result: **dragging
-  tears / is not smooth.** Offscreen pixmap 2D is HW-accelerated; on-screen is not
-  (yet).
 - **Compiz / GL compositing does NOT work and is unsafe.** It bypasses the DDX
   hooks (going through the closed emgd GLX), renders a **black screen**, and has
   **hard-hung the machine** (full network death, requiring a physical power

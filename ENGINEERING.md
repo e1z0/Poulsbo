@@ -73,8 +73,9 @@ desktop, precisely because the direct 2D engine wedged the moment SGX inited.
 `PVR2DMemAlloc` (SGX-mapped) and fills/copies them with **`PVR2DBlt`** — the SGX
 microkernel's *own* 2D path, which coexists with GL by design. Verified on
 hardware: X up, **blitter hangs 0, SGX faults 0**, GL works, marco desktop
-displays. The remaining rough edge (on-screen scanout 2D still CPU) and the
-compiz danger are in [§9](#9-honest-limitations-and-future-work).
+displays. On-screen 2D is accelerated too (the scanout is `PVR2DMemWrap`ped so
+`PVR2DBlt` draws to the screen — window dragging is a HW blit). The compiz
+danger is in [§9](#9-honest-limitations-and-future-work).
 
 ---
 
@@ -86,7 +87,7 @@ mainline `gma500_gfx` DRM driver:
 | Layer | What | Mechanism | Status |
 |---|---|---|---|
 | **A** | 2D acceleration on the fbcon | `GMA_BLT_SUBMIT` DRM ioctl → dedicated SGX 2D BLIT core (slave port `SGX+0x4000`) | **12/12 HW tests — but only with SGX uninitialised.** Real GPU pixels, verified via aperture + `/dev/fb0` readback. **Wedges once SGX/GL is up (see [§0](#0-the-core-finding-the-2d-blt--sgx-bif-conflict)); not usable alongside OpenGL.** |
-| **B** | Open X11 2D EXA DDX | `xf86-video-gma500blt`: KMS modeset (LVDS-1 @ 1600x768) + EXA Solid/Copy | **Working + stable X (Path B).** HW 2D for **offscreen pixmaps via `PVR2DBlt`** (coexists with GL); **on-screen/scanout 2D falls back to CPU** (§9). Xorg 1.20 (HWE ABI 24.1). |
+| **B** | Open X11 2D EXA DDX | `xf86-video-gma500blt`: KMS modeset (LVDS-1 @ 1600x768) + EXA Solid/Copy | **Working + stable X (Path B).** HW 2D via `PVR2DBlt` for **offscreen pixmaps** (`PVR2DMemAlloc`) **and the on-screen scanout** (`PVR2DMemWrap`) — coexists with GL. Xorg 1.20 (HWE ABI 24.1). |
 | **C** | 3D (GLES2 / EGL) | Closed EMGD/Imagination userspace (DDK 1.5.15.3226) on ported `pvrsrvkm`, coexisting with `gma500` via an open PVR-over-DRM bridge | **Working: SGX535 renders programmable-shader GLES2,** interrupt-driven page-flip present. (The high offscreen-bench FPS figures below are register/API-verified, not on-panel measurements.) |
 | **C2** | Desktop OpenGL (GLX / DRI2) on X | Closed EMGD `emgd_dri.so` DRI2 driver bridged into Mesa-20's GLX, on the open `gma500blt` DDX (which is itself a PVR2D client providing the DRI2 buffers) | **Working and displaying: `glxinfo` = direct rendering Yes / EMGD on PowerVR SGX535 / OpenGL 2.1; `glxgears` renders and displays at ~66 FPS (measured). Reboot-persistent, on a marco (non-compositing) desktop. Compiz does NOT work (§9).** See [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-performance). |
 
@@ -767,12 +768,15 @@ State these plainly; do not overclaim.
   KMS scanout region (not zero-copy); and the whole GLX enablement leans on a
   binary `libGLX_mesa` patch + a patchelf + a `/proc/dri` compat shim to reconcile
   the 2010-era emgd DRI2 driver with the Mesa-20 loader.
-- **On-screen (scanout) 2D is still CPU.** The KMS front buffer is not SGX-mapped,
-  so `PVR2DBlt` cannot target it; screen-to-screen copies (window dragging) fall
-  back to the CPU on uncached memory, so **dragging tears / is not smooth**.
-  Offscreen pixmap 2D is HW-accelerated (Path B, §3.5); on-screen is not yet. A
-  fix needs the scanout usable as a `PVR2DBlt` target (kernel PRIME/dma-buf, or
-  wrapping its pages).
+- **On-screen (scanout) 2D is now hardware-accelerated** (was CPU): the KMS front
+  buffer is `PVR2DMemWrap`ped (NONCONTIGUOUS — the services layer
+  `get_user_pages` the GTT-scattered CPU mapping) and hung on the root pixmap's
+  EXA private, so `PVR2DBlt` targets the screen and window dragging is a HW blit.
+  Verified (renders correctly, dragging smoother, 0 faults). Possible edge:
+  overlapping root→root drags (PVR2DBlt overlap semantics) — not seen as
+  corruption; guard `src==dst` overlap → CPU if trails appear. (This superseded
+  the earlier plan that on-screen accel would need kernel PRIME/dma-buf —
+  `PVR2DMemWrap` of the scanout's CPU mapping was enough.)
 - **Compiz / GL compositing does NOT work and is unsafe.** It bypasses the DDX
   DRI2 hooks (goes through the closed emgd GLX), renders a **black screen**, and
   has **hard-hung the box** (full network death, physical power cycle). The
