@@ -130,8 +130,9 @@ static void gma_dri2_cache_put(GmaDri2Buf *p)
 	free(p);
 }
 
-/* Lazily create the DDX's PVR2D context (PVR services must be up by now). */
-static PVR2DCONTEXTHANDLE gma_dri2_pvr2d(ScrnInfoPtr scrn)
+/* Lazily create the DDX's PVR2D context (PVR services must be up by now).
+ * Non-static: the pixmap allocator and EXA Solid/Copy share this context. */
+PVR2DCONTEXTHANDLE gma500blt_pvr2d_ctx(ScrnInfoPtr scrn)
 {
 	PVR2DDEVICEINFO *arr; int n; PVR2DERROR e;
 
@@ -163,7 +164,7 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	ScrnInfoPtr scrn = xf86ScreenToScrn(draw->pScreen);
 	DRI2Buffer2Ptr buf;
 	GmaDri2Buf *priv;
-	PVR2DCONTEXTHANDLE ctx = gma_dri2_pvr2d(scrn);
+	PVR2DCONTEXTHANDLE ctx = gma500blt_pvr2d_ctx(scrn);
 	PVR2DHANDLE hexport = NULL;
 	PVR2DERROR e;
 	int cpp = (format ? format : draw->bitsPerPixel) / 8;

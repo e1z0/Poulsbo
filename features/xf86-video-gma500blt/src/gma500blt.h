@@ -39,13 +39,21 @@ struct gma_accel_state {
 
 /* Per-pixmap driver private: the GEM dumb-buffer backing an EXA pixmap. */
 typedef struct {
-	uint32_t handle;	/* GEM handle */
+	uint32_t handle;	/* GEM handle (dumb-bo pixmaps + the root) */
 	uint32_t pitch;		/* bytes */
 	uint32_t size;
 	void    *cpu_ptr;	/* mmap for PrepareAccess/software fallback */
 	int      bo_mapped;
 	int      is_front;	/* root pixmap bound to the scanout bo: do not
 				   DESTROY_DUMB/munmap it (drmmode owns it) */
+	/*
+	 * PVR2D-backed offscreen pixmap (Path B): SGX-mapped memory the SGX 2D
+	 * (PVR2DBlt) can read/write, which coexists with GL (unlike the direct
+	 * 2D-BLT engine).  Opaque here (real type PVR2DMEMINFO* in pvr2d.h) to
+	 * keep this header free of the PVR2D ABI, which dri2.c declares locally.
+	 * When set, cpu_ptr aliases its ->pBase and `handle` is unused.
+	 */
+	void    *pvr2d_mem;
 } GMA500BLTPixmapPriv;
 
 /* Per-screen driver private. */

@@ -36,6 +36,7 @@
 
 #include "gma500blt.h"
 #include "gma500blt_drmmode.h"
+#include "pvr2d.h"
 
 #define GMA_DRM_NAME		"gma500"	/* in-kernel KMS driver name */
 #define GMA_VERSION		1000
@@ -64,9 +65,11 @@ static ModeStatus gma_valid_mode(ScrnInfoPtr pScrn, DisplayModePtr mode,
 static void *gma_create_pixmap(ScreenPtr pScreen, int w, int h, int depth,
 			       int usage, int bpp, int *new_pitch)
 {
-	GMA500BLTPtr b = GMA500BLT_PRIV(xf86ScreenToScrn(pScreen));
+	ScrnInfoPtr scrn = xf86ScreenToScrn(pScreen);
+	GMA500BLTPtr b = GMA500BLT_PRIV(scrn);
 	GMA500BLTPixmapPriv *priv = calloc(1, sizeof(*priv));
 	struct drm_mode_create_dumb c;
+	PVR2DCONTEXTHANDLE ctx;
 
 	(void)depth;
 	(void)usage;
@@ -74,6 +77,30 @@ static void *gma_create_pixmap(ScreenPtr pScreen, int w, int h, int depth,
 		return NULL;
 	if (w == 0 || h == 0)			/* scratch/empty pixmap */
 		return priv;
+
+	/*
+	 * Path B: back offscreen pixmaps with PVR2D (SGX-mapped) memory so the
+	 * SGX 2D (PVR2DBlt) can accelerate Solid/Copy on them and coexist with
+	 * GL.  PVR2DMemAlloc returns memory that is both CPU-mapped (pBase) and
+	 * SGX-mapped (ui32DevAddr).  Falls back to a GEM dumb bo (software 2D)
+	 * if PVR services are not up yet.
+	 */
+	ctx = gma500blt_pvr2d_ctx(scrn);
+	if (ctx) {
+		unsigned int pitch = (w * (bpp >> 3) + 63) & ~63u;
+		PVR2DMEMINFO *mem = NULL;
+		if (PVR2DMemAlloc(ctx, (unsigned long)pitch * h, 0,
+				  PVR2D_MEM_WRITECOMBINE, &mem) == PVR2D_OK &&
+		    mem && mem->pBase) {
+			priv->pvr2d_mem = mem;
+			priv->cpu_ptr   = mem->pBase;
+			priv->pitch     = pitch;
+			priv->size      = pitch * h;
+			if (new_pitch)
+				*new_pitch = pitch;
+			return priv;
+		}
+	}
 
 	memset(&c, 0, sizeof(c));
 	c.width = w;
@@ -99,6 +126,14 @@ static void gma_destroy_pixmap(ScreenPtr pScreen, void *driverPriv)
 	if (!priv)
 		return;
 	if (priv->is_front) {		/* root: drmmode owns this bo/mapping */
+		free(priv);
+		return;
+	}
+	if (priv->pvr2d_mem) {		/* PVR2D-backed pixmap (Path B) */
+		PVR2DCONTEXTHANDLE ctx =
+			gma500blt_pvr2d_ctx(xf86ScreenToScrn(pScreen));
+		if (ctx)
+			PVR2DMemFree(ctx, priv->pvr2d_mem);
 		free(priv);
 		return;
 	}
@@ -137,7 +172,7 @@ static Bool gma_pixmap_is_offscreen(PixmapPtr pPix)
 	 * 2D-BLT engine hangs the core while SGX is up -- see gma500blt_exa.c
 	 * and the 2d-sgx-bif-conflict notes.
 	 */
-	if (priv && priv->handle)
+	if (priv && (priv->handle || priv->pvr2d_mem))
 		return TRUE;
 	return FALSE;
 }
@@ -152,6 +187,17 @@ Bool gma_prepare_access(PixmapPtr pPix, int index)
 	struct drm_mode_map_dumb m;
 
 	(void)index;
+
+	/* PVR2D-backed pixmap: memory is already CPU-mapped at ->pBase.  Finish
+	 * any in-flight SGX blits to it first so the CPU sees completed data. */
+	if (priv && priv->pvr2d_mem && priv->cpu_ptr) {
+		PVR2DCONTEXTHANDLE ctx =
+			gma500blt_pvr2d_ctx(xf86ScreenToScrn(pScreen));
+		if (ctx)
+			PVR2DQueryBlitsComplete(ctx, priv->pvr2d_mem, 1);
+		pPix->devPrivate.ptr = priv->cpu_ptr;
+		return TRUE;
+	}
 
 	/* Root/screen pixmap: backed by the persistent scanout mmap. */
 	if ((!priv || !priv->handle)) {

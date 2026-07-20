@@ -16,6 +16,14 @@
 #include "exa.h"
 #include "gma500blt.h"		/* GMA500BLTPtr, pixmap->handle helpers */
 #include "gma_blt_drm.h"	/* DRM_IOCTL_PSB_BLT_SUBMIT, reloc, stream limits */
+#include "pvr2d.h"		/* PVR2DBlt: SGX 2D that coexists with GL */
+
+/* PVR2D allocation backing an offscreen pixmap, or NULL (root/dumb-bo). */
+static PVR2DMEMINFO *gma_pvr2d_mem(PixmapPtr pPix)
+{
+	GMA500BLTPixmapPriv *p = exaGetPixmapDriverPrivate(pPix);
+	return p ? (PVR2DMEMINFO *)p->pvr2d_mem : NULL;
+}
 
 /* SGX 2D-core command-stream opcodes (psb_reg.h / the proven blt-ioctl). */
 #define P2D_FENCE_BH	0x70000000u
@@ -133,12 +141,30 @@ static void gma_Solid(PixmapPtr pDst, int x1, int y1, int x2, int y2)
 	struct drm_psb_blt_reloc r;
 
 	/*
-	 * Software-2D mode: the 2D-BLT engine hangs the graphics core while the
-	 * SGX microkernel is up (the GL/DRI2 path initialises it), so never
-	 * issue a blit -- do every fill on the CPU.  Revert to the sub-8px
-	 * guard once 2D/SGX coexistence lands (see 2d-sgx-bif-conflict).
+	 * Path B: accelerate the fill through the SGX 2D (PVR2DBlt) when the
+	 * destination is PVR2D-backed -- this coexists with GL, unlike the
+	 * direct 2D-BLT engine (which the shared BIF wedges while SGX is up).
+	 * The root/scanout and any dumb-bo pixmap fall back to a CPU fill.
 	 */
-	if (1) {
+	{
+		PVR2DMEMINFO *dm = gma_pvr2d_mem(pDst);
+		PVR2DCONTEXTHANDLE ctx = dm ?
+			gma500blt_pvr2d_ctx(xf86ScreenToScrn(pDst->drawable.pScreen)) : NULL;
+		if (dm && ctx) {
+			PVR2DBLTINFO bl;
+			memset(&bl, 0, sizeof bl);
+			bl.CopyCode      = PVR2DPATROPcopy;	/* solid pattern fill */
+			bl.Colour        = st->fill_colour;
+			bl.pDstMemInfo   = dm;
+			bl.DstStride     = gma_pixmap_stride(pDst);
+			bl.DstFormat     = PVR2D_ARGB8888;
+			bl.DstSurfWidth  = pDst->drawable.width;
+			bl.DstSurfHeight = pDst->drawable.height;
+			bl.DstX = x1; bl.DstY = y1;
+			bl.DSizeX = x2 - x1; bl.DSizeY = y2 - y1;
+			if (PVR2DBlt(ctx, &bl) == PVR2D_OK)
+				return;
+		}
 		gma_solid_sw(pDst, x1, y1, x2, y2, st->fill_colour);
 		return;
 	}
@@ -232,9 +258,33 @@ static void gma_Copy(PixmapPtr pDst, int srcX, int srcY, int dstX, int dstY,
 	uint32_t cs[10];
 	struct drm_psb_blt_reloc r[2];
 
-	/* Software-2D mode (see gma_Solid): never touch the 2D-BLT engine while
-	 * SGX is up -- copy on the CPU. */
-	if (1) {
+	/* Path B: accelerate through the SGX 2D (PVR2DBlt) when BOTH surfaces
+	 * are PVR2D-backed; otherwise (root/scanout or dumb-bo involved) copy
+	 * on the CPU.  See gma_Solid. */
+	{
+		PVR2DMEMINFO *dm = gma_pvr2d_mem(pDst);
+		PVR2DMEMINFO *sm = gma_pvr2d_mem(st->copy_src);
+		PVR2DCONTEXTHANDLE ctx = (dm && sm) ?
+			gma500blt_pvr2d_ctx(xf86ScreenToScrn(pDst->drawable.pScreen)) : NULL;
+		if (dm && sm && ctx) {
+			PVR2DBLTINFO bl;
+			memset(&bl, 0, sizeof bl);
+			bl.CopyCode      = PVR2DROPcopy;
+			bl.pDstMemInfo   = dm;
+			bl.DstStride     = gma_pixmap_stride(pDst);
+			bl.DstFormat     = PVR2D_ARGB8888;
+			bl.DstSurfWidth  = pDst->drawable.width;
+			bl.DstSurfHeight = pDst->drawable.height;
+			bl.DstX = dstX; bl.DstY = dstY; bl.DSizeX = w; bl.DSizeY = h;
+			bl.pSrcMemInfo   = sm;
+			bl.SrcStride     = gma_pixmap_stride(st->copy_src);
+			bl.SrcFormat     = PVR2D_ARGB8888;
+			bl.SrcSurfWidth  = st->copy_src->drawable.width;
+			bl.SrcSurfHeight = st->copy_src->drawable.height;
+			bl.SrcX = srcX; bl.SrcY = srcY; bl.SizeX = w; bl.SizeY = h;
+			if (PVR2DBlt(ctx, &bl) == PVR2D_OK)
+				return;
+		}
 		gma_copy_sw(pDst, st->copy_src, srcX, srcY, dstX, dstY, w, h,
 			    st->ydir);
 		return;
