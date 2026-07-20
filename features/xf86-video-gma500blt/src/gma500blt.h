@@ -54,6 +54,9 @@ typedef struct {
 	 * When set, cpu_ptr aliases its ->pBase and `handle` is unused.
 	 */
 	void    *pvr2d_mem;
+	/* Cached PVR2D export handle of pvr2d_mem, for DRI2/texture_from_pixmap
+	 * (compiz binds this pixmap's SGX memory as a GL texture).  0 = none. */
+	unsigned long pvr2d_export;
 } GMA500BLTPixmapPriv;
 
 /* Per-screen driver private. */

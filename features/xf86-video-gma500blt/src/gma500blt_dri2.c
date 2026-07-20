@@ -229,13 +229,40 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	 * while processing it, wiping the descriptor, so it MUST be rewritten on
 	 * every CreateBuffer -- including cache reuses -- not just fresh allocation.
 	 */
-	if (priv->mem->pBase) {
-		uint32_t *d = priv->mem->pBase;
-		d[0] = 1;
-		d[1] = (uint32_t)priv->name;
-		d[2] = (uint32_t)priv->name;
-		d[3] = (uint32_t)priv->name;
-		d[4] = 1;
+	/*
+	 * texture_from_pixmap: if this drawable is backed by a PVR2D pixmap (a
+	 * redirected compiz window / a pixmap), point emgd's descriptor at the
+	 * PIXMAP's own SGX memory so the bound texture samples the real window
+	 * content, not this fresh (empty) render buffer.  Normal GL windows are
+	 * backed by the (non-PVR2D) screen pixmap, so they keep the render path.
+	 * The export handle is cached on the pixmap to avoid a per-frame leak.
+	 */
+	{
+		uint32_t tex = (uint32_t)priv->name;	/* default: this buffer */
+		PixmapPtr pp = (draw->type == DRAWABLE_WINDOW)
+			? draw->pScreen->GetWindowPixmap((WindowPtr)draw)
+			: (draw->type == DRAWABLE_PIXMAP ? (PixmapPtr)draw : NULL);
+		GMA500BLTPixmapPriv *pxp = pp ? exaGetPixmapDriverPrivate(pp) : NULL;
+
+		if (pxp && pxp->pvr2d_mem) {
+			if (!pxp->pvr2d_export) {
+				PVR2DHANDLE ph = NULL;
+				if (PVR2DMemExport(ctx, 0,
+						   (PVR2DMEMINFO *)pxp->pvr2d_mem,
+						   &ph) == PVR2D_OK)
+					pxp->pvr2d_export = (unsigned long)ph;
+			}
+			if (pxp->pvr2d_export)
+				tex = (uint32_t)pxp->pvr2d_export;
+		}
+		if (priv->mem->pBase) {
+			uint32_t *d = priv->mem->pBase;
+			d[0] = 1;
+			d[1] = tex;
+			d[2] = tex;
+			d[3] = tex;
+			d[4] = 1;
+		}
 	}
 
 	buf = calloc(1, sizeof *buf);
