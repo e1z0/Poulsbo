@@ -159,6 +159,10 @@
  * requestor back on the linear bypass path, leaving EDM/TA/3D untouched.
  */
 #define _PSB_CB_BANK0_INDEX_2D_MASK	0x000F0000
+#define _PSB_CB_BANK0_INDEX_2D_SHIFT	16
+/* Free BIF dir-list slot we park gma500's GTT page directory in for the 2D
+ * requestor (SGX uses index 0 and 15; DIR_LIST_BASE1 is left empty). */
+#define PSB_2D_BIF_DIR_LIST_INDEX	1
 
 #define PSB_CR_2D_SOCIF			0x0E18
 #define _PSB_C2_SOCIF_FREESPACE_SHIFT		(0)
