@@ -553,8 +553,33 @@ int psb_2d_submit_user(struct drm_psb_private *dev_priv, uint32_t *cmdbuf,
 	int ret = 0;
 	int i;
 	unsigned submit_size;
+	u32 bank0;
 
 	spin_lock_irqsave(&dev_priv->lock_2d, flags);
+
+	/*
+	 * SGX-coexistence.  SGXInitialise/SGXReset routes the BIF 2D requestor
+	 * through the SGX MMU (BANK0 INDEX_2D -> EDM dirlist, and TWOD_REQ_BASE
+	 * moved off gatt_start), so the 2D engine's linear GTT-offset addresses
+	 * stop resolving and the blit wedges the core.  Put the 2D requestor
+	 * back on the linear bypass path by clearing ONLY its INDEX_2D field
+	 * (EDM/TA/3D preserved, so SGX rendering is unaffected) and restoring
+	 * TWOD_REQ_BASE.  Idempotent and re-applied per submit so it survives a
+	 * later SGX re-init; the BIF flush only fires when a change was needed,
+	 * so steady-state cost is a single register read.  No drain/restore ->
+	 * no lock_2d stall.
+	 */
+	bank0 = PSB_RSGX32(PSB_CR_BIF_BANK0);
+	if ((bank0 & _PSB_CB_BANK0_INDEX_2D_MASK) ||
+	    PSB_RSGX32(PSB_CR_BIF_TWOD_REQ_BASE) != dev_priv->gtt.gatt_start) {
+		PSB_WSGX32(bank0 & ~_PSB_CB_BANK0_INDEX_2D_MASK,
+			   PSB_CR_BIF_BANK0);
+		PSB_WSGX32(dev_priv->gtt.gatt_start, PSB_CR_BIF_TWOD_REQ_BASE);
+		PSB_WSGX32(_PSB_CB_CTRL_INVALDC | _PSB_CB_CTRL_FLUSH,
+			   PSB_CR_BIF_CTRL);
+		(void)PSB_RSGX32(PSB_CR_BIF_CTRL);	/* post the flush */
+	}
+
 	while (size > 0) {
 		unsigned long stop = jiffies + HZ;
 

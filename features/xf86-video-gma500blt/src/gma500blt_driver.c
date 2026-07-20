@@ -130,20 +130,21 @@ static Bool gma_pixmap_is_offscreen(PixmapPtr pPix)
 	GMA500BLTPixmapPriv *priv = exaGetPixmapDriverPrivate(pPix);
 
 	/*
-	 * Only pixmaps that carry their own dumb bo (offscreen EXA pixmaps) are
-	 * "offscreen" for acceleration. The root/screen pixmap has NO EXA
-	 * driver-private (fb created it before EXA); reporting it offscreen made
-	 * EXA dereference that NULL private during setup -> segfault. Treat the
-	 * root as not-offscreen: it renders via fb/software, while offscreen dumb
-	 * pixmaps still accelerate Solid/Copy. (On-target-hardened.)
+	 * Offscreen == carries its own dumb bo.  Kept TRUE so EXA maps the bo
+	 * (PrepareAccess) before any software op; the root/screen pixmap has no
+	 * private and stays not-offscreen (renders to the scanout bo).  NOTE:
+	 * Solid/Copy are currently CPU-only (software-2D mode) because the
+	 * 2D-BLT engine hangs the core while SGX is up -- see gma500blt_exa.c
+	 * and the 2d-sgx-bif-conflict notes.
 	 */
 	if (priv && priv->handle)
 		return TRUE;
 	return FALSE;
 }
 
-/* CPU access for software fallback / Composite: mmap the dumb BO. */
-static Bool gma_prepare_access(PixmapPtr pPix, int index)
+/* CPU access for software fallback / Composite: mmap the dumb BO.
+ * Non-static: the tiny-rect erratum fallback in gma500blt_exa.c reuses it. */
+Bool gma_prepare_access(PixmapPtr pPix, int index)
 {
 	GMA500BLTPtr b = GMA500BLT_GET(pPix);
 	ScreenPtr pScreen = pPix->drawable.pScreen;
@@ -179,7 +180,7 @@ static Bool gma_prepare_access(PixmapPtr pPix, int index)
 	return TRUE;
 }
 
-static void gma_finish_access(PixmapPtr pPix, int index)
+void gma_finish_access(PixmapPtr pPix, int index)
 {
 	(void)index;
 	pPix->devPrivate.ptr = NULL;		/* keep the map cached for reuse */

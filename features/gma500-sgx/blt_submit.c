@@ -37,6 +37,8 @@
 #include <linux/delay.h>
 #include <linux/jiffies.h>
 #include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>
@@ -51,6 +53,23 @@
 #include "gtt.h"
 #include "power.h"
 #include "gma_blt_drm.h"
+
+/*
+ * Diagnostics for the 2D-BLT engine-hang investigation.  All access is
+ * serialized under dev_priv->mutex_2d (every blt_submit holds it), so the
+ * bare globals need no further locking.  blt_debug=1 logs every submit.
+ */
+static int blt_debug;
+module_param(blt_debug, int, 0644);
+MODULE_PARM_DESC(blt_debug, "verbose 2D BLT submit + engine-hang logging");
+
+static unsigned long psb_blt_seq;
+static struct psb_blt_last {
+	unsigned long seq;
+	bool is_copy;
+	u32 dst_addr, src_addr, size_x, size_y;
+	int post_wait;
+} psb_blt_last;
 
 /* Not defined in this tree's psb_reg.h */
 #ifndef PSB_2D_BH_MASK
@@ -122,16 +141,6 @@ static u64 psb_blt_last_byte(u32 delta, u32 x, u32 y, u32 w, u32 h,
 #define PSB_BLT_HANG_WINDOW	(HZ)
 /* Overall cap on one drain wait, even with a busy-but-healthy engine */
 #define PSB_BLT_WAIT_CAP	(4 * HZ)
-/*
- * Small 2D blits (window fills, glyph strips, compositor damage) drain in a few
- * microseconds, but usleep_range(100,500) sleeps >=100us and, once the
- * scheduler is involved, typically ~1ms -- so a 2D-heavy load (Compiz + a MATE
- * panel does thousands of tiny fills) spends the X server almost entirely in
- * these idle waits, starving client requests.  Spin-poll the engine status for
- * a short window first: a quick blit is caught in microseconds with no sleep,
- * and only genuinely long drains fall through to the sleeping wait.
- */
-#define PSB_BLT_SPIN_TRIES	64
 
 /*
  * psb_blt_wait_idle_progress - sleeping engine drain with hang detection
@@ -158,8 +167,7 @@ static int psb_blt_wait_idle_progress(struct drm_psb_private *dev_priv)
 	u32 status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
 
 	for (;;) {
-		u32 new_socif = socif, new_status = status;
-		int spins;
+		u32 new_socif, new_status;
 
 		if (socif == _PSB_C2_SOCIF_EMPTY &&
 		    !(status & _PSB_C2B_STATUS_BUSY))
@@ -169,24 +177,10 @@ static int psb_blt_wait_idle_progress(struct drm_psb_private *dev_priv)
 		if (time_after_eq(jiffies, cap))
 			return -EBUSY;
 
-		/*
-		 * Fast path: spin-poll the engine for a short window so a small
-		 * blit that drains in microseconds returns without a sleep.
-		 */
-		for (spins = 0; spins < PSB_BLT_SPIN_TRIES; spins++) {
-			new_socif  = PSB_RSGX32(PSB_CR_2D_SOCIF);
-			new_status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
-			if (new_socif == _PSB_C2_SOCIF_EMPTY &&
-			    !(new_status & _PSB_C2B_STATUS_BUSY))
-				return 0;
-			cpu_relax();
-		}
+		usleep_range(100, 500);
 
-		/* Still draining after the spin window: back off to a sleep. */
-		usleep_range(50, 150);
 		new_socif = PSB_RSGX32(PSB_CR_2D_SOCIF);
 		new_status = PSB_RSGX32(PSB_CR_2D_BLIT_STATUS);
-
 		if (new_socif != socif || new_status != status)
 			hang = jiffies + PSB_BLT_HANG_WINDOW;
 		socif = new_socif;
@@ -523,6 +517,29 @@ int psb_blt_submit_ioctl(struct drm_device *dev, void *data,
 		return -EIO;
 	}
 
+	/*
+	 * BIF/MMU state dump (SGX-coexistence RE): SGXInit reconfigures the
+	 * shared BIF, breaking the 2D linear path.  Dump the requestor bases,
+	 * bank assignment and MMU control so the working (SGX-off) and broken
+	 * (SGX-on) states can be diffed.  One-shot, under lock, blt_debug only.
+	 */
+	if (blt_debug && psb_blt_seq == 0) {
+		dev_info(dev->dev,
+			 "BIF gatt_start=%#08x CTRL=%#08x INT_STAT=%#08x FAULT=%#08x\n",
+			 dev_priv->gtt.gatt_start,
+			 PSB_RSGX32(PSB_CR_BIF_CTRL),
+			 PSB_RSGX32(PSB_CR_BIF_INT_STAT),
+			 PSB_RSGX32(PSB_CR_BIF_FAULT));
+		dev_info(dev->dev,
+			 "BIF BANK0=%#08x BANK1=%#08x DIR0=%#08x DIR1=%#08x TWOD_BASE=%#08x 3D_BASE=%#08x\n",
+			 PSB_RSGX32(PSB_CR_BIF_BANK0),
+			 PSB_RSGX32(PSB_CR_BIF_BANK1),
+			 PSB_RSGX32(PSB_CR_BIF_DIR_LIST_BASE0),
+			 PSB_RSGX32(PSB_CR_BIF_DIR_LIST_BASE1),
+			 PSB_RSGX32(PSB_CR_BIF_TWOD_REQ_BASE),
+			 PSB_RSGX32(PSB_CR_BIF_3D_REQ_BASE));
+	}
+
 	patched = 0;
 	for (i = 0; i < args->nr_relocs; i++) {
 		struct gtt_range *gt;
@@ -603,7 +620,12 @@ int psb_blt_submit_ioctl(struct drm_device *dev, void *data,
 	if (ret) {
 		if (ret == -EIO) {
 			dev_err(dev->dev,
-				"blt_submit: engine hung on pre-drain, resetting\n");
+				"blt_submit: engine hung on pre-drain (seq=%lu). Prior submit: seq=%lu %s dst=%#x src=%#x %ux%u post_wait=%d\n",
+				psb_blt_seq + 1, psb_blt_last.seq,
+				psb_blt_last.is_copy ? "copy" : "solid",
+				psb_blt_last.dst_addr, psb_blt_last.src_addr,
+				psb_blt_last.size_x, psb_blt_last.size_y,
+				psb_blt_last.post_wait);
 			psb_blt_reset_engine(dev_priv);
 		}
 		goto unwind;
@@ -619,11 +641,30 @@ int psb_blt_submit_ioctl(struct drm_device *dev, void *data,
 	 */
 	ret2 = psb_blt_wait_idle_progress(dev_priv);
 	if (ret2 == -EIO) {
-		dev_err(dev->dev, "blt_submit: idle timeout, resetting\n");
+		dev_err(dev->dev,
+			"blt_submit: idle timeout (seq=%lu %s dst=%#x %ux%u), resetting\n",
+			psb_blt_seq + 1, op.is_copy ? "copy" : "solid",
+			cs[op.dst_slot], op.size_x, op.size_y);
 		psb_blt_reset_engine(dev_priv);
 	}
 	if (!ret)
 		ret = ret2;
+
+	/* Record this submit so the NEXT pre-drain can name it if it hung. */
+	psb_blt_seq++;
+	psb_blt_last.seq	= psb_blt_seq;
+	psb_blt_last.is_copy	= op.is_copy;
+	psb_blt_last.dst_addr	= cs[op.dst_slot];
+	psb_blt_last.src_addr	= op.is_copy ? cs[op.src_slot] : 0;
+	psb_blt_last.size_x	= op.size_x;
+	psb_blt_last.size_y	= op.size_y;
+	psb_blt_last.post_wait	= ret2;
+	if (blt_debug)
+		dev_info(dev->dev,
+			 "blt seq=%lu %s dst=%#x src=%#x %ux%u post=%d\n",
+			 psb_blt_seq, op.is_copy ? "copy" : "solid",
+			 psb_blt_last.dst_addr, psb_blt_last.src_addr,
+			 op.size_x, op.size_y, ret2);
 
 unwind:
 	/*

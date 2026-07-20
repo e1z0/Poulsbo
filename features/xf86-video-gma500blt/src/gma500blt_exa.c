@@ -88,12 +88,60 @@ static Bool gma_PrepareSolid(PixmapPtr pDst, int alu, Pixel planemask, Pixel fg)
 	return TRUE;
 }
 
+/*
+ * CPU fill of a rectangle -- used for sub-minimum rects that would wedge the
+ * 2D engine (GMA_BLT_MIN_DIM erratum).  Writes straight into the pixmap's
+ * backing bo (the same memory the engine would target), so it is immediately
+ * consistent with later accelerated ops on the same pixmap.
+ */
+static void gma_solid_sw(PixmapPtr pDst, int x1, int y1, int x2, int y2,
+			 uint32_t colour)
+{
+	int cpp   = pDst->drawable.bitsPerPixel >> 3;
+	int pitch = (int)exaGetPixmapPitch(pDst);
+	unsigned char *base;
+	int x, y, w = x2 - x1;
+
+	if (!gma_prepare_access(pDst, EXA_PREPARE_DEST))
+		return;
+	base = pDst->devPrivate.ptr;
+	if (base) {
+		for (y = y1; y < y2; y++) {
+			unsigned char *row = base + (size_t)y * pitch +
+					     (size_t)x1 * cpp;
+			if (cpp == 4) {
+				uint32_t *p = (uint32_t *)row;
+				for (x = 0; x < w; x++)
+					p[x] = colour;
+			} else if (cpp == 2) {
+				uint16_t *p = (uint16_t *)row;
+				for (x = 0; x < w; x++)
+					p[x] = (uint16_t)colour;
+			} else {
+				memset(row, (int)(colour & 0xff), (size_t)w);
+			}
+		}
+	}
+	gma_finish_access(pDst, EXA_PREPARE_DEST);
+}
+
 static void gma_Solid(PixmapPtr pDst, int x1, int y1, int x2, int y2)
 {
 	GMA500BLTPtr b = GMA500BLT_GET(pDst);
 	struct gma_accel_state *st = &b->accel;
 	uint32_t cs[8];
 	struct drm_psb_blt_reloc r;
+
+	/*
+	 * Software-2D mode: the 2D-BLT engine hangs the graphics core while the
+	 * SGX microkernel is up (the GL/DRI2 path initialises it), so never
+	 * issue a blit -- do every fill on the CPU.  Revert to the sub-8px
+	 * guard once 2D/SGX coexistence lands (see 2d-sgx-bif-conflict).
+	 */
+	if (1) {
+		gma_solid_sw(pDst, x1, y1, x2, y2, st->fill_colour);
+		return;
+	}
 
 	cs[0] = P2D_FENCE_BH;
 	cs[1] = st->dst_fmt_stride;
@@ -134,8 +182,46 @@ static Bool gma_PrepareCopy(PixmapPtr pSrc, PixmapPtr pDst, int xdir, int ydir,
 	st->dst_fmt_stride = P2D_DST_SURF_BH | dfmt | gma_pixmap_stride(pDst);
 	st->src_fmt_stride = P2D_SRC_SURF_BH | sfmt | gma_pixmap_stride(pSrc);
 	st->src_handle     = gma_pixmap_handle(pSrc);
+	st->copy_src       = pSrc;		/* for the tiny-rect CPU fallback */
 	st->xdir = xdir; st->ydir = ydir;
 	return TRUE;
+}
+
+/*
+ * CPU copy of a rectangle -- tiny-rect erratum fallback for gma_Copy.  Honours
+ * the EXA copy direction (ydir for vertically-overlapping same-pixmap blits)
+ * and uses memmove per row so horizontal overlap is safe too.
+ */
+static void gma_copy_sw(PixmapPtr pDst, PixmapPtr pSrc, int srcX, int srcY,
+			int dstX, int dstY, int w, int h, int ydir)
+{
+	int cpp    = pDst->drawable.bitsPerPixel >> 3;
+	int dpitch = (int)exaGetPixmapPitch(pDst);
+	int spitch = (int)exaGetPixmapPitch(pSrc);
+	unsigned char *sbase, *dbase;
+	int i;
+
+	if (!gma_prepare_access(pSrc, EXA_PREPARE_SRC))
+		return;
+	sbase = pSrc->devPrivate.ptr;
+	if (!gma_prepare_access(pDst, EXA_PREPARE_DEST)) {
+		gma_finish_access(pSrc, EXA_PREPARE_SRC);
+		return;
+	}
+	dbase = pDst->devPrivate.ptr;
+	if (sbase && dbase) {
+		size_t rowbytes = (size_t)w * cpp;
+		for (i = 0; i < h; i++) {
+			int y = (ydir < 0) ? (h - 1 - i) : i;
+			unsigned char *s = sbase + (size_t)(srcY + y) * spitch +
+					   (size_t)srcX * cpp;
+			unsigned char *d = dbase + (size_t)(dstY + y) * dpitch +
+					   (size_t)dstX * cpp;
+			memmove(d, s, rowbytes);
+		}
+	}
+	gma_finish_access(pDst, EXA_PREPARE_DEST);
+	gma_finish_access(pSrc, EXA_PREPARE_SRC);
 }
 
 static void gma_Copy(PixmapPtr pDst, int srcX, int srcY, int dstX, int dstY,
@@ -145,6 +231,14 @@ static void gma_Copy(PixmapPtr pDst, int srcX, int srcY, int dstX, int dstY,
 	struct gma_accel_state *st = &b->accel;
 	uint32_t cs[10];
 	struct drm_psb_blt_reloc r[2];
+
+	/* Software-2D mode (see gma_Solid): never touch the 2D-BLT engine while
+	 * SGX is up -- copy on the CPU. */
+	if (1) {
+		gma_copy_sw(pDst, st->copy_src, srcX, srcY, dstX, dstY, w, h,
+			    st->ydir);
+		return;
+	}
 
 	/* SRC_SURF (addr) + DST_SURF (addr) + BLIT(src copy) + coords + FLUSH */
 	cs[0] = P2D_FENCE_BH;

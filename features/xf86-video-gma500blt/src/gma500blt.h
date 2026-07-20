@@ -33,6 +33,7 @@ struct gma_accel_state {
 	uint32_t dst_fmt_stride;	/* DST_SURF format|pitch dword */
 	uint32_t src_fmt_stride;	/* SRC_SURF format|pitch dword (copy) */
 	uint32_t src_handle;		/* source GEM handle (copy) */
+	PixmapPtr copy_src;		/* source pixmap (copy; CPU fallback) */
 	int      xdir, ydir;		/* copy direction (overlap handling) */
 };
 
@@ -93,6 +94,20 @@ static inline uint32_t gma_pixmap_stride(PixmapPtr pPix)
 #define GMA_PLANEMASK_FULL(pm, pPix) \
 	(((pm) & ((1ull << (pPix)->drawable.depth) - 1)) == \
 	 ((1ull << (pPix)->drawable.depth) - 1))
+
+/*
+ * Poulsbo 2D-BLT engine erratum: blits narrower/shorter than this in either
+ * dimension wedge the 2D core (a single 1x1 solid fill hangs it hard, and a
+ * reset does not recover it).  fbcon never hits this (it only fills console
+ * cells and full-width clears); the DDX does constantly (1px borders, cursors,
+ * thin rects), so Solid/Copy route sub-minimum rects through a CPU fallback.
+ */
+#define GMA_BLT_MIN_DIM 8
+
+/* gma500blt_driver.c -- CPU-map a pixmap's backing store (dumb bo or scanout),
+ * reused by the exa.c tiny-rect software fallback. */
+Bool gma_prepare_access(PixmapPtr pPix, int index);
+void gma_finish_access(PixmapPtr pPix, int index);
 
 /* gma500blt_exa.c */
 void gma500blt_exa_init_accel(ExaDriverPtr exa);

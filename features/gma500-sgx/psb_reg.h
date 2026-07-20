@@ -151,6 +151,14 @@
 #define PSB_CR_BIF_DIR_LIST_BASE0	0x0C84
 #define PSB_CR_BIF_TWOD_REQ_BASE	0x0C88
 #define PSB_CR_BIF_3D_REQ_BASE		0x0CAC
+/*
+ * BIF_BANK0 packs a 4-bit page-directory-list index per requestor.  SGXInit/
+ * SGXReset (pvrsrvkm) sets the 2D requestor's index to the SGX microkernel's
+ * dirlist, routing 2D through the SGX MMU and breaking the open 2D engine's
+ * linear (TWOD_REQ_BASE) addressing.  We clear ONLY this field to put the 2D
+ * requestor back on the linear bypass path, leaving EDM/TA/3D untouched.
+ */
+#define _PSB_CB_BANK0_INDEX_2D_MASK	0x000F0000
 
 #define PSB_CR_2D_SOCIF			0x0E18
 #define _PSB_C2_SOCIF_FREESPACE_SHIFT		(0)
