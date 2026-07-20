@@ -70,6 +70,11 @@ typedef struct {
 	CreateScreenResourcesProcPtr	CreateScreenResources;
 	CloseScreenProcPtr		CloseScreen;
 	struct gma_accel_state		accel;
+	/* PVR2DMemWrap of the KMS scanout (root pixmap), so PVR2DBlt can target
+	 * the screen for on-screen 2D (window drags).  Opaque PVR2DMEMINFO*;
+	 * NULL if not wrapped / wrap failed (root then falls back to CPU).
+	 * -1 sentinel = wrap already attempted and failed (don't retry). */
+	void    *scanout_pvr2d;
 } GMA500BLTRec, *GMA500BLTPtr;
 
 #define GMA500BLT_PRIV(scrn) ((GMA500BLTPtr)((scrn)->driverPrivate))

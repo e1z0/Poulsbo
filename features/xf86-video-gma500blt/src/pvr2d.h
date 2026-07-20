@@ -61,9 +61,17 @@ typedef struct {
 	long           MaskX, MaskY;
 } PVR2DBLTINFO;
 
+/* PVR2DMemWrap flags: wrap an existing CPU mapping into an SGX-accessible
+ * surface.  NONCONTIGUOUS (0) lets the services layer get_user_pages() the CPU
+ * VA -- used to wrap the (GTT-scattered) KMS scanout so PVR2DBlt can target the
+ * screen directly. */
+#define PVR2D_WRAPFLAG_CONTIGUOUS    1UL
+#define PVR2D_WRAPFLAG_NONCONTIGUOUS 0UL
+
 extern int        PVR2DEnumerateDevices(PVR2DDEVICEINFO *);
 extern PVR2DERROR PVR2DCreateDeviceContext(unsigned long, PVR2DCONTEXTHANDLE *, unsigned long);
 extern PVR2DERROR PVR2DMemAlloc(PVR2DCONTEXTHANDLE, unsigned long, unsigned long, unsigned long, PVR2DMEMINFO **);
+extern PVR2DERROR PVR2DMemWrap(PVR2DCONTEXTHANDLE, void *, unsigned long, unsigned long, unsigned long *, PVR2DMEMINFO **);
 extern PVR2DERROR PVR2DMemFree(PVR2DCONTEXTHANDLE, PVR2DMEMINFO *);
 extern PVR2DERROR PVR2DMemExport(PVR2DCONTEXTHANDLE, unsigned long, PVR2DMEMINFO *, PVR2DHANDLE *);
 extern PVR2DERROR PVR2DBlt(PVR2DCONTEXTHANDLE, PVR2DBLTINFO *);

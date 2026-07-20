@@ -293,22 +293,37 @@ static Bool gma_create_screen_resources(ScreenPtr pScreen)
 		return FALSE;
 
 	/*
-	 * Root pixmap acceleration: DELIBERATELY LEFT SOFTWARE. Binding the root
-	 * to the scanout bo and accelerating on-screen Solid/Copy via the SGX 2D
-	 * BLT engine is correct but *slower* than software here: the kernel BLT
-	 * submit is fully synchronous per op (pin -> submit -> wait-for-idle ->
-	 * unpin), ~330ms/op measured, vs ~14000 small fills/sec in software. So we
-	 * bind the scanout memory to the root (below) for CPU/fb rendering only and
-	 * leave gma_pixmap_is_offscreen() returning FALSE for it. The EXA BLT path
-	 * stays wired for offscreen pixmaps; making on-screen accel a win needs an
-	 * async/fenced BLT submit (deferred unpin) in the kernel -- a separate task.
+	 * Root pixmap acceleration via PVR2DBlt.  (The old direct-BLT engine was
+	 * synchronous -- pin/submit/wait/unpin ~330ms/op -- so on-screen accel was
+	 * left software.  PVR2DBlt goes through the SGX microkernel asynchronously
+	 * and coexists with GL, so it is now a win for large on-screen ops like
+	 * window drags.)  Wrap the scanout as an SGX surface and hang it on the
+	 * root's private: rp->pvr2d_mem makes EXA treat the root as offscreen and
+	 * route its Solid/Copy through the SGX 2D (gma_pvr2d_mem).  Wrap failure
+	 * leaves rp->pvr2d_mem NULL -> the root stays CPU-rendered.
 	 */
 	{
 		GMA500BLTPixmapPriv *rp = exaGetPixmapDriverPrivate(root);
-		if (rp) {			/* fb/CPU access to the scanout, no accel handle */
+		if (rp) {
+			PVR2DCONTEXTHANDLE ctx = gma500blt_pvr2d_ctx(pScrn);
+			PVR2DMEMINFO *mem = NULL;
+
 			rp->cpu_ptr   = b->drmmode.front.cpu_ptr;
 			rp->bo_mapped = 1;
 			rp->is_front  = 1;
+			if (ctx && b->drmmode.front.cpu_ptr &&
+			    PVR2DMemWrap(ctx, b->drmmode.front.cpu_ptr,
+					 PVR2D_WRAPFLAG_NONCONTIGUOUS,
+					 b->drmmode.front.size, NULL, &mem)
+					== PVR2D_OK && mem) {
+				rp->pvr2d_mem    = mem;
+				b->scanout_pvr2d = mem;
+				xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+					   "PVR2D: scanout wrapped -> HW on-screen 2D\n");
+			} else {
+				xf86DrvMsg(pScrn->scrnIndex, X_INFO,
+					   "PVR2D: scanout wrap failed -> on-screen 2D stays CPU\n");
+			}
 		}
 	}
 

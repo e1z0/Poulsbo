@@ -18,7 +18,12 @@
 #include "gma_blt_drm.h"	/* DRM_IOCTL_PSB_BLT_SUBMIT, reloc, stream limits */
 #include "pvr2d.h"		/* PVR2DBlt: SGX 2D that coexists with GL */
 
-/* PVR2D allocation backing an offscreen pixmap, or NULL (root/dumb-bo). */
+/*
+ * PVR2D memory the SGX 2D can target for this pixmap, or NULL (CPU fallback).
+ * Offscreen pixmaps carry their own PVR2DMemAlloc'd buffer; the root/screen
+ * pixmap carries the PVR2DMemWrap of the KMS scanout (set in
+ * gma_create_screen_resources) so PVR2DBlt can draw straight to the screen.
+ */
 static PVR2DMEMINFO *gma_pvr2d_mem(PixmapPtr pPix)
 {
 	GMA500BLTPixmapPriv *p = exaGetPixmapDriverPrivate(pPix);
