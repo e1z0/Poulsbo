@@ -1,29 +1,42 @@
 # Poulsbo SGX — accelerated GMA500 driver for Ubuntu 18.04 LTS
 
 Open + closed driver stack that gives the **Intel GMA500 / Poulsbo (PowerVR
-SGX535)** real graphics acceleration on Ubuntu 18.04 LTS:
+SGX535)** real graphics acceleration on Ubuntu 18.04 LTS. What actually runs and
+displays on the panel today (the "Path B" configuration, commit `fc6a520f`, HW
+verified 2026-07-20 — blitter hangs 0, SGX faults 0):
 
-- **Accelerated 2D on X11** — the SGX 2D BLIT engine drives window fills, copies
-  and scrolls through an EXA driver (`xf86-video-gma500blt`), instead of the
-  unaccelerated `modesetting` fallback.
 - **Hardware-accelerated desktop OpenGL (GLX / DRI2) on X11** — real
   **OpenGL 2.1** on the SGX535 for ordinary X apps. `glxinfo` reports
-  *direct rendering: Yes* and *renderer: EMGD on PowerVR SGX535*; `glxgears` runs
-  at **~105 FPS**. A **MATE + Compiz** desktop composites through the GPU
-  (`composite` + `opengl` plugins). This survives a clean reboot with no manual
-  steps.
-- **OpenGL ES 2.0 on the SGX535** — the Intel EMGD EGL/GLES runtime on a
-  kernel `pvrsrvkm` render module, with a **zero-copy hardware page-flip
-  present** (`eglSwapBuffers` flips the scanned-out buffer directly — no CPU
-  copy), driven by SGX interrupts (~1 ms/present).
-- **Accelerated 2D on the framebuffer console** (SGX 2D BLIT).
+  *direct rendering: Yes* and *renderer: EMGD on PowerVR SGX535*; `glxgears`
+  renders **and displays** in a window at **~66 FPS** (measured on hardware).
+- **Hardware 2D for offscreen X pixmaps** — the EXA driver
+  (`xf86-video-gma500blt`) allocates offscreen pixmaps with `PVR2DMemAlloc` and
+  fills/copies them with **`PVR2DBlt`** — the SGX microkernel's *own* 2D path,
+  which coexists with OpenGL by design. See the important caveat below: **on-screen
+  (scanout) 2D is still CPU**, so window dragging is not smooth.
+- **A stable MATE desktop** using **marco** (the non-compositing window manager).
+  **Compiz / GL compositing does NOT work on this stack and must not be run** — it
+  renders black and has hard-hung the machine (see *What does not work*).
+- **OpenGL ES 2.0 on the SGX535** — the Intel EMGD EGL/GLES runtime on a kernel
+  `pvrsrvkm` render module, interrupt-driven present.
 
-After you install the packages and reboot, X comes up accelerated automatically,
-with GLX/DRI2 enabled.
+After you install the packages and reboot, a systemd unit brings up the marco +
+HW-2D-pixmap + HW-GL desktop automatically (no compiz).
 
-> **Note on GL performance:** `glxgears` at ~105 FPS is uncapped; real GL apps
-> vsync-cap to the 60 Hz LVDS panel. OpenGL is version **2.1** (fixed-function +
-> GLSL 1.20), which is what the SGX535 realistically does.
+> **The core finding you should know first.** The open, direct-MMIO **2D-BLT
+> engine** and the closed **SGX microkernel** (required for OpenGL/GLX/DRI2)
+> *conflict* on the shared graphics-core BIF: `SGXInitialise` reroutes the 2D
+> requestor through the SGX MMU (`BIF_BANK0` `INDEX_2D`, `BIF_DIR_LIST_BASE0`,
+> `BIF_TWOD_REQ_BASE`), so the direct 2D-BLT engine wedges the moment SGX is up.
+> The standalone 2D-BLT test passes **12/12 with SGX uninitialised** and fails
+> **5/12 once SGX is initialised**. This is why earlier "accelerated composited
+> desktop" claims never actually reached the panel. Path B sidesteps the conflict
+> by doing X 2D through the SGX's own `PVR2DBlt` instead of the direct engine.
+> See [ENGINEERING.md](ENGINEERING.md) §0 and §9.
+
+> **Note on GL performance:** `glxgears` ~66 FPS is measured on hardware. OpenGL
+> is version **2.1** (fixed-function + GLSL 1.20), which is what the SGX535
+> realistically does.
 
 > This targets one specific configuration: **Ubuntu 18.04 LTS, kernel
 > `5.4.0-150-generic` (i686/i386)** on Poulsbo hardware (e.g. the Sony Vaio P /
@@ -38,18 +51,18 @@ with GLX/DRI2 enabled.
 
 ## Install
 
+This is a **development snapshot**, not a validated release — it brings up a
+usable HW-accelerated marco desktop, with the known limitations listed below.
 Grab the three `.deb` files (from `packaging/out/`, or build them per
-[PACKAGING.md](PACKAGING.md)) and install:
+[PACKAGING.md](PACKAGING.md)) and install (the version string in the filenames is
+whatever you built with):
 
 ```bash
-sudo dpkg -i poulsbo-sgx-modules_1.0-rc1_i386.deb \
-             poulsbo-sgx-userspace_1.0-rc1_i386.deb \
-             poulsbo-sgx_1.0-rc1_all.deb
+sudo dpkg -i poulsbo-sgx-modules_*_i386.deb \
+             poulsbo-sgx-userspace_*_i386.deb \
+             poulsbo-sgx_*_all.deb
 sudo reboot
 ```
-
-(This is the **1.0-rc1** release. Grab the matching `.deb` names from
-`packaging/out/`.)
 
 What the packages do on install:
 
@@ -62,9 +75,12 @@ What the packages do on install:
 - install the `gma500blt` X driver and an `xorg.conf.d` snippet that selects it;
 - **enable accelerated GLX/DRI2**: put the `emgd` DRI driver on the Mesa loader
   path, set `MESA_LOADER_DRIVER_OVERRIDE=emgd`, apply a small `libGLX_mesa`
-  patch, and install the AIGLX/DRI2 `xorg.conf` (so `startx` / a DM comes up with
-  accelerated OpenGL);
-- bring the SGX up (`srvinit`) before the login screen so GL apps work.
+  patch, and install the AIGLX/DRI2 `xorg.conf` (so X comes up with accelerated
+  OpenGL);
+- bring the SGX up (`srvinit`) before the login screen so GL apps work;
+- install the auto-start desktop unit (`poulsbo-desktop.service` + a marco
+  session xinitrc, commit `d2dfbe64`) that starts the accelerated **marco**
+  desktop on boot — deliberately **without** compiz.
 
 The three packages:
 
@@ -94,7 +110,7 @@ glxinfo | grep -E 'direct rendering|OpenGL renderer|OpenGL version'
 #   -> direct rendering: Yes
 #   -> OpenGL renderer string: EMGD on PowerVR SGX535
 #   -> OpenGL version string: 2.1 ...
-glxgears        # ~105 FPS (uncapped)
+glxgears        # renders AND displays, ~66 FPS (measured on HW)
 
 # OpenGL ES renderer (in an X session):
 #   an EGL/GLES2 app reports  GL_RENDERER = "EMGD on PowerVR SGX 535"
@@ -102,21 +118,44 @@ glxgears        # ~105 FPS (uncapped)
 
 ---
 
-## Running a composited desktop (MATE + Compiz)
+## Running the accelerated desktop (MATE + marco)
 
-A MATE session with Compiz compositing runs on the SGX535. Make sure the Mesa
-override is in the environment (the package sets it in `/etc/environment`, so a
-fresh login already has it; export it by hand only if you launch from a bare
-session):
+After install + reboot the desktop comes up automatically via
+`poulsbo-desktop.service` (marco window manager, HW 2D for offscreen pixmaps via
+`PVR2DBlt`, HW OpenGL). To start it by hand from a bare session, make sure the
+Mesa override is in the environment (the package sets it in `/etc/environment`, so
+a fresh login already has it):
 
 ```bash
 export MESA_LOADER_DRIVER_OVERRIDE=emgd     # already set by the package
-mate-session &
-compiz --replace composite opengl decor move resize place &
+marco &                                     # NON-compositing WM (deliberate)
+mate-panel &
 ```
 
-Compiz's `composite` + `opengl` plugins load and run stably on the GPU, and
-GL apps (e.g. `glxgears`) render accelerated inside the composited desktop.
+GL apps (e.g. `glxgears`) render and display accelerated on this desktop.
+
+**Do not run compiz** (or any GL compositor) on this stack. See below.
+
+## What does not work / known limitations
+
+- **On-screen (scanout) 2D is CPU, not accelerated.** The KMS front buffer is not
+  SGX-mapped, so `PVR2DBlt` cannot target it; screen-to-screen copies (e.g.
+  dragging a window) fall back to the CPU on uncached memory. Result: **dragging
+  tears / is not smooth.** Offscreen pixmap 2D is HW-accelerated; on-screen is not
+  (yet).
+- **Compiz / GL compositing does NOT work and is unsafe.** It bypasses the DDX
+  hooks (going through the closed emgd GLX), renders a **black screen**, and has
+  **hard-hung the machine** (full network death, requiring a physical power
+  cycle). The desktop uses marco (non-compositing) on purpose. Completing compiz
+  would require reverse-engineering the closed emgd GLX present path.
+- **The direct 2D-BLT ioctl is not usable alongside OpenGL.** The direct-MMIO 2D
+  engine (`features/blt-ioctl`) is proven 12/12 on hardware — but **only with the
+  SGX uninitialised**. Once the SGX/GL stack is up it wedges the core (the BIF
+  conflict above). Path B's HW 2D therefore goes through `PVR2DBlt`, not the
+  direct engine.
+- **No framebuffer readback.** This DDX has no `GetImage` path, so
+  `import`/screenshots return black — a debugging false-negative, not a rendering
+  bug (ground truth is a photo of the physical panel).
 
 ---
 
@@ -129,11 +168,11 @@ reload the modules — hot reload can hang the machine).
 
 | Parameter | Module | Default | Meaning |
 |---|---|---|---|
-| `pvr_irq_forward` | `gma500_gfx` | `1` | Forward SGX interrupts to `pvrsrvkm` so GL present is interrupt-driven (~1 ms, ~950 FPS). Set `0` to fall back to `pvrsrvkm`'s internal ~250 ms poll (~4 FPS) — diagnostic only. |
+| `pvr_irq_forward` | `gma500_gfx` | `1` | Forward SGX interrupts to `pvrsrvkm` so GL present is interrupt-driven instead of poll-bound (the internal poll is ~250 ms). Leave at `1`; `0` is diagnostic only. (The large FPS deltas quoted for this in older notes came from an EGL/GLES2 offscreen bench, not the marco desktop.) |
 | `flip_vsync` | `gma500_gfx` | `0` | `0` = present as soon as the buffer is armed (max rate). `1` = throttle presents to roughly the panel refresh and reduce tearing, via a deferred completion that does **not** block the SGX command pipeline. **Note:** on this hardware the closed present-completion path limits the throttled rate to ~15–20 FPS for trivial workloads, so `1` is for tear-sensitive/static content, not maximum FPS. (A phase-locked vblank-IRQ variant reached ~40 FPS tear-free but proved unstable on this box, so the stable timer-based throttle is shipped.) |
 | `flip_enable` | `gma500dc` | `1` | `1` = zero-copy hardware page-flip present. `0` = complete presents without moving the scanout (diagnostic). |
 | `gma_no_sgx` | `gma500_gfx` | `1` | Hand the SGX render core to `pvrsrvkm` (leave at 1). |
-| `event_timeout_ms` | `pvrsrvkm` | `2` | How long the GL client's event-object wait re-checks for SGX render completion. The stock value was a hard 100 ms, which cost the EMGD GL client a full timeout every frame; `2` is one of the GLX-speed fixes. Runtime-tunable. |
+| `event_timeout_ms` | `pvrsrvkm` | `2` | How long the GL client's event-object wait re-checks for SGX render completion. The stock value was a hard 100 ms, which cost the EMGD GL client a full timeout every frame; `2` shortens that. Runtime-tunable. |
 | `sgx_apm_latency_ms` | `pvrsrvkm` | `500` | SGX active-power-management idle latency before the core powers down. The Poulsbo default was 1 ms, so the SGX powered off between every frame and paid a power-up penalty; `500` keeps it awake under load. `0` disables active PM entirely. Runtime-tunable. |
 
 Examples:

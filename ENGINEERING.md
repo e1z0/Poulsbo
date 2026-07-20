@@ -7,22 +7,74 @@ PCI `8086:8108`) on a Sony Vaio running Ubuntu 18.04 LTS, kernel
 
 > **This document describes a driver that exists and runs.** Earlier revisions of
 > this file framed the project as "planning a driver that does not exist yet."
-> That is no longer true. On the target hardware today: full 2D acceleration
-> runs on the fbcon and under X, an open EXA X11 driver modesets and accelerates
-> the desktop, the SGX535's proprietary microkernel firmware boots to
+> That is no longer true. On the target hardware today (the "Path B"
+> configuration, commit `fc6a520f`, HW verified 2026-07-20): an open EXA X11
+> driver modesets and accelerates offscreen 2D via the SGX's own `PVR2DBlt`, a
+> stable **MATE (marco)** desktop displays, **hardware-accelerated desktop
+> OpenGL / GLX/DRI2 works and displays** (`glxinfo`: direct rendering Yes, *EMGD
+> on PowerVR SGX535*, OpenGL 2.1; `glxgears` renders and displays at ~66 FPS
+> measured), the SGX535's proprietary microkernel firmware boots to
 > `INIT_COMPLETE` from an open hand-written loader, and the closed
-> Imagination/EMGD GLES2 userspace renders true programmable-shader 3D — into an
-> X11 window, zero-copy, interrupt-driven, at ~950 FPS — on top of an open
-> kernel PVR-over-DRM bridge. **Desktop OpenGL now works too: full
-> hardware-accelerated GLX/DRI2 (`glxinfo`: direct rendering Yes, *EMGD on
-> PowerVR SGX535*, OpenGL 2.1; `glxgears` ~105 FPS) for ordinary X apps, with a
-> MATE + Compiz composited desktop running on the GPU — reboot-persistent.** The
-> reverse-engineering plan, register database, and clean-room rules that made
-> this possible are retained below as engineering notes rather than as a roadmap.
+> Imagination/EMGD GLES2 userspace renders true programmable-shader 3D on top of
+> an open kernel PVR-over-DRM bridge.
+>
+> **Read [§0](#0-the-core-finding-the-2d-blt--sgx-bif-conflict) first.** The
+> direct-MMIO 2D-BLT engine and the closed SGX microkernel **cannot both drive
+> the graphics core** — this is the central architectural constraint, and the
+> reason earlier "composited accelerated desktop" claims never reached the panel.
+> Corrected honest limitations are in [§9](#9-honest-limitations-and-future-work);
+> compiz does **not** work and can hard-hang the box.
 
 All results below were measured on the target host `root@10.1.11.218` (the
 "Vaio") unless noted. Dated milestones come from the project memory log; the
 key source of truth is the 3D bring-up history summarized in [§8](#8-sgx-3d-bring-up-history-the-open-microkernel-track).
+
+---
+
+## 0. The core finding: the 2D-BLT ↔ SGX BIF conflict
+
+**The open, direct-MMIO 2D-BLT engine and the closed SGX microkernel (pvrsrvkm,
+required for OpenGL/GLX/DRI2) cannot both be active on the shared graphics core
+as currently built.** Proven on hardware 2026-07-20.
+
+**Evidence.** The standalone BLT test (`features/blt-ioctl/user/psb_blt_test.c`)
+passes **12/12 with SGX uninitialised** (srvinit service masked) and fails
+**5/12 the moment SGX is initialised** (partial fill, engine hang). It is not
+X-specific — `SGXInitialise`/`SGXReset`, running at boot before X, is what breaks
+2D.
+
+**Mechanism.** `SGXInitialise` reroutes the 2D requestor through the SGX MMU.
+`BIF_BANK0` (`0x0C78`) packs 4-bit per-requestor dir-list indices; `SGXReset`
+sets `INDEX_2D` (bits `[19:16]`) to `0xF`, i.e. route the 2D engine through the
+SGX page-directory model instead of the GART. Observed register diff:
+
+| reg | SGX off (2D works) | SGX on (2D wedges) |
+|---|---|---|
+| `BIF_BANK0` (`0x0C78`) | `0x000000` | `0x0f00ff` |
+| `BIF_TWOD_REQ_BASE` (`0x0C88`) | `0x80000000` (=`gatt_start`) | `0x10000000` |
+| `BIF_DIR_LIST_BASE0` (`0x0C84`) | `0x34448000` (gma500 PD) | `0x7f04a000` (SGX's) |
+
+Once SGX is up, 2D requests are *translated* through an MMU page directory, and
+gma500's simple-model PD does not map the GTT aperture `[gatt_start, …)` the 2D
+engine addresses. Multiple coexistence attempts (re-asserting `TWOD_REQ_BASE`,
+clearing only `INDEX_2D`, parking gma500's PD in a free dir-list slot with
+`INDEX_2D=1`) all still failed 5/12 on hardware; one per-blit IRQs-off drain-spin
+**hard-hung the box**. A real fix needs a GTT-mirroring SGX-model page directory
+for 2D, or routing all open-2D buffers through the SGX MMU — neither is done.
+
+**Consequence — what this invalidates.** Earlier notes that claimed a
+"HW-accelerated composited desktop working" were **process/API-level only** (glxinfo
+strings, running processes), never confirmed pixels on the panel. The first real
+visual test (2026-07-19/20) showed black/blue/fragment screens, not a usable
+desktop, precisely because the direct 2D engine wedged the moment SGX inited.
+
+**Path B — the working resolution (commit `fc6a520f`).** Abandon the direct-MMIO
+2D-BLT engine under X. Instead the DDX allocates offscreen EXA pixmaps with
+`PVR2DMemAlloc` (SGX-mapped) and fills/copies them with **`PVR2DBlt`** — the SGX
+microkernel's *own* 2D path, which coexists with GL by design. Verified on
+hardware: X up, **blitter hangs 0, SGX faults 0**, GL works, marco desktop
+displays. The remaining rough edge (on-screen scanout 2D still CPU) and the
+compiz danger are in [§9](#9-honest-limitations-and-future-work).
 
 ---
 
@@ -33,10 +85,10 @@ mainline `gma500_gfx` DRM driver:
 
 | Layer | What | Mechanism | Status |
 |---|---|---|---|
-| **A** | 2D acceleration on the fbcon | `GMA_BLT_SUBMIT` DRM ioctl → dedicated SGX 2D BLIT core (slave port `SGX+0x4000`) | **Working, 12/12 HW tests.** Real GPU pixels, verified via aperture + `/dev/fb0` readback. |
-| **B** | Open X11 2D EXA DDX | `xf86-video-gma500blt`: KMS modeset (LVDS-1 @ 1600x768) + EXA Solid/Copy over the 2D BLIT core | **Working + stable X.** Xorg 1.20 (HWE ABI 24.1), `x11perf` clean. |
-| **C** | 3D (GLES2 / EGL) | Closed EMGD/Imagination userspace (DDK 1.5.15.3226) on ported `pvrsrvkm`, coexisting with `gma500` via an open PVR-over-DRM bridge | **Working: SGX535 renders programmable-shader GLES2 into an X11 window,** zero-copy page-flip present, interrupt-driven, ~950 FPS. |
-| **C2** | Desktop OpenGL (GLX / DRI2) on X | Closed EMGD `emgd_dri.so` DRI2 driver bridged into Mesa-20's GLX, on the open `gma500blt` DDX (which is itself a PVR2D client providing the DRI2 buffers) | **Working: `glxinfo` = direct rendering Yes / EMGD on PowerVR SGX535 / OpenGL 2.1; `glxgears` ~105 FPS; MATE + Compiz composited desktop on the GPU. Reboot-persistent.** See [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-the-5105-fps-fixes). |
+| **A** | 2D acceleration on the fbcon | `GMA_BLT_SUBMIT` DRM ioctl → dedicated SGX 2D BLIT core (slave port `SGX+0x4000`) | **12/12 HW tests — but only with SGX uninitialised.** Real GPU pixels, verified via aperture + `/dev/fb0` readback. **Wedges once SGX/GL is up (see [§0](#0-the-core-finding-the-2d-blt--sgx-bif-conflict)); not usable alongside OpenGL.** |
+| **B** | Open X11 2D EXA DDX | `xf86-video-gma500blt`: KMS modeset (LVDS-1 @ 1600x768) + EXA Solid/Copy | **Working + stable X (Path B).** HW 2D for **offscreen pixmaps via `PVR2DBlt`** (coexists with GL); **on-screen/scanout 2D falls back to CPU** (§9). Xorg 1.20 (HWE ABI 24.1). |
+| **C** | 3D (GLES2 / EGL) | Closed EMGD/Imagination userspace (DDK 1.5.15.3226) on ported `pvrsrvkm`, coexisting with `gma500` via an open PVR-over-DRM bridge | **Working: SGX535 renders programmable-shader GLES2,** interrupt-driven page-flip present. (The high offscreen-bench FPS figures below are register/API-verified, not on-panel measurements.) |
+| **C2** | Desktop OpenGL (GLX / DRI2) on X | Closed EMGD `emgd_dri.so` DRI2 driver bridged into Mesa-20's GLX, on the open `gma500blt` DDX (which is itself a PVR2D client providing the DRI2 buffers) | **Working and displaying: `glxinfo` = direct rendering Yes / EMGD on PowerVR SGX535 / OpenGL 2.1; `glxgears` renders and displays at ~66 FPS (measured). Reboot-persistent, on a marco (non-compositing) desktop. Compiz does NOT work (§9).** See [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-performance). |
 
 A parallel, fully-open **microkernel bring-up track** (`sgx_3d.c`, no closed
 userspace) independently reached `INIT_COMPLETE` and host↔microkernel CCB
@@ -218,6 +270,18 @@ software**: a synchronous pin→submit→wait_idle→unpin BLT is ~330 ms/op vs 
 rect/s in software, so software root is optimal until an async/fenced submit
 exists.
 
+**Path B correction (commit `fc6a520f`).** The direct `PSB_2D`/`DRM_IOCTL_PSB_BLT_SUBMIT`
+stream above is the *original* DDX path — and it is **abandoned under X**, because
+the direct 2D engine wedges the moment SGX inits ([§0](#0-the-core-finding-the-2d-blt--sgx-bif-conflict)).
+The shipped DDX instead allocates offscreen EXA pixmaps with `PVR2DMemAlloc`
+(new `pvr2d.h`; `priv->pvr2d_mem` in `gma_create_pixmap`/`gma_destroy_pixmap`) and
+implements `gma_Solid`/`gma_Copy` with **`PVR2DBlt`** (fill ROP `0xF0` / copy
+`0xCC`, CPU fallback), syncing via `PVR2DQueryBlitsComplete` in
+`gma_prepare_access`. This is the SGX microkernel's own 2D path, which coexists
+with GL. Gotcha fixed: `gma_pixmap_is_offscreen` must return **TRUE** for
+`pvr2d_mem` pixmaps (handle `== 0`) or EXA NULL-derefs in `fbBlt`. On-screen
+copies still fall to CPU (the KMS front buffer is not SGX-mapped — §9).
+
 ---
 
 ## 4. Interrupt-driven, zero-copy page-flip present
@@ -271,7 +335,7 @@ the `PVR2DPresentFlip` waiter.
 recovery / oops, display healthy.** This is a general fix — the whole GL stack
 is now interrupt-driven instead of poll-bound.
 
-### 4.3 GLX/DRI2 desktop OpenGL: the buffer bridge and the 5→105 FPS fixes
+### 4.3 GLX/DRI2 desktop OpenGL: the buffer bridge and performance
 
 Layer C above is **GLES2/EGL** — an app links `libEMGDegl` and presents through
 our WSEGL flip chain. Layer **C2** is **desktop OpenGL under X via GLX/DRI2**, so
@@ -341,11 +405,23 @@ PACKAGING.md):
    (`ff 50 08`) inside `ff 75 30 ff 50 08 83 c4 10` are neutralised to
    `xor %eax,%eax; nop` (`31 c0 90`); a `.orig` backup is kept.
 
-**Performance: 5 → 105 FPS (21×).** The first working GLX render was correct but
-~5 FPS. `strace -T` showed one `nanosleep(~160 ms)` per frame: the EMGD GL client
-waits its full event-object timeout each frame because a 3D render raises no host
+**What actually displays.** The GL that reaches the window does so because
+`gma_dri2_copy_region` was rewritten to **CPU-copy the client back-buffer straight
+into the window's region of the KMS scanout** (`b->drmmode.front.cpu_ptr` + pitch,
+clipped). The earlier code blitted back to an off-screen PVR2D "front", so the
+window stayed black — that is one reason prior "GLX working" reports never
+displayed. `glxgears` now renders **and displays** at **~66 FPS** (measured on
+hardware).
+
+**Performance tuning.** The first working GLX render was correct but slow.
+`strace -T` showed one `nanosleep(~160 ms)` per frame: the EMGD GL client waits
+its full event-object timeout each frame because a 3D render raises no host
 `SW_EVENT`, so the MISR never signals that particular event object (this is a
-*different* event than the flip fix of §4.2 woke). Three stacked fixes:
+*different* event than the flip fix of §4.2 woke). Three stacked fixes lifted the
+rate substantially (the specific per-step FPS figures — 5→10→17→105 — come from
+that earlier tuning session and predate the on-panel visual verification; treat
+them as relative deltas, and ~66 FPS as the measured glxgears figure on the
+current Path B desktop):
 
 1. **`pvrsrvkm.event_timeout_ms`** (new param, default **2**, was a hard 100 ms)
    — shortens that per-frame event re-check interval. 5 → 10 FPS.
@@ -366,16 +442,23 @@ drains in microseconds returns from a short spin-poll (`PSB_BLT_SPIN_TRIES`)
 without sleeping, so the X server is not starved by synchronous 2D fills under a
 compositor.
 
-`glxgears` ~105 FPS is **uncapped**; real GL apps vsync-cap to the 60 Hz LVDS
-panel. A **MATE + Compiz** desktop runs with the `composite` + `opengl` (+
-`decor`/`move`/`resize`/`place`) plugins on the SGX535 and is stable; GL apps
-render accelerated inside it.
+The desktop that ships and displays is **MATE with marco** (the *non-compositing*
+window manager); GL apps render and display accelerated on it. **Compiz / GL
+compositing does NOT work and must not be run** — it bypasses the DDX DRI2 hooks
+(verified by instrumentation: compiz calls neither `gma_dri2_create_buffer` nor
+`gma_dri2_copy_region`, so its texture-from-pixmap and present happen entirely
+inside the closed emgd GLX), renders a **black screen**, and on one launch
+**hard-hung the machine** (full network death, physical power cycle required). See
+[§9](#9-honest-limitations-and-future-work).
 
 **Persistence.** The whole GLX path survives a clean reboot with zero manual
 steps (reboot-verified): `poulsbo-sgx.service` → `load.sh` loads the modules
 including `proc_dri_compat`; `poulsbo-sgx-srvinit.service` brings PVR services up;
-`/etc/environment` sets `MESA_LOADER_DRIVER_OVERRIDE=emgd`; and `xorg.conf.glx`
-(gma500blt + AIGLX + glx/dri2) is the default X config. After reboot, `startx` →
+`/etc/environment` sets `MESA_LOADER_DRIVER_OVERRIDE=emgd`; `xorg.conf.glx`
+(gma500blt + AIGLX + glx/dri2) is the default X config; and
+`poulsbo-desktop.service` (+ a marco session xinitrc, `packaging/desktop/`, commit
+`d2dfbe64`) starts the accelerated **marco** desktop on boot — deliberately
+without compiz. After reboot the marco + HW-2D-pixmap + HW-GL desktop comes up and
 `glxinfo` shows direct rendering on the SGX535.
 
 New sources: `features/xf86-video-gma500blt/src/gma500blt_dri2.c` (DDX DRI2 +
@@ -436,7 +519,7 @@ isolating render vs. scanout.
 The re-check interval for `EVENT_OBJECT_TIMEOUT_MS` in the PVR event-object wait
 (`osfunc.c`). The stock value was a hard **100 ms**, which the EMGD desktop-GL
 client paid *per frame* because a 3D render raises no host `SW_EVENT` for the
-MISR to signal. `2` collapses that wait; see [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-the-5105-fps-fixes).
+MISR to signal. `2` collapses that wait; see [§4.3](#43-glxdri2-desktop-opengl-the-buffer-bridge-and-performance).
 Clamped to a `1 ms` floor.
 
 ### `pvrsrvkm.sgx_apm_latency_ms` (int, default `500`) — SGX power-down latency
@@ -674,18 +757,35 @@ State these plainly; do not overclaim.
 - **The whole stack is target-pinned:** prebuilt for kernel `5.4.0-150-generic`
   i686 on this specific Vaio, and the display-pipe assumption (pipe B) is this
   panel's.
-- **Desktop OpenGL under X (GLX/DRI2) now works** (this was previously listed as
-  open). `emgd_dri.so` is bridged into Mesa-20 GLX on our open `gma500blt` DDX
-  (§4.3): `glxinfo` = direct rendering Yes / EMGD on PowerVR SGX535 / OpenGL 2.1,
-  `glxgears` ~105 FPS, MATE + Compiz composites on the GPU, reboot-persistent.
-  Honest caveats that remain: OpenGL is **2.1** (fixed-function + GLSL 1.20, what
-  SGX535 realistically does); the DRI2 `CopyRegion` present is a 2D-BLT copy of
-  the client back-buffer to the window (not the zero-copy scanout flip the GLES2
-  path uses), so it is fast but not zero-copy; and the whole GLX enablement leans
-  on a binary `libGLX_mesa` patch + a patchelf + a `/proc/dri` compat shim to
-  reconcile the 2010-era emgd DRI2 driver with the Mesa-20 loader.
-- **Layer A/C are mutually exclusive on the SGX** (fbcon 2D accel vs. pvrsrvkm
-  render); this is by design and matches the historical EMGD split.
+- **Desktop OpenGL under X (GLX/DRI2) works and displays** (this was previously
+  listed as open). `emgd_dri.so` is bridged into Mesa-20 GLX on our open
+  `gma500blt` DDX (§4.3): `glxinfo` = direct rendering Yes / EMGD on PowerVR
+  SGX535 / OpenGL 2.1, `glxgears` renders and displays at **~66 FPS (measured)**,
+  reboot-persistent, on a **marco** (non-compositing) desktop. Honest caveats:
+  OpenGL is **2.1** (fixed-function + GLSL 1.20, what SGX535 realistically does);
+  the DRI2 present is a **CPU copy** of the client back-buffer into the window's
+  KMS scanout region (not zero-copy); and the whole GLX enablement leans on a
+  binary `libGLX_mesa` patch + a patchelf + a `/proc/dri` compat shim to reconcile
+  the 2010-era emgd DRI2 driver with the Mesa-20 loader.
+- **On-screen (scanout) 2D is still CPU.** The KMS front buffer is not SGX-mapped,
+  so `PVR2DBlt` cannot target it; screen-to-screen copies (window dragging) fall
+  back to the CPU on uncached memory, so **dragging tears / is not smooth**.
+  Offscreen pixmap 2D is HW-accelerated (Path B, §3.5); on-screen is not yet. A
+  fix needs the scanout usable as a `PVR2DBlt` target (kernel PRIME/dma-buf, or
+  wrapping its pages).
+- **Compiz / GL compositing does NOT work and is unsafe.** It bypasses the DDX
+  DRI2 hooks (goes through the closed emgd GLX), renders a **black screen**, and
+  has **hard-hung the box** (full network death, physical power cycle). The
+  desktop uses marco on purpose; completing compiz is a deep RE of the closed
+  emgd GLX present/TFP path, not a DDX tweak. Do not run it on this hardware.
+- **The direct 2D-BLT engine cannot coexist with the SGX/GL stack** (§0). The
+  `features/blt-ioctl` path is proven 12/12 — but only with SGX uninitialised; it
+  wedges the core once `SGXInitialise` runs.
+- **No framebuffer readback.** This DDX has no `GetImage` path — `xsetroot`
+  read-back and `import`/screenshots return **black** (a debugging false-negative;
+  ground truth is a photo of the physical panel).
+- **Layer A/C are mutually exclusive on the SGX** (direct fbcon 2D-BLT vs.
+  pvrsrvkm render); this is the §0 conflict, and matches the historical EMGD split.
 
 ### Near-term future work
 

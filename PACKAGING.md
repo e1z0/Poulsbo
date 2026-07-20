@@ -4,8 +4,12 @@ This describes how to rebuild the three `.deb` packages from source — both the
 kernel modules and the package assembly. Everything lives under `packaging/`,
 with the module sources under `features/`.
 
-The current release is **1.0-rc1** (the first release with hardware-accelerated
-desktop OpenGL / GLX/DRI2; see ENGINEERING.md §4.3).
+This is a **development snapshot**, not a validated release. It builds a stack
+that brings up a HW-accelerated **marco** desktop (HW OpenGL/GLX/DRI2 + HW 2D for
+offscreen pixmaps via `PVR2DBlt`), with the known limitations documented in
+README.md and ENGINEERING.md §9 (on-screen 2D is CPU; compiz does not work). Pass
+whatever `VERSION=` you like when building; the examples below use `1.0-rc1` only
+as a placeholder string.
 
 ```
 packaging/
@@ -15,6 +19,7 @@ packaging/
   userspace/         # dpkg tree for poulsbo-sgx-userspace (ld/xorg config)
   meta/              # dpkg tree for the poulsbo-sgx metapackage
   glx-extra/         # GLX/DRI2 enablement: glx-enable.sh, xorg.conf.glx, emgd_dri.so
+  desktop/           # poulsbo-desktop.service + marco session xinitrc (auto-start, no compiz)
   out/               # built .deb files land here
 ```
 
@@ -170,9 +175,16 @@ Inspect a result with `dpkg-deb --info` / `dpkg-deb --contents`.
 /opt/poulsbo-sgx/srvinit, srvinit.sh                 SGX INIT_COMPLETE (for GL)
 /lib/systemd/system/poulsbo-sgx.service              loads the stack at sysinit
 /lib/systemd/system/poulsbo-sgx-srvinit.service      runs srvinit before login
+/lib/systemd/system/poulsbo-desktop.service          starts the marco desktop (commit d2dfbe64)
 /etc/modprobe.d/poulsbo-sgx.conf                     blacklists stock gma500_gfx
 /etc/default/poulsbo-sgx                             module-parameter tunables
 ```
+
+The `poulsbo-desktop.service` unit (with a marco session xinitrc, sources under
+`packaging/desktop/`) brings up the accelerated desktop on boot using **marco**,
+the non-compositing window manager — deliberately **without compiz**, which does
+not work and can hard-hang the box (README.md *What does not work*; ENGINEERING.md
+§9).
 
 `postinst` runs `depmod`, `update-initramfs -u` (so the blacklist takes effect
 in early boot), and `systemctl enable` on both units. `load.sh` insmods
@@ -208,10 +220,11 @@ enablement (the parts that live outside `/opt/emgd`, on the system Mesa paths).
 4. installs `xorg.conf.glx` (gma500blt + AIGLX + glx/dri2) to `/etc/X11/`, making
    it the default `xorg.conf` if none exists.
 
-On the next X start the server loads `gma500blt`, initialises EXA + DRI2, 2D is
-accelerated, and desktop **OpenGL (GLX/DRI2) runs on the SGX535** — `glxinfo`
-shows direct rendering on *EMGD on PowerVR SGX535* (OpenGL 2.1). EGL/GLES2 apps
-get the SGX535 via the EMGD runtime as before.
+On the next X start the server loads `gma500blt`, initialises EXA + DRI2,
+**offscreen 2D is accelerated via `PVR2DBlt`** (on-screen/scanout 2D falls back to
+CPU — ENGINEERING.md §9), and desktop **OpenGL (GLX/DRI2) runs on the SGX535** —
+`glxinfo` shows direct rendering on *EMGD on PowerVR SGX535* (OpenGL 2.1). EGL/GLES2
+apps get the SGX535 via the EMGD runtime as before.
 
 ### Tunable kernel parameters
 
@@ -226,7 +239,8 @@ cat  /sys/module/pvrsrvkm/parameters/sgx_apm_latency_ms    # default 500 (Poulsb
 echo 500 | sudo tee /sys/module/pvrsrvkm/parameters/sgx_apm_latency_ms
 ```
 
-See ENGINEERING.md §4.3 for what these fix (glxgears 5 → 105 FPS).
+See ENGINEERING.md §4.3 for what these fix (they lift the GLX frame rate; measured
+glxgears on the current Path B desktop is ~66 FPS).
 
 ---
 
