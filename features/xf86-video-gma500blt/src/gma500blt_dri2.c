@@ -88,6 +88,9 @@ typedef struct {
 	int           w, h;		/* cache key: drawable dimensions      */
 	int           cpp;
 	int           refcnt;
+	int           is_tfp;		/* texture_from_pixmap: name is a pixmap's
+					   own export (not owned here); don't
+					   free/cache the backing PVR2D memory */
 } GmaDri2Buf;
 
 static PVR2DCONTEXTHANDLE g_pvr2d;	/* the DDX's PVR2D device context */
@@ -188,6 +191,59 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 	if (cpp < 1) cpp = 4;
 	if (!ctx) return NULL;
 
+	/*
+	 * texture_from_pixmap fast path (the fix for black composited windows).
+	 * When compiz redirects a window it binds that window's backing pixmap as
+	 * a GL texture; emgd then requests the pixmap drawable's FRONT buffer
+	 * (front-left, optionally |0x80).  RE of emgd_dri.so shows PVRDRIInitialise-
+	 * Buffer only textures a returned buffer whose attachment == 0 (front):
+	 * 0x1c480 PVR2DMemMaps that buffer's `name` ([drawable+0x30]) as the sampled
+	 * surface.  Our normal path hands back a fresh (empty) render buffer, so
+	 * every composited window textured black.  Instead hand back the PIXMAP's
+	 * own PVR2D export as an attachment-0 buffer, so the texture samples the
+	 * real window content.  Only redirect/offscreen pixmaps carry pvr2d_mem;
+	 * the screen/root pixmap does not, so normal on-screen GL windows fall
+	 * through to the render path below and are unaffected.
+	 */
+	if ((attachment & 0x7f) == 0) {			/* front-left (maybe |0x80) */
+		PixmapPtr pp = (draw->type == DRAWABLE_WINDOW)
+			? draw->pScreen->GetWindowPixmap((WindowPtr)draw)
+			: (draw->type == DRAWABLE_PIXMAP ? (PixmapPtr)draw : NULL);
+		GMA500BLTPixmapPriv *pxp = pp ? exaGetPixmapDriverPrivate(pp) : NULL;
+
+		if (pxp && pxp->pvr2d_mem) {
+			if (!pxp->pvr2d_export) {
+				PVR2DHANDLE ph = NULL;
+				if (PVR2DMemExport(ctx, 0,
+						   (PVR2DMEMINFO *)pxp->pvr2d_mem,
+						   &ph) == PVR2D_OK)
+					pxp->pvr2d_export = (unsigned long)ph;
+			}
+			if (pxp->pvr2d_export) {
+				priv = calloc(1, sizeof *priv);
+				if (!priv) return NULL;
+				priv->is_tfp = 1;
+				priv->name   = pxp->pvr2d_export;
+				priv->pitch  = pxp->pitch;
+				priv->cpp    = cpp;
+				priv->w      = draw->width;
+				priv->h      = draw->height;
+				priv->refcnt = 1;
+
+				buf = calloc(1, sizeof *buf);
+				if (!buf) { free(priv); return NULL; }
+				buf->attachment    = 0;	/* FRONT: emgd textures this */
+				buf->name          = pxp->pvr2d_export;
+				buf->pitch         = pxp->pitch;
+				buf->cpp           = cpp;
+				buf->flags         = 0;
+				buf->format        = format;
+				buf->driverPrivate = priv;
+				return buf;
+			}
+		}
+	}
+
 	pitch = (draw->width * cpp + 7) & ~7u;		/* small alignment */
 	size  = pitch * draw->height;
 
@@ -285,14 +341,22 @@ static void gma_dri2_destroy_buffer(DrawablePtr draw, DRI2Buffer2Ptr buf)
 	GmaDri2Buf *priv;
 	if (!buf) return;
 	priv = buf->driverPrivate;
+	if (priv && priv->is_tfp) {		/* pixmap owns the memory: just drop */
+		free(priv);
+		free(buf);
+		return;
+	}
 	if (priv && --priv->refcnt <= 0)
 		gma_dri2_cache_put(priv);	/* retain the PVR2D alloc for reuse */
 	free(buf);
 }
 
-/* Present: copy the source PVR2D buffer to the destination (both carry a CPU
- * mapping via PVR2DMEMINFO.pBase).  A CPU copy for now; the SGX 2D BLT path can
- * replace it once buffers expose GEM handles. */
+/* Present: copy the client's rendered (source/back) buffer to the on-screen KMS
+ * scanout.  The DRI2 "front" buffer is an off-screen PVR2D allocation, so the
+ * DRI2 core's back->front blit never reaches the panel; we present here instead.
+ * While the SGX microkernel is up the 2D-BLT engine cannot be used (it wedges
+ * the core -- see 2d-sgx-bif-conflict), so this is a CPU copy of write-combine
+ * memory (uncached read, slower than a device blit, but it displays). */
 static void
 gma_dri2_copy_region(DrawablePtr draw, RegionPtr region,
 		     DRI2BufferPtr dst, DRI2BufferPtr src)
@@ -304,44 +368,57 @@ gma_dri2_copy_region(DrawablePtr draw, RegionPtr region,
 	int scr_pitch = b->drmmode.front.pitch;
 	int scr_w = b->drmmode.front.width, scr_h = b->drmmode.front.height;
 	int win_x = draw->x, win_y = draw->y;
-	int w = draw->width, h = draw->height;
 	const int cpp = 4;
-	int y;
+	BoxPtr box;
+	int nbox, i, y;
 
-	(void)dst; (void)region;
+	(void)dst;
 	if (!scanout || !sbase)
 		return;
 
 	/*
-	 * Present the client's rendered (source/back) buffer straight to the
-	 * window's on-screen region in the KMS scanout.  The DRI2 "front" buffer
-	 * is an off-screen PVR2D allocation, so the previous back->front blit
-	 * never reached the panel (black window).  While the SGX microkernel is
-	 * up the 2D-BLT engine cannot be used (it wedges the core -- see the
-	 * 2d-sgx-bif-conflict notes), so 2D and this present are done on the CPU.
-	 * The source is write-combine (uncached read, so this is slower than a
-	 * device blit), but it displays; clipped to the scanout so a partly
-	 * off-screen or oversized window can never write past the front buffer.
+	 * Present ONLY the damaged rectangles.  emgd exposes GLX_MESA_copy_sub_
+	 * buffer, so a GL compositor (compiz) does PARTIAL redraws: it renders just
+	 * the damage region into the back buffer and leaves the rest of that buffer
+	 * stale/black, then presents with `region` = the damage.  Copying the whole
+	 * back buffer would paint black over everything the frame didn't touch --
+	 * which made idle composited windows go black, and moving flicker black
+	 * squares (the damage rects surrounded by never-drawn buffer).  Copying only
+	 * `region` preserves the undamaged scanout, which already holds the correct
+	 * previous frame.  Coords: `region` is drawable-relative and so is the
+	 * source buffer; the scanout destination adds the drawable origin.  Every
+	 * rect is clipped to the scanout so an off-screen/oversized drawable can
+	 * never write past the front buffer.
 	 */
-	for (y = 0; y < h; y++) {
-		int sy = win_y + y;
-		int sx = win_x;
-		int copy_w = w;
-		unsigned char *srcrow = sbase + (size_t)y * src->pitch;
+	if (!region || !RegionNotEmpty(region))
+		return;
+	nbox = RegionNumRects(region);
+	box  = RegionRects(region);
 
-		if (sy < 0 || sy >= scr_h)
-			continue;
-		if (sx < 0) {				/* clip left edge */
-			srcrow += (size_t)(-sx) * cpp;
-			copy_w += sx;
-			sx = 0;
+	for (i = 0; i < nbox; i++, box++) {
+		int rx1 = box->x1, ry1 = box->y1, rx2 = box->x2, ry2 = box->y2;
+
+		for (y = ry1; y < ry2; y++) {
+			int sy = win_y + y;		/* scanout row  */
+			int sx = win_x + rx1;		/* scanout col  */
+			int copy_w = rx2 - rx1;
+			unsigned char *srcrow = sbase + (size_t)y * src->pitch
+					      + (size_t)rx1 * cpp;
+
+			if (sy < 0 || sy >= scr_h)
+				continue;
+			if (sx < 0) {			/* clip left edge */
+				srcrow += (size_t)(-sx) * cpp;
+				copy_w += sx;
+				sx = 0;
+			}
+			if (sx + copy_w > scr_w)	/* clip right edge */
+				copy_w = scr_w - sx;
+			if (copy_w <= 0)
+				continue;
+			memcpy(scanout + (size_t)sy * scr_pitch + (size_t)sx * cpp,
+			       srcrow, (size_t)copy_w * cpp);
 		}
-		if (sx + copy_w > scr_w)		/* clip right edge */
-			copy_w = scr_w - sx;
-		if (copy_w <= 0)
-			continue;
-		memcpy(scanout + (size_t)sy * scr_pitch + (size_t)sx * cpp,
-		       srcrow, (size_t)copy_w * cpp);
 	}
 }
 
