@@ -1,0 +1,21 @@
+[Unit]
+Description=Poulsbo accelerated desktop (Xorg + MATE/marco, HW 2D + HW GL)
+After=poulsbo-sgx.service poulsbo-sgx-srvinit.service systemd-user-sessions.service
+Wants=poulsbo-sgx-srvinit.service
+Conflicts=getty@tty7.service
+
+[Service]
+Type=simple
+User=root
+PAMName=login
+TTYPath=/dev/tty7
+StandardInput=tty
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty7
+ExecStart=/usr/bin/startx -- :0 vt7 -nolisten tcp
+Restart=on-failure
+RestartSec=8
+
+[Install]
+WantedBy=multi-user.target

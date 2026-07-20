@@ -1,0 +1,10 @@
+#!/bin/sh
+# Poulsbo accelerated desktop session (installed as /root/.xinitrc).
+# marco (non-compositing) + hardware 2D (PVR2DBlt) + hardware OpenGL (emgd).
+# NOTE: do NOT enable compiz here -- GL compositing hard-hangs this box.
+export MESA_LOADER_DRIVER_OVERRIDE=emgd
+# Force marco as the window manager and keep the software compositor off
+# (a leftover dconf setting could otherwise launch the unstable compiz).
+gsettings set org.mate.session.required-components windowmanager marco 2>/dev/null || true
+gsettings set org.mate.Marco.general compositing-manager false 2>/dev/null || true
+exec dbus-launch --exit-with-session mate-session
