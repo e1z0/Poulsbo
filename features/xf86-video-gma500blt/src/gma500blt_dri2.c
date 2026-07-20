@@ -269,40 +269,51 @@ static void
 gma_dri2_copy_region(DrawablePtr draw, RegionPtr region,
 		     DRI2BufferPtr dst, DRI2BufferPtr src)
 {
-	GmaDri2Buf *sd = src->driverPrivate, *dd = dst->driverPrivate;
-	PVR2DBLTINFO b;
+	GmaDri2Buf *sd = src->driverPrivate;
+	GMA500BLTPtr b = GMA500BLT_PRIV(xf86ScreenToScrn(draw->pScreen));
+	unsigned char *scanout = b->drmmode.front.cpu_ptr;
+	unsigned char *sbase   = (sd && sd->mem) ? sd->mem->pBase : NULL;
+	int scr_pitch = b->drmmode.front.pitch;
+	int scr_w = b->drmmode.front.width, scr_h = b->drmmode.front.height;
+	int win_x = draw->x, win_y = draw->y;
 	int w = draw->width, h = draw->height;
+	const int cpp = 4;
+	int y;
 
-	if (!sd || !dd || !sd->mem || !dd->mem)
+	(void)dst; (void)region;
+	if (!scanout || !sbase)
 		return;
 
 	/*
-	 * Present via the SGX 2D engine (PVR2DBlt) rather than a CPU memcpy: the
-	 * buffers are write-combine, so a CPU read of the source is uncached and
-	 * cripplingly slow (~5 FPS). The GPU blit reads/writes device-side.
+	 * Present the client's rendered (source/back) buffer straight to the
+	 * window's on-screen region in the KMS scanout.  The DRI2 "front" buffer
+	 * is an off-screen PVR2D allocation, so the previous back->front blit
+	 * never reached the panel (black window).  While the SGX microkernel is
+	 * up the 2D-BLT engine cannot be used (it wedges the core -- see the
+	 * 2d-sgx-bif-conflict notes), so 2D and this present are done on the CPU.
+	 * The source is write-combine (uncached read, so this is slower than a
+	 * device blit), but it displays; clipped to the scanout so a partly
+	 * off-screen or oversized window can never write past the front buffer.
 	 */
-	if (g_pvr2d) {
-		memset(&b, 0, sizeof b);
-		b.CopyCode     = PVR2DROPcopy;
-		b.pDstMemInfo  = dd->mem;
-		b.DstStride    = dst->pitch;
-		b.DstFormat    = PVR2D_ARGB8888;
-		b.DstSurfWidth = w; b.DstSurfHeight = h;
-		b.DstX = 0; b.DstY = 0; b.DSizeX = w; b.DSizeY = h;
-		b.pSrcMemInfo  = sd->mem;
-		b.SrcStride    = src->pitch;
-		b.SrcFormat    = PVR2D_ARGB8888;
-		b.SrcSurfWidth = w; b.SrcSurfHeight = h;
-		b.SrcX = 0; b.SrcY = 0; b.SizeX = w; b.SizeY = h;
-		if (PVR2DBlt(g_pvr2d, &b) == PVR2D_OK) {
-			PVR2DQueryBlitsComplete(g_pvr2d, dd->mem, 1);	/* wait for present */
-			return;
+	for (y = 0; y < h; y++) {
+		int sy = win_y + y;
+		int sx = win_x;
+		int copy_w = w;
+		unsigned char *srcrow = sbase + (size_t)y * src->pitch;
+
+		if (sy < 0 || sy >= scr_h)
+			continue;
+		if (sx < 0) {				/* clip left edge */
+			srcrow += (size_t)(-sx) * cpp;
+			copy_w += sx;
+			sx = 0;
 		}
-		/* fall through to CPU copy if the blit was rejected */
-	}
-	if (sd->mem->pBase && dd->mem->pBase) {
-		unsigned int n = sd->size < dd->size ? sd->size : dd->size;
-		memcpy(dd->mem->pBase, sd->mem->pBase, n);
+		if (sx + copy_w > scr_w)		/* clip right edge */
+			copy_w = scr_w - sx;
+		if (copy_w <= 0)
+			continue;
+		memcpy(scanout + (size_t)sy * scr_pitch + (size_t)sx * cpp,
+		       srcrow, (size_t)copy_w * cpp);
 	}
 }
 
