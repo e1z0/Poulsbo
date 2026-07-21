@@ -220,35 +220,6 @@ gma_dri2_create_buffer(DrawablePtr draw, unsigned int attachment,
 					pxp->pvr2d_export = (unsigned long)ph;
 			}
 			if (pxp->pvr2d_export) {
-				/*
-				 * Opaque-window alpha fix (the wobbly white/magenta bug).
-				 * Depth-24 windows have no alpha channel, so X leaves the
-				 * pixmap's pad byte 0.  compiz draws TRANSFORMED (wobbly)
-				 * windows with premultiplied-alpha blending (GL_ONE,
-				 * GL_ONE_MINUS_SRC_ALPHA); a sampled alpha of 0 degenerates
-				 * that blend to ADDITIVE (win_rgb + dst_rgb), so an opaque
-				 * maroon window over the blue desktop composites to magenta
-				 * and bright content to white -- exactly the wobbly glitch.
-				 * (Confirmed on HW via glReadPixels: alpha0+premult-blend =>
-				 * 128,0,255; alpha255 => 128,0,0.  emgd's RGB-format TFP does
-				 * not force alpha=1 either.)  Force the pad byte to 0xFF for
-				 * opaque (non-32-bpp-alpha) pixmaps so the sampled alpha is
-				 * 1.0 and the blend is a correct source-over.  Untransformed
-				 * windows draw without blend and are unaffected; 32-bit ARGB
-				 * windows keep their real alpha.
-				 */
-				if (pp->drawable.depth != 32 && pxp->cpu_ptr) {
-					unsigned char *base = pxp->cpu_ptr;
-					int ph = pp->drawable.height;
-					int pw = pp->drawable.width;
-					int yy, xx;
-					for (yy = 0; yy < ph; yy++) {
-						unsigned char *row = base + (size_t)yy * pxp->pitch;
-						for (xx = 0; xx < pw; xx++)
-							row[xx * 4 + 3] = 0xFF;
-					}
-				}
-
 				priv = calloc(1, sizeof *priv);
 				if (!priv) return NULL;
 				priv->is_tfp = 1;
